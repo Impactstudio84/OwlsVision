@@ -571,10 +571,9 @@ function renderSidebar(){
     </div>
     <div class="nav">
       ${navItem('catalogue','Catalogue JVN')}
-      ${navItem('planning','Planning')}
+      ${navItem('planning', u?.isMaster ? 'Planning global' : 'Mes réservations')}
       ${navItem('missions','Missions')}
-      ${navItem('classement','Classement')}
-      ${u?.isMaster ? `<div class="nav-sep"></div>${navItem('admin','Panneau maître')}` : ''}
+      ${u?.isMaster ? `${navItem('classement','Clients &amp; XP')}<div class="nav-sep"></div>${navItem('admin','Panneau maître')}` : ''}
     </div>
     <div class="side-foot">
       <div class="side-user">
@@ -625,15 +624,17 @@ function renderCatalogue(){
 
 function renderPlanning(){
   const u = currentUserObj();
-  const sorted = [...state.bookings].sort((a,b) => a.start.localeCompare(b.start));
+  const isMaster = !!u?.isMaster;
+  const source = isMaster ? state.bookings : state.bookings.filter(b => b.username === state.currentUser);
+  const sorted = [...source].sort((a,b) => a.start.localeCompare(b.start));
   const rows = sorted.map(b => {
     const item = state.items.find(i => i.id === b.itemId);
     const mine = b.username === state.currentUser;
-    const canCancel = mine || u?.isMaster;
+    const canCancel = mine || isMaster;
     return `
       <tr>
         <td>${esc(item?.name || "Matériel supprimé")}</td>
-        <td>${esc(b.username)}${mine? ' <span style="color:var(--accent);font-size:11px">(vous)</span>':''}</td>
+        ${isMaster ? `<td>${esc(b.username)}${mine? ' <span style="color:var(--accent);font-size:11px">(vous)</span>':''}</td>` : ''}
         <td>${b.start}</td>
         <td>${b.end}</td>
         <td>${canCancel ? `<button class="btn btn-ghost btn-sm" onclick="cancelBooking('${b.id}')">Annuler</button>` : '—'}</td>
@@ -643,30 +644,31 @@ function renderPlanning(){
   return `
     <div class="topbar">
       <div>
-        <h1>Planning des réservations</h1>
-        <div class="desc">Vue d'ensemble de toutes les locations à venir et passées.</div>
+        <h1>${isMaster ? 'Planning global' : 'Mes réservations'}</h1>
+        <div class="desc">${isMaster ? "Vue d'ensemble de toutes les locations de tous les clients." : "Vos locations à venir et passées. Vos données ne sont visibles que par vous et le compte maître."}</div>
       </div>
       ${xpBarHtml(u)}
     </div>
     <div class="panel">
-      ${state.bookings.length ? `
+      ${sorted.length ? `
       <table>
-        <thead><tr><th>Matériel</th><th>Client</th><th>Début</th><th>Fin</th><th></th></tr></thead>
+        <thead><tr><th>Matériel</th>${isMaster ? '<th>Client</th>' : ''}<th>Début</th><th>Fin</th><th></th></tr></thead>
         <tbody>${rows}</tbody>
-      </table>` : `<div class="empty">Aucune réservation planifiée. Rendez-vous dans le catalogue pour réserver du matériel.</div>`}
+      </table>` : `<div class="empty">${isMaster ? "Aucune réservation planifiée." : "Vous n'avez aucune réservation pour le moment. Rendez-vous dans le catalogue."}</div>`}
     </div>
   `;
 }
 
 function renderMissions(){
   const u = currentUserObj();
+  const isMaster = !!u?.isMaster;
   const items = state.tasks.slice().sort((a,b) => (a.completed - b.completed) || (b.createdAt - a.createdAt));
   const rows = items.map(t => `
     <div class="task-item ${t.completed?'done':''}">
       <div>
         <div class="t-title">${esc(t.title)}</div>
         ${t.description ? `<div class="t-desc">${esc(t.description)}</div>` : ''}
-        ${t.completed ? `<div class="t-desc">Accomplie par ${esc(t.completedBy)} — XP distribuée à tous les comptes</div>` : ''}
+        ${t.completed ? `<div class="t-desc">${isMaster ? `Accomplie par ${esc(t.completedBy)}` : 'Mission accomplie'} — XP distribuée à tous les comptes</div>` : ''}
       </div>
       <div style="display:flex;align-items:center;gap:12px;">
         <span class="task-xp">+${t.xpReward} XP pour tous</span>
@@ -691,23 +693,28 @@ function renderMissions(){
 
 function renderClassement(){
   const u = currentUserObj();
+  if(!u?.isMaster) return renderCatalogue();
   const sorted = [...state.users].sort((a,b) => b.xp - a.xp);
-  const rows = sorted.map((usr, idx) => `
+  const rows = sorted.map((usr, idx) => {
+    const nbBookings = state.bookings.filter(b => b.username === usr.username).length;
+    const joined = usr.createdAt ? new Date(usr.createdAt).toLocaleDateString('fr-FR') : '—';
+    return `
     <div class="lead-row">
       <div class="lead-rank ${idx<3?'top':''}">${idx+1}</div>
       <div class="avatar" style="width:28px;height:28px;font-size:11px;">${esc(usr.username.slice(0,2).toUpperCase())}</div>
       <div style="flex:1;">
-        <div style="font-weight:600;font-size:14px;">${esc(usr.username)}${usr.isMaster?' 👑':''}${usr.username===state.currentUser?' <span style="color:var(--accent);font-size:11px">(vous)</span>':''}</div>
-        <div style="font-size:11.5px;color:var(--text-faint);">${esc(rankFor(usr.xp))} · Niveau ${levelFor(usr.xp)}</div>
+        <div style="font-weight:600;font-size:14px;">${esc(usr.username)}${usr.isMaster?' 👑':''}</div>
+        <div style="font-size:11.5px;color:var(--text-faint);">${esc(rankFor(usr.xp))} · Niveau ${levelFor(usr.xp)} · Inscrit le ${joined} · ${nbBookings} réservation${nbBookings>1?'s':''}</div>
       </div>
       <div style="font-family:'Rajdhani',sans-serif;font-weight:700;color:var(--accent);">${usr.xp} XP</div>
     </div>
-  `).join("");
+  `;
+  }).join("");
   return `
     <div class="topbar">
       <div>
-        <h1>Classement</h1>
-        <div class="desc">Progression de tous les comptes Owls Vision.</div>
+        <h1>Clients &amp; XP</h1>
+        <div class="desc">Vue détaillée réservée au compte maître — chaque client ne voit que sa propre progression.</div>
       </div>
       ${xpBarHtml(u)}
     </div>
@@ -776,9 +783,10 @@ function renderModal(){
         <h3>Réserver — ${esc(item.name)}</h3>
         ${state.bookingError ? `<div class="msg msg-error">${esc(state.bookingError)}</div>` : ''}
         <div class="row">
-          <div class="field"><label>Début</label><input id="bk-start" type="date" min="${todayStr()}" value="${todayStr()}"></div>
-          <div class="field"><label>Fin</label><input id="bk-end" type="date" min="${todayStr()}" value="${todayStr()}"></div>
+          <div class="field"><label>Début</label><input id="bk-start" type="date" min="${todayStr()}" value="${todayStr()}" oninput="updateAvailabilityPreview('${item.id}')"></div>
+          <div class="field"><label>Fin</label><input id="bk-end" type="date" min="${todayStr()}" value="${todayStr()}" oninput="updateAvailabilityPreview('${item.id}')"></div>
         </div>
+        <div id="bk-availability" style="font-size:12.5px;color:var(--accent);margin-bottom:8px;"></div>
         <div style="font-size:12px;color:var(--text-faint);">Gain à la réservation : +${item.xpValue} XP pour vous.</div>
         <div class="modal-actions">
           <button class="btn btn-ghost" onclick="closeModal()">Annuler</button>
@@ -833,6 +841,11 @@ function render(){
     app.innerHTML = renderGate();
     return;
   }
+  const currentUserForGuard = currentUserObj();
+  if((state.view === "classement" || state.view === "admin") && !currentUserForGuard?.isMaster){
+    state.view = "catalogue";
+  }
+
   let content = "";
   if(state.view === "catalogue") content = renderCatalogue();
   else if(state.view === "planning") content = renderPlanning();
@@ -877,7 +890,30 @@ window.deleteItem = deleteItem;
 window.deleteTask = deleteTask;
 window.completeTask = completeTask;
 window.cancelBooking = cancelBooking;
-window.openBookModal = (itemId) => { state.bookingError=""; state.modal = {type:"book", itemId}; render(); };
+window.openBookModal = (itemId) => {
+  state.bookingError="";
+  state.modal = {type:"book", itemId};
+  render();
+  updateAvailabilityPreview(itemId);
+};
+function computeAvailabilityText(itemId, start, end){
+  const item = state.items.find(i => i.id === itemId);
+  if(!item) return "";
+  if(!start || !end || start > end) return "Merci de choisir une période valide.";
+  const used = activeBookingsCount(itemId, start, end);
+  const left = item.qty - used;
+  if(left <= 0) return `Complet sur cette période (0/${item.qty} disponible).`;
+  return `${left}/${item.qty} disponible sur cette période.`;
+}
+window.updateAvailabilityPreview = (itemId) => {
+  const startEl = document.getElementById('bk-start');
+  const endEl = document.getElementById('bk-end');
+  const out = document.getElementById('bk-availability');
+  if(!startEl || !endEl || !out) return;
+  const text = computeAvailabilityText(itemId, startEl.value, endEl.value);
+  out.textContent = text;
+  out.style.color = (text.startsWith('Complet') || text.startsWith('Merci')) ? 'var(--danger)' : 'var(--accent)';
+};
 window.openNewItemModal = () => { state.modal = {type:"newItem"}; render(); };
 window.openNewTaskModal = () => { state.modal = {type:"newTask"}; render(); };
 window.closeModal = () => { state.modal = null; state.bookingError=""; render(); };
