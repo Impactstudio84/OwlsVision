@@ -90,6 +90,10 @@
   }
   .field input:focus, .field select:focus, .field textarea:focus{ border-color: var(--accent-soft-2); box-shadow: 0 0 0 4px var(--accent-soft); }
   .field .static-val{font-size:14.5px;color:var(--text);padding:12px 0 2px;}
+  .pwd-wrap{position:relative;}
+  .pwd-wrap input{padding-right:44px !important;}
+  .pwd-eye{position:absolute;right:6px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--text-faint);cursor:pointer;font-size:17px;padding:8px;line-height:1;}
+  .pwd-eye:hover{color:var(--text);}
   .btn{
     display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:13px 22px;border-radius: var(--r-pill);
     border:1px solid transparent;font-size:14.5px;font-weight:600;
@@ -144,7 +148,8 @@
   .xp-card .xp-rank{font-size:14px;font-weight:700;color:var(--accent);}
   .xp-card .xp-num{font-size:12px;color:var(--text-faint);font-weight:500;}
   .xp-bar-track{height:10px;background:rgba(255,255,255,0.06);border-radius:var(--r-pill);overflow:hidden;position:relative;}
-  .xp-bar-fill{height:100%;border-radius:var(--r-pill);background:linear-gradient(90deg, var(--accent-2), var(--accent));transition:width .8s var(--ease);position:relative;overflow:hidden;}
+  .xp-bar-pending{position:absolute;top:0;left:0;height:100%;border-radius:var(--r-pill);background:rgba(255,255,255,0.28);transition:width .8s var(--ease);z-index:0;}
+  .xp-bar-fill{height:100%;border-radius:var(--r-pill);background:linear-gradient(90deg, var(--accent-2), var(--accent));transition:width .8s var(--ease);position:relative;z-index:1;overflow:hidden;}
   .xp-bar-fill::after{
     content:"";position:absolute;inset:0;
     background:linear-gradient(100deg, transparent 20%, rgba(255,255,255,0.35) 40%, transparent 60%);
@@ -173,7 +178,7 @@
   .row > *{flex:1;min-width:160px;}
   .empty{padding:36px 20px;text-align:center;color:var(--text-faint);border:1.5px dashed var(--border);border-radius: var(--r-md);font-size:14px;font-weight:500;}
 
-  .mission-spotlight{background:linear-gradient(135deg, var(--accent-soft), rgba(143,239,61,0.03));border:1.5px solid var(--accent);border-radius:var(--r-lg);padding:22px;margin-top:22px;}
+  .mission-spotlight{background:var(--surface);border:1px solid var(--border);border-left:3px solid var(--accent);border-radius:var(--r-lg);padding:22px;margin-top:22px;}
   .mission-spotlight-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px;}
   .mission-spotlight-head h2{font-size:18px;font-weight:800;letter-spacing:-0.01em;display:flex;align-items:center;gap:8px;}
   .mission-spotlight-list{display:flex;flex-direction:column;gap:10px;}
@@ -189,6 +194,12 @@
   .mission-card.done .mission-icon{background:rgba(255,255,255,0.06);}
   .task-xp{font-size:12.5px;color:var(--accent);font-weight:600;background:var(--accent-soft);padding:5px 11px;border-radius:var(--r-pill);white-space:nowrap;display:inline-block;margin-top:6px;}
   .submission-row{display:flex;justify-content:space-between;gap:10px;font-size:12.5px;color:var(--text-dim);padding:8px 0;border-top:1px solid var(--border-soft);}
+  .history-list{display:flex;flex-direction:column;max-height:280px;overflow-y:auto;}
+  .history-row{display:flex;gap:10px;padding:9px 0;border-top:1px solid var(--border-soft);}
+  .history-row:first-child{border-top:none;}
+  .history-icon{font-size:15px;flex-shrink:0;width:22px;text-align:center;}
+  .history-label{font-size:13px;color:var(--text);line-height:1.4;}
+  .history-date{font-size:11px;color:var(--text-faint);margin-top:2px;}
   .modal-bg{position:fixed;inset:0;background:rgba(3,5,3,0.6);backdrop-filter: blur(6px);-webkit-backdrop-filter: blur(6px);display:flex;align-items:center;justify-content:center;z-index:50;padding:20px;}
   .modal{background: #0E100E;border:1px solid var(--border);border-radius: var(--r-lg);width:100%;max-width:430px;padding:26px;box-shadow: var(--shadow-2);max-height:90vh;overflow-y:auto;}
   .modal h3{font-size:19px;margin-bottom:16px;font-weight:700;letter-spacing:-0.01em;}
@@ -236,23 +247,29 @@
   /* ---------- Hero XP (accueil) ---------- */
   .hero-wrap{display:flex;justify-content:center;margin-bottom:6px;}
   .xp-hero{
-    width:100%;max-width:460px;text-align:center;padding:38px 30px;border-radius:var(--r-lg);
-    background: radial-gradient(120% 140% at 50% -10%, rgba(143,239,61,0.14), transparent 60%), var(--surface);
+    width:100%;max-width:460px;text-align:center;padding:32px 30px;border-radius:var(--r-lg);
+    background: var(--surface);
     border:1px solid var(--border);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);
-    animation: heroGlow 4s ease-in-out infinite;
   }
-  @keyframes heroGlow{ 0%,100%{ box-shadow: 0 0 0 0 rgba(143,239,61,0);} 50%{ box-shadow: 0 0 44px 6px rgba(143,239,61,0.10);} }
   .xp-ring{
-    width:126px;height:126px;border-radius:50%;margin:0 auto 16px;position:relative;
+    width:110px;height:110px;border-radius:50%;margin:0 auto 14px;position:relative;
     background: conic-gradient(var(--accent) calc(var(--pct,0)*1%), rgba(255,255,255,0.07) 0);
     display:flex;align-items:center;justify-content:center;
   }
   .xp-ring::before{content:"";position:absolute;inset:10px;border-radius:50%;background:#0c0e0c;}
-  .ring-owl{position:relative;font-size:42px;filter: drop-shadow(0 0 14px rgba(143,239,61,0.45));}
-  .xp-hero-rank{font-size:24px;font-weight:800;letter-spacing:-0.02em;}
-  .xp-hero-level{font-size:13.5px;color:var(--accent);font-weight:700;margin:5px 0 20px;}
-  .xp-bar-track-lg{height:16px;}
+  .ring-owl{position:relative;font-size:36px;}
+  .xp-hero-rank{font-size:22px;font-weight:800;letter-spacing:-0.02em;}
+  .xp-hero-level{font-size:13px;color:var(--text-dim);font-weight:700;margin:4px 0 18px;}
+  .xp-bar-track-lg{height:14px;}
   .xp-hero-num{font-size:12.5px;color:var(--text-faint);margin-top:12px;font-weight:500;}
+  .ranks-roadmap{display:flex;gap:6px;overflow-x:auto;margin-top:20px;padding:2px;}
+  .rank-step{flex:1;min-width:80px;text-align:center;padding:9px 4px;border-radius:var(--r-sm);background:rgba(255,255,255,0.03);border:1px solid var(--border-soft);}
+  .rank-step.done{background:rgba(255,255,255,0.05);}
+  .rank-step.current{border-color:var(--accent);}
+  .rank-step .rank-name{font-size:11.5px;font-weight:700;white-space:nowrap;color:var(--text-dim);}
+  .rank-step.current .rank-name{color:var(--accent);}
+  .rank-step.locked .rank-name{color:var(--text-faint);}
+  .rank-step .rank-xp{font-size:10px;color:var(--text-faint);margin-top:2px;}
 
   .levelup-toast{
     position:fixed;left:50%;bottom:28px;transform:translate(-50%,20px);opacity:0;display:flex;align-items:center;gap:12px;
@@ -296,9 +313,14 @@
 
   @media (max-width: 860px){
     .shell{padding:0;gap:0;}
-    .sidebar{position:fixed;left:16px;top:16px;bottom:16px;height:auto;z-index:40;transform:translateX(-120%);transition:transform .28s var(--ease);}
+    /* En PWA "ajouté à l'écran d'accueil" (status bar translucide, viewport-fit=cover), le contenu
+       est dessiné SOUS la barre de statut/l'encoche : sans cette marge le bouton du menu se
+       retrouvait sous elle, hors zone cliquable. env(safe-area-inset-*) peut valoir 0 selon les
+       appareils/navigateurs (support inégal) : on ajoute donc une marge fixe généreuse en plus de
+       l'inset, pour garantir le dégagement même quand l'inset lui-même n'est pas fiable. */
+    .sidebar{position:fixed;left:16px;top:calc(32px + env(safe-area-inset-top));bottom:calc(16px + env(safe-area-inset-bottom));height:auto;z-index:40;transform:translateX(-120%);transition:transform .28s var(--ease);}
     .sidebar.open{transform:translateX(0);}
-    .main{padding:16px 16px 50px;}
+    .main{padding:calc(32px + env(safe-area-inset-top)) 16px calc(50px + env(safe-area-inset-bottom));}
     .mobile-topbar{display:flex;align-items:center;gap:12px;margin-bottom:20px;}
     .hamburger{display:flex;width:38px;height:38px;border:1px solid var(--border);border-radius: var(--r-sm);background:var(--surface);align-items:center;justify-content:center;flex-shrink:0;}
     .backdrop{position:fixed;inset:0;background:rgba(0,0,0,0.55);z-index:39;}
@@ -327,15 +349,16 @@ const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
 let bootDone = false;
 
 const RANKS = [
-  {min:0,   name:"Recrue"},
-  {min:150, name:"Éclaireur"},
-  {min:400, name:"Sentinelle"},
-  {min:800, name:"Vigie de nuit"},
-  {min:1400,name:"Rapace"},
-  {min:2200,name:"Chouette d'élite"},
+  {min:0,   name:"Novice"},
+  {min:150, name:"Explorateur"},
+  {min:400, name:"Confirmé"},
+  {min:800, name:"Spécialiste"},
+  {min:1400,name:"Vétéran"},
+  {min:2200,name:"Navy Seal"},
 ];
 const XP_STEP = 150;
 function rankFor(xp){ let r = RANKS[0]; for(const c of RANKS){ if(xp >= c.min) r = c; } return r.name; }
+function rankIndexFor(xp){ let i = 0; for(let k=0;k<RANKS.length;k++){ if(xp >= RANKS[k].min) i = k; } return i; }
 function levelFor(xp){ return Math.floor(xp / XP_STEP) + 1; }
 function xpInLevel(xp){ return xp % XP_STEP; }
 const todayStr = () => new Date().toISOString().slice(0,10);
@@ -469,13 +492,28 @@ sb.auth.onAuthStateChange((event, session) => {
   }
 });
 
+// render() reconstruit tout le innerHTML de la page : si un event Realtime arrive pendant que
+// quelqu'un tape (ex. son email à la connexion), ça efface ce qui vient d'être tapé. On ne
+// re-rend jamais tant qu'un champ a le focus — on retente juste un peu plus tard.
+function isTypingInField(){
+  const el = document.activeElement;
+  return !!(el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA'));
+}
+function renderUnlessTyping(){
+  if(isTypingInField()){
+    clearTimeout(window.__ovDeferredRenderTimer);
+    window.__ovDeferredRenderTimer = setTimeout(renderUnlessTyping, 1500);
+    return;
+  }
+  render();
+}
 function subscribeRealtime(){
   const channel = sb.channel('ov-sync');
   ['items','bookings','tasks','task_completions','contracts','profiles','mission_groups','rewards','reward_redemptions'].forEach(table => {
     channel.on('postgres_changes', { event:'*', schema:'public', table }, () => {
       clearTimeout(window.__ovSyncTimer);
       window.__ovSyncTimer = setTimeout(async () => {
-        try{ await fetchAll(); render(); }catch(e){}
+        try{ await fetchAll(); renderUnlessTyping(); }catch(e){}
       }, 500);
     });
   });
@@ -631,6 +669,16 @@ async function grantXp(username, amount){
   await sb.from('profiles').update({ xp: newXp }).eq('username', username);
   prof.xp = newXp;
   if(username === state.session?.username) checkLevelUp(oldXp, newXp);
+}
+async function resetUserToLevel1(username){
+  if(!state.session.isMaster) return;
+  const prof = state.profiles.find(p => p.username === username);
+  if(!prof) return;
+  if(!confirm(`Réinitialiser ${clientDisplayName(prof)} au niveau 1 (0 XP) ? Son historique de missions et récompenses reste conservé.`)) return;
+  const { error } = await sb.from('profiles').update({ xp: 0 }).eq('username', username);
+  if(error){ alert("Erreur : " + error.message); return; }
+  prof.xp = 0;
+  render();
 }
 
 /* ---------- Bookings ---------- */
@@ -845,13 +893,40 @@ async function updateReward(id, fields){
   return true;
 }
 async function deleteReward(id){
-  if(!confirm("Supprimer cette récompense du catalogue ?")) return;
+  // Une récompense supprimée alors qu'une demande est encore "en attente" laissait cette
+  // demande orpheline (reward_id passe à NULL en base) : invisible dans cet écran (qui liste
+  // les demandes par récompense) mais toujours comptée dans la pastille de notification, qui
+  // restait donc allumée indéfiniment sans qu'on puisse la traiter. On refuse maintenant ces
+  // demandes automatiquement avant de supprimer la récompense.
+  const pending = state.redemptions.filter(r => r.reward_id === id && r.status === 'attente');
+  if(!confirm(pending.length
+    ? `Supprimer cette récompense du catalogue ? ${pending.length} demande(s) en attente liée(s) seront automatiquement refusées.`
+    : "Supprimer cette récompense du catalogue ?")) return;
+  if(pending.length){
+    const now = new Date().toISOString();
+    await sb.from('reward_redemptions').update({ status: 'refusee', resolved_at: now, client_seen: false }).eq('reward_id', id).eq('status', 'attente');
+    pending.forEach(r => { r.status = 'refusee'; r.resolved_at = now; r.client_seen = false; });
+  }
   await sb.from('rewards').delete().eq('id', id);
   state.rewards = state.rewards.filter(r => r.id !== id);
   render();
 }
-function myPendingOrValidatedRedemption(rewardId, username){
-  return state.redemptions.find(r => r.reward_id === rewardId && r.username === username && r.status === 'attente');
+// Résidu d'une récompense déjà supprimée (reward_id NULL) : normalement impossible désormais
+// grâce au correctif ci-dessus, mais permet de nettoyer les demandes orphelines déjà existantes.
+// Les demandes déjà refusées sont sans impact (ni pastille, ni suivi) : inutile de les remonter ici.
+function orphanRedemptions(){
+  return state.redemptions.filter(r => r.status !== 'refusee' && !state.rewards.find(rw => rw.id === r.reward_id));
+}
+async function clearOrphanRedemption(id){
+  if(!confirm("Supprimer définitivement cette demande (récompense déjà supprimée) ?")) return;
+  await sb.from('reward_redemptions').delete().eq('id', id);
+  state.redemptions = state.redemptions.filter(r => r.id !== id);
+  render();
+}
+// Bloque une nouvelle demande tant qu'une précédente est en attente OU validée-mais-pas-encore-
+// confirmée/expédiée (une demande refusée, elle, peut être retentée).
+function myActiveRedemption(rewardId, username){
+  return state.redemptions.find(r => r.reward_id === rewardId && r.username === username && r.status !== 'refusee');
 }
 function totalXpSpentOrPending(username){
   // XP déjà dépensé (validé) ou réservé (en attente), pour calculer l'XP réellement disponible à échanger.
@@ -867,7 +942,7 @@ async function redeemReward(rewardId){
   if(!u) return;
   const reward = state.rewards.find(r => r.id === rewardId);
   if(!reward) return;
-  if(myPendingOrValidatedRedemption(rewardId, u.username)){ alert("Vous avez déjà une demande en cours pour cette récompense."); return; }
+  if(myActiveRedemption(rewardId, u.username)){ alert("Vous avez déjà une demande en cours pour cette récompense."); return; }
   const available = u.xp - totalXpSpentOrPending(u.username);
   if(available < reward.xp_cost){ alert("Vous n'avez pas assez d'XP disponible pour cette récompense."); return; }
   const { data, error } = await sb.from('reward_redemptions').insert({ reward_id: rewardId, username: u.username, status: 'attente', client_seen: true }).select().single();
@@ -891,6 +966,14 @@ async function rejectRedemption(id){
   const r = state.redemptions.find(x => x.id === id);
   if(!r || r.status !== 'attente') return;
   const { data, error } = await sb.from('reward_redemptions').update({ status:'refusee', resolved_at: new Date().toISOString(), client_seen:false }).eq('id', id).select().single();
+  if(error){ alert("Erreur : " + error.message); return; }
+  Object.assign(r, data);
+  render();
+}
+async function confirmRedemptionAddress(id, address){
+  const r = state.redemptions.find(x => x.id === id);
+  if(!r || r.status !== 'validee' || !address.trim()) return;
+  const { data, error } = await sb.from('reward_redemptions').update({ shipping_address: address.trim() }).eq('id', id).select().single();
   if(error){ alert("Erreur : " + error.message); return; }
   Object.assign(r, data);
   render();
@@ -1177,17 +1260,56 @@ function iconFor(name){
   return icons[name] || "";
 }
 
+// XP "en attente" : missions soumises par le client mais pas encore validées par le master.
+// Affichée en gris derrière la barre verte, pour montrer où l'XP arrivera une fois validée.
+function pendingXp(username){
+  return state.completions
+    .filter(c => c.username === username && c.status === 'attente')
+    .reduce((sum, c) => {
+      const t = state.tasks.find(x => x.id === c.task_id);
+      return sum + (t ? (t.xp_reward || 0) : 0);
+    }, 0);
+}
+function xpProgressBarHtml(pctActual, pctPending, extraClass){
+  return `<div class="xp-bar-track ${extraClass||''}">
+    ${pctPending > pctActual ? `<div class="xp-bar-pending" style="width:${pctPending}%"></div>` : ''}
+    <div class="xp-bar-fill" style="width:${pctActual}%"></div>
+  </div>`;
+}
+function ranksRoadmapHtml(xp){
+  const curIdx = rankIndexFor(xp);
+  return `
+    <div class="ranks-roadmap">
+      ${RANKS.map((r, i) => `
+        <div class="rank-step ${i<curIdx?'done':i===curIdx?'current':'locked'}">
+          <div class="rank-name">${i<curIdx?'✓ ':''}${esc(r.name)}</div>
+          <div class="rank-xp">${r.min} XP</div>
+        </div>`).join('')}
+    </div>`;
+}
 function xpBarHtml(u){
   if(!u || u.is_master) return "";
   const lvl = levelFor(u.xp), rank = rankFor(u.xp), inLevel = xpInLevel(u.xp);
   const pct = Math.round((inLevel / XP_STEP) * 100);
+  const pendingPct = Math.min(100, Math.round(((inLevel + pendingXp(u.username)) / XP_STEP) * 100));
   return `
     <div class="xp-card">
       <div class="xp-top"><span class="xp-rank">Niv. ${lvl} — ${esc(rank)}</span><span class="xp-num">${inLevel} / ${XP_STEP} XP</span></div>
-      <div class="xp-bar-track"><div class="xp-bar-fill" style="width:${pct}%"></div></div>
+      ${xpProgressBarHtml(pct, pendingPct)}
     </div>`;
 }
 
+function passwordFieldHtml(id, name, label, opts){
+  opts = opts || {};
+  return `
+    <div class="field">
+      <label>${esc(label)}</label>
+      <div class="pwd-wrap">
+        <input id="${id}" name="${name}" type="password" required autocomplete="${opts.autocomplete||'current-password'}" ${opts.minlength?`minlength="${opts.minlength}"`:''}>
+        <button type="button" class="pwd-eye" onclick="togglePasswordVisibility('${id}')" aria-label="Afficher le mot de passe">👁</button>
+      </div>
+    </div>`;
+}
 /* ---------- Gate (login/register) ---------- */
 function renderGate(){
   if(state.showAdminLogin){
@@ -1202,7 +1324,7 @@ function renderGate(){
         ${state.authError ? `<div class="msg msg-error">${esc(state.authError)}</div>` : ''}
         <form onsubmit="return handleAdminLogin(event)">
           <div class="field"><label>Identifiant</label><input name="username" required autocomplete="username"></div>
-          <div class="field"><label>Mot de passe</label><input name="password" type="password" required autocomplete="current-password"></div>
+          ${passwordFieldHtml('admin-pwd', 'password', 'Mot de passe')}
           <button class="btn btn-primary" type="submit">Se connecter</button>
         </form>
         <div class="admin-link-wrap"><button onclick="toggleAdminLogin()">← Retour à l'espace client</button></div>
@@ -1227,15 +1349,15 @@ function renderGate(){
       ${isLogin ? `
         <form onsubmit="return handleClientLogin(event)">
           <div class="field"><label>Adresse email</label><input id="login-email" name="email" type="email" required autocomplete="username" value="${esc(state.lastRegisterEmail||'')}"></div>
-          <div class="field"><label>Mot de passe</label><input name="password" type="password" required autocomplete="current-password"></div>
+          ${passwordFieldHtml('login-pwd', 'password', 'Mot de passe')}
           <button class="btn btn-primary" type="submit">Se connecter</button>
         </form>
         <div class="admin-link-wrap"><button onclick="handleResendConfirmation()">Renvoyer l'email de confirmation</button></div>
       ` : `
         <form onsubmit="return handleClientRegister(event)">
           <div class="field"><label>Adresse email</label><input name="email" type="email" required autocomplete="email"></div>
-          <div class="field"><label>Mot de passe</label><input name="password" type="password" required autocomplete="new-password" minlength="6"></div>
-          <div class="field"><label>Confirmer le mot de passe</label><input name="password2" type="password" required autocomplete="new-password" minlength="6"></div>
+          ${passwordFieldHtml('reg-pwd', 'password', 'Mot de passe', { autocomplete: 'new-password', minlength: 6 })}
+          ${passwordFieldHtml('reg-pwd2', 'password2', 'Confirmer le mot de passe', { autocomplete: 'new-password', minlength: 6 })}
           <button class="btn btn-primary" type="submit">Créer mon compte</button>
         </form>
         <div style="font-size:11.5px;color:var(--text-faint);margin-top:10px;text-align:center;">Un email de confirmation vous sera envoyé pour activer votre compte.</div>
@@ -1302,15 +1424,18 @@ function renderAccueil(){
   const myDone = state.completions.filter(c => c.username === u.username).map(c => c.task_id);
   const pending = state.tasks.filter(t => !myDone.includes(t.id));
   const contract = state.contracts.find(c => c.username === u.username);
-  const pct = Math.round((xpInLevel(u.xp) / XP_STEP) * 100);
+  const inLevel = xpInLevel(u.xp);
+  const pct = Math.round((inLevel / XP_STEP) * 100);
+  const pendingPct = Math.min(100, Math.round(((inLevel + pendingXp(u.username)) / XP_STEP) * 100));
   return `
     <div class="hero-wrap">
       <div class="xp-hero">
         <div class="xp-ring" style="--pct:${pct}"><span class="ring-owl">🦉</span></div>
         <div class="xp-hero-rank">${esc(rankFor(u.xp))}</div>
         <div class="xp-hero-level">NIVEAU ${levelFor(u.xp)}</div>
-        <div class="xp-bar-track xp-bar-track-lg"><div class="xp-bar-fill" style="width:${pct}%"></div></div>
+        ${xpProgressBarHtml(pct, pendingPct, 'xp-bar-track-lg')}
         <div class="xp-hero-num">${xpInLevel(u.xp)} / ${XP_STEP} XP dans ce niveau · ${u.xp} XP au total</div>
+        ${ranksRoadmapHtml(u.xp)}
       </div>
     </div>
     <div class="mission-spotlight">
@@ -1711,19 +1836,34 @@ function renderMissions(){
 
 /* ---------- À gagner (récompenses) ---------- */
 function rewardCardHtml(r, isMaster, u){
-  const myPending = !isMaster ? myPendingOrValidatedRedemption(r.id, u.username) : null;
+  const myRedemption = !isMaster ? myActiveRedemption(r.id, u.username) : null;
   const available = !isMaster ? u.xp - totalXpSpentOrPending(u.username) : 0;
   const canAfford = !isMaster && available >= r.xp_cost;
   const allRedemptions = isMaster ? state.redemptions.filter(x => x.reward_id === r.id).sort((a,b)=>(b.requested_at||'').localeCompare(a.requested_at||'')) : [];
+  let clientBlock = '';
+  if(!isMaster){
+    if(!myRedemption){
+      clientBlock = `<div class="card-foot"><button class="btn btn-primary btn-sm" style="width:100%;" ${canAfford?'':'disabled'} onclick="redeemReward('${r.id}')">${canAfford ? 'Échanger' : `Il manque ${r.xp_cost - available} XP`}</button></div>`;
+    } else if(myRedemption.status === 'attente'){
+      clientBlock = `<div class="card-foot"><span class="status-pill pending">Demande en attente</span></div>`;
+    } else if(myRedemption.status === 'validee' && !myRedemption.shipping_address){
+      clientBlock = `
+        <div class="card-desc" style="color:var(--accent);flex:0;">🎉 Récompense validée ! Merci de confirmer votre adresse d'envoi postal.</div>
+        <div class="card-foot" style="flex-direction:column;align-items:stretch;gap:8px;">
+          <textarea id="ship-addr-${r.id}" rows="2" placeholder="Nom, adresse, code postal, ville..." style="width:100%;background:rgba(255,255,255,0.055);border:1px solid var(--border-soft);color:var(--text);padding:10px 12px;border-radius:var(--r-sm);font-size:13.5px;">${esc(u.adresse||'')}</textarea>
+          <button class="btn btn-primary btn-sm" style="width:100%;" onclick="window.confirmRedemptionAddressUi('${myRedemption.id}','${r.id}')">Confirmer l'adresse</button>
+        </div>`;
+    } else if(myRedemption.status === 'validee' && myRedemption.shipping_address){
+      clientBlock = `<div class="card-desc" style="color:var(--accent);flex:0;">📦 En cours de préparation — envoi à : ${esc(myRedemption.shipping_address)}</div>`;
+    }
+  }
   return `
     <div class="card">
       ${r.image_url ? `<img class="card-photo" src="${r.image_url}" alt="${esc(r.name)}">` : `<div class="card-photo-ph">🎁</div>`}
       <span class="tag">${r.xp_cost} XP</span>
       <h3>${esc(r.name)}</h3>
       ${r.description ? `<div class="card-desc">${esc(r.description)}</div>` : ''}
-      ${!isMaster ? `<div class="card-foot">
-        ${myPending ? `<span class="status-pill pending">Demande en attente</span>` : `<button class="btn btn-primary btn-sm" style="width:100%;" ${canAfford?'':'disabled'} onclick="redeemReward('${r.id}')">${canAfford ? 'Échanger' : `Il manque ${r.xp_cost - available} XP`}</button>`}
-      </div>` : ''}
+      ${clientBlock}
       ${isMaster && allRedemptions.length ? `<div>${allRedemptions.map(rd => `
         <div class="submission-row" style="flex-direction:column;align-items:stretch;gap:4px;">
           <div style="display:flex;justify-content:space-between;"><span>${esc(rd.username)}</span><span>${fmtDate(rd.requested_at)}</span></div>
@@ -1731,8 +1871,17 @@ function rewardCardHtml(r, isMaster, u){
             ${statusPillHtml(rd.status === 'attente' ? 'demande' : rd.status === 'validee' ? 'accepte' : 'refuse')}
             ${rd.status === 'attente' ? `<div style="display:flex;gap:6px;"><button class="btn btn-primary btn-sm" onclick="validateRedemption('${rd.id}')">Valider</button><button class="btn btn-ghost btn-sm" onclick="rejectRedemption('${rd.id}')">Refuser</button></div>` : ''}
           </div>
+          ${rd.status === 'validee' ? `<div style="font-size:12px;color:var(--text-dim);">${rd.shipping_address ? `Adresse : ${esc(rd.shipping_address)}` : "En attente de l'adresse du client"}</div>` : ''}
         </div>`).join("")}</div>` : ''}
       ${isMaster ? `<div class="card-foot"><button class="btn btn-ghost btn-sm" style="flex:1;" onclick="openEditRewardModal('${r.id}')">Modifier</button><button class="btn btn-danger btn-sm" style="flex:1;" onclick="deleteReward('${r.id}')">Supprimer</button></div>` : ''}
+    </div>`;
+}
+function orphanRedemptionRowHtml(r){
+  const p = state.profiles.find(x => x.username === r.username);
+  return `
+    <div class="list-row">
+      <div><div class="t-title">${esc(p ? clientDisplayName(p) : r.username)}</div><div class="t-desc">Récompense supprimée · demande ${r.status === 'attente' ? 'en attente' : r.status === 'validee' ? 'validée' : 'refusée'} du ${fmtDate(r.requested_at)}</div></div>
+      <button class="btn btn-danger btn-sm" onclick="clearOrphanRedemption('${r.id}')">Supprimer cette demande</button>
     </div>`;
 }
 function renderRecompenses(){
@@ -1741,6 +1890,7 @@ function renderRecompenses(){
   const rewards = state.rewards.slice().sort((a,b) => a.xp_cost - b.xp_cost);
   const cards = rewards.map(r => rewardCardHtml(r, isMaster, u)).join("");
   const available = !isMaster ? u.xp - totalXpSpentOrPending(u.username) : 0;
+  const orphans = isMaster ? orphanRedemptions() : [];
   return `
     <div class="topbar">
       <div><h1>À gagner</h1><div class="desc">${isMaster ? "Créez des récompenses échangeables contre de l'XP et validez les demandes d'échange." : "Échangez votre XP contre des récompenses."}</div></div>
@@ -1749,6 +1899,10 @@ function renderRecompenses(){
     ${!isMaster ? `<div class="panel" style="margin-bottom:18px;"><div class="section-title" style="margin-bottom:0;">XP disponible à échanger : <strong style="color:var(--accent);">${available}</strong></div></div>` : ''}
     ${isMaster ? `<button class="btn btn-primary btn-sm" style="width:auto;margin-bottom:18px;" onclick="openNewRewardModal()">+ Créer une récompense</button>` : ''}
     ${rewards.length ? `<div class="grid">${cards}</div>` : `<div class="empty">Aucune récompense disponible pour le moment.</div>`}
+    ${orphans.length ? `
+      <div class="section-title" style="margin-top:26px;">Demandes liées à une récompense supprimée</div>
+      <div style="display:flex;flex-direction:column;gap:10px;">${orphans.map(orphanRedemptionRowHtml).join("")}</div>
+    ` : ''}
   `;
 }
 
@@ -1872,6 +2026,46 @@ function renderProfilClient(){
   `;
 }
 
+/* ---------- Historique client (répertoire horodaté par compte) ---------- */
+function clientHistoryEntries(username){
+  const entries = [];
+  const p = state.profiles.find(x => x.username === username);
+  if(p && p.created_at) entries.push({ date: p.created_at, icon: '👤', label: 'Compte créé' });
+  if(p && p.id_doc_uploaded_at) entries.push({ date: p.id_doc_uploaded_at, icon: '📄', label: "Pièce d'identité envoyée" });
+  if(p && p.address_doc_uploaded_at) entries.push({ date: p.address_doc_uploaded_at, icon: '📄', label: 'Justificatif de domicile envoyé' });
+  state.bookings.filter(b => b.username === username).forEach(b => {
+    const item = state.items.find(i => i.id === b.item_id);
+    entries.push({ date: b.start_date, icon: '📦', label: `Réservation ${esc(item ? item.name : 'matériel supprimé')} — ${fmtDate(b.start_date)} → ${fmtDate(b.end_date)} · ${STATUS_LABELS[b.status] || b.status}` });
+  });
+  state.completions.filter(c => c.username === username).forEach(c => {
+    const task = state.tasks.find(t => t.id === c.task_id);
+    const statusLabel = c.status === 'validee' ? 'validée' : c.status === 'refusee' ? 'refusée' : 'en attente';
+    entries.push({ date: c.completed_at, icon: '🎯', label: `Mission "${esc(task ? task.title : 'supprimée')}" ${statusLabel}${task ? ` (+${task.xp_reward} XP)` : ''}${c.answer ? ` — réponse : ${esc(c.answer)}` : ''}` });
+  });
+  state.redemptions.filter(r => r.username === username).forEach(r => {
+    const reward = state.rewards.find(x => x.id === r.reward_id);
+    const statusLabel = r.status === 'validee' ? 'validée' : r.status === 'refusee' ? 'refusée' : 'demandée';
+    entries.push({ date: r.resolved_at || r.requested_at, icon: '🎁', label: `Récompense "${esc(reward ? reward.name : 'supprimée')}" ${statusLabel}` });
+  });
+  const contract = state.contracts.find(c => c.username === username);
+  if(contract && contract.signed_at) entries.push({ date: contract.signed_at, icon: '✍️', label: 'Contrat signé' });
+  return entries.filter(e => e.date).sort((a, b) => b.date.localeCompare(a.date));
+}
+function clientHistoryHtml(username){
+  const entries = clientHistoryEntries(username);
+  if(!entries.length) return `<div class="empty">Aucune activité enregistrée pour ce compte.</div>`;
+  const shown = entries.slice(0, 40);
+  return `
+    <div class="history-list">
+      ${shown.map(e => `
+        <div class="history-row">
+          <div class="history-icon">${e.icon}</div>
+          <div class="history-body"><div class="history-label">${e.label}</div><div class="history-date">${fmtDateTime(e.date)}</div></div>
+        </div>`).join('')}
+      ${entries.length > shown.length ? `<div class="card-desc" style="text-align:center;">+ ${entries.length - shown.length} entrée${entries.length-shown.length>1?'s':''} plus ancienne${entries.length-shown.length>1?'s':''}...</div>` : ''}
+    </div>`;
+}
+
 /* ---------- Modals ---------- */
 function renderModal(){
   if(!state.modal) return "";
@@ -1990,10 +2184,12 @@ function renderModal(){
     <div class="modal-bg" onclick="closeModalBg(event)"><div class="modal">
       <h3>Fiche client</h3>
       <div class="field"><label>Email</label><div class="static-val">${esc(p.username)}</div></div>
-      <div class="row">
-        <div class="field"><label>Nom</label><div class="static-val">${esc(p.nom || '—')}</div></div>
-        <div class="field"><label>Prénom</label><div class="static-val">${esc(p.prenom || '—')}</div></div>
+      <div class="row" style="align-items:flex-end;">
+        <div class="field" style="flex:1;"><label>Nom</label><div class="static-val">${esc(p.nom || '—')}</div></div>
+        <div class="field" style="flex:1;"><label>Prénom</label><div class="static-val">${esc(p.prenom || '—')}</div></div>
       </div>
+      <div class="field"><label>Progression</label><div class="static-val">${p.xp} XP · Niveau ${levelFor(p.xp)} · ${esc(RANKS[rankIndexFor(p.xp)].name)}</div></div>
+      <button class="btn btn-ghost btn-sm" onclick="resetUserToLevel1('${p.username}')">Réinitialiser au niveau 1</button>
       <div class="row">
         <div class="field"><label>Date de naissance</label><div class="static-val">${fmtDate(p.date_naissance)}</div></div>
         <div class="field"><label>Téléphone</label><div class="static-val">${esc(p.telephone || '—')}</div></div>
@@ -2003,6 +2199,8 @@ function renderModal(){
       <div class="section-title" style="margin-top:6px;">Documents</div>
       ${docRowHtml('id', p, false)}
       ${docRowHtml('address', p, false)}
+      <div class="section-title" style="margin-top:6px;">Historique du compte (missions, locations, récompenses, contrat...)</div>
+      ${clientHistoryHtml(p.username)}
       <div class="section-title" style="margin-top:6px;">Note interne (visible équipe uniquement)</div>
       <div class="star-row">${[1,2,3,4,5].map(n => `<button class="star-btn ${(p.master_rating||0)>=n?'filled':''}" onclick="saveClientRating('${p.username}',${n})">★</button>`).join("")}</div>
       <div class="field"><label>Commentaire</label><textarea id="client-note" rows="3" placeholder="Notes internes sur ce client...">${esc(p.master_note||'')}</textarea></div>
@@ -2057,6 +2255,14 @@ function render(){
 
 /* ---------- Global handlers ---------- */
 window.setAuthTab = (tab) => { state.authTab = tab; state.authError = ""; state.authNotice = ""; render(); };
+window.togglePasswordVisibility = (id) => {
+  const input = document.getElementById(id);
+  const btn = input && input.parentElement.querySelector('.pwd-eye');
+  if(!input) return;
+  const showing = input.type === 'text';
+  input.type = showing ? 'password' : 'text';
+  if(btn) btn.textContent = showing ? '👁' : '🙈';
+};
 window.toggleAdminLogin = () => { state.showAdminLogin = !state.showAdminLogin; state.authError = ""; render(); };
 window.handleClientLogin = (e) => { e.preventDefault(); doClientLogin(e.target.email.value, e.target.password.value); return false; };
 window.handleClientRegister = (e) => { e.preventDefault(); doClientRegister(e.target.email.value, e.target.password.value, e.target.password2.value); return false; };
@@ -2164,6 +2370,12 @@ window.deleteReward = deleteReward;
 window.redeemReward = redeemReward;
 window.validateRedemption = validateRedemption;
 window.rejectRedemption = rejectRedemption;
+window.confirmRedemptionAddressUi = (redemptionId, rewardId) => {
+  const el = document.getElementById(`ship-addr-${rewardId}`);
+  const value = el ? el.value : '';
+  if(!value.trim()){ alert("Merci de renseigner une adresse."); return; }
+  return confirmRedemptionAddress(redemptionId, value);
+};
 window.confirmNewReward = async (e, rewardId) => {
   const name = document.getElementById("rw-name").value.trim();
   const desc = document.getElementById("rw-desc").value.trim();
