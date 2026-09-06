@@ -35,6 +35,10 @@
     --danger-soft: rgba(255,107,87,0.14);
     --amber:#FFD166;
     --amber-soft: rgba(255,209,102,0.14);
+    --blue:#6BA8FF;
+    --blue-soft: rgba(107,168,255,0.14);
+    --violet:#B7A0FF;
+    --violet-soft: rgba(183,160,255,0.14);
     --r-sm:14px;
     --r-md:20px;
     --r-lg:28px;
@@ -299,7 +303,8 @@
   .status-pill.ok{background:var(--accent-soft);color:var(--accent);}
   .status-pill.pending{background: var(--amber-soft);color:var(--amber);}
   .status-pill.none{background:rgba(255,255,255,0.06);color:var(--text-faint);}
-  .status-pill.info{background:rgba(107,168,255,0.14);color:#6BA8FF;}
+  .status-pill.info{background:var(--blue-soft);color:var(--blue);}
+  .status-pill.active{background:var(--violet-soft);color:var(--violet);}
   .status-pill.danger{background:var(--danger-soft);color:#FFB3A6;}
   .file-btn{position:relative;overflow:hidden;}
   .file-btn input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;}
@@ -427,7 +432,10 @@ const STATUS_LABELS = {
   refuse: "Refusée",
 };
 function statusPillHtml(status){
-  const cls = { demande:"pending", accepte:"info", loue:"ok", retourne:"none", refuse:"danger" }[status] || "none";
+  // "loue" (location en cours) n'est pas un état terminal : il ne doit pas porter le vert de succès,
+  // sinon la quasi-totalité des lignes d'une boutique de location s'affiche en vert. Le vert "ok" est
+  // réservé au matériel réellement rendu (retourne) — le seul état vraiment "terminé avec succès".
+  const cls = { demande:"pending", accepte:"info", loue:"active", retourne:"ok", refuse:"danger" }[status] || "none";
   return `<span class="status-pill ${cls}">${STATUS_LABELS[status] || status}</span>`;
 }
 function isProfileComplete(p){
@@ -1737,9 +1745,9 @@ function renderDashboard(){
     <div class="topbar"><div><h1>Tableau de bord</h1><div class="desc">Vue d'ensemble en temps réel de toutes les locations Owls Vision.</div></div></div>
     <div class="gauge-grid">
       ${gaugeHtml("Demandes en cours", counts.demande, total, "var(--amber)")}
-      ${gaugeHtml("Locations acceptées", counts.accepte, total, "#6BA8FF")}
-      ${gaugeHtml("En cours de location", counts.loue, total, "var(--accent)")}
-      ${gaugeHtml("Retournées", counts.retourne, total, "rgba(255,255,255,0.5)")}
+      ${gaugeHtml("Locations acceptées", counts.accepte, total, "var(--blue)")}
+      ${gaugeHtml("En cours de location", counts.loue, total, "var(--violet)")}
+      ${gaugeHtml("Retournées", counts.retourne, total, "var(--accent)")}
     </div>
     <div class="panel" style="margin-top:18px;">
       <div class="section-title">Chiffre d'affaires (estimé sur locations louées/retournées, tarifs jour/semaine)</div>
