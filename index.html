@@ -312,49 +312,30 @@
   .admin-link-wrap{text-align:center;margin-top:20px;}
   .admin-link-wrap button{background:none;border:none;color:var(--text-faint);font-size:11.5px;text-decoration:underline;padding:4px;}
 
-  /* ---------- Direction "Phosphore" — finition & motion (Lot 5) ----------
-     Couches persistantes (grain + trame ambiante) posées une seule fois sur le shell,
-     jamais reconstruites au ré-affichage : coût de rendu quasi nul, jamais "rejouées"
-     par erreur lors des rafraîchissements de données. */
-  .nv-grain{position:fixed;inset:0;z-index:1;opacity:0.05;mix-blend-mode:overlay;pointer-events:none;
-    background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");}
-  .nv-scan{position:fixed;left:0;right:0;height:40vh;z-index:1;pointer-events:none;
-    background:linear-gradient(180deg,transparent,rgba(143,239,61,0.022),transparent);
-    animation:nvScanDrift 9s linear infinite;}
-  @keyframes nvScanDrift{from{top:-40vh;}to{top:100vh;}}
+  /* ---------- Direction "Phosphore" — finition & motion (Lot 5, corrigé) ----------
+     Retour d'expérience : les couches ambiantes en boucle (grain + trame verte animée en
+     permanence) donnaient une impression de "vert partout" changeant sans arrêt et cassaient
+     le contraste — supprimées. Ne restent que des réactions ponctuelles à une vraie action
+     (survol, clic, changement de valeur), jamais d'animation qui tourne toute seule en fond. */
   .nv-flash{position:fixed;inset:0;z-index:90;background:rgba(143,239,61,0.12);pointer-events:none;}
   .nv-flash.play{animation:nvFlash .28s ease-out forwards;}
   @keyframes nvFlash{0%{opacity:1;}35%{opacity:.1;}55%{opacity:.4;}100%{opacity:0;}}
 
-  /* mire (logo) : léger halo façon optique, sur le vrai logo déjà en place — pas de
-     remplacement de l'identité, juste une lueur au diamètre de l'objectif. */
-  .side-brand img, .mobile-topbar img, .gate-brand img{filter:drop-shadow(0 0 5px rgba(143,239,61,0.35));}
-
-  /* boutons : reflet diagonal au survol, en plus du glow déjà en place */
+  /* boutons : reflet diagonal au survol seulement (rien tant qu'on n'interagit pas) */
   .btn-primary{position:relative;overflow:hidden;}
   .btn-primary::after{content:"";position:absolute;top:0;left:-60%;width:36%;height:100%;
     background:linear-gradient(115deg,transparent,rgba(255,255,255,0.45),transparent);
     transform:skewX(-18deg);transition:left .55s var(--ease);pointer-events:none;}
   .btn-primary:hover::after{left:130%;}
 
-  /* cartes : la lueur d'accent rejoint l'ombre déjà en place au survol */
+  /* cartes et lignes : lueur au survol seulement, aucun état permanent ajouté */
   .card:hover{box-shadow:var(--shadow-2),0 0 0 1px var(--accent-soft-2);}
   .mission-spotlight-row{transition:background .18s var(--ease),transform .18s var(--ease);}
   .mission-spotlight-row:hover{background:rgba(143,239,61,0.06);transform:translateY(-1px);}
   .list-row{transition:background .2s var(--ease),transform .18s var(--ease),box-shadow .18s var(--ease);}
   .list-row:hover{transform:translateY(-1px);box-shadow:0 0 0 1px var(--accent-soft-2);}
 
-  /* grade en cours : respire doucement pour rester repérable au premier coup d'œil */
-  .rank-step.current{animation:rankGlow 2.4s ease-in-out infinite;}
-  @keyframes rankGlow{0%,100%{box-shadow:0 0 0 0 rgba(143,239,61,0.3);}50%{box-shadow:0 0 10px 1px rgba(143,239,61,0.3);}}
-
-  /* mission en vedette : le chip d'XP de la mission la plus visible pulse légèrement,
-     pour attirer l'œil sans l'imposer à toutes les missions listées ailleurs */
-  .mission-spotlight-row:first-child .task-xp{animation:xpChipPulse 2.6s ease-in-out .8s infinite;}
-  @keyframes xpChipPulse{0%,100%{box-shadow:0 0 0 0 rgba(143,239,61,0.45);}50%{box-shadow:0 0 0 5px rgba(143,239,61,0);}}
-
   @media (prefers-reduced-motion: reduce){
-    .nv-scan, .rank-step.current, .mission-spotlight-row:first-child .task-xp, .xp-bar-fill::after{animation:none !important;}
     *{transition-duration:.001s !important;}
   }
 
@@ -377,8 +358,6 @@
 </style>
 </head>
 <body>
-<div class="nv-grain"></div>
-<div class="nv-scan"></div>
 <div class="nv-flash" id="nv-flash"></div>
 <div id="app"></div>
 
