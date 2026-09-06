@@ -4,6 +4,14 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Owls Vision — Location JVN</title>
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="favicon-16.png">
+<link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#050605">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Owls Vision">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -181,6 +189,33 @@
   .section-title{font-size:13px;color:var(--text-faint);margin-bottom:14px;font-weight:600;}
   .hamburger{display:none;}
   .mobile-topbar{display:none;}
+  .mobile-topbar img{width:26px;height:26px;border-radius:8px;}
+
+  /* ---------- Filter bar (Gestion location) ---------- */
+  .filter-bar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:16px;}
+  .filter-bar input[type=text]{flex:2;min-width:200px;background: rgba(255,255,255,0.055);border:1px solid var(--border-soft);color:var(--text);padding:11px 14px;border-radius: var(--r-sm);font-size:14px;outline:none;}
+  .filter-bar select{flex:1;min-width:150px;background: rgba(255,255,255,0.055);border:1px solid var(--border-soft);color:var(--text);padding:11px 14px;border-radius: var(--r-sm);font-size:14px;outline:none;}
+  .filter-bar input:focus, .filter-bar select:focus{border-color: var(--accent-soft-2); box-shadow: 0 0 0 4px var(--accent-soft);}
+  th.sortable{cursor:pointer;user-select:none;}
+  th.sortable:hover{color:var(--text);}
+  th.sortable .sort-arrow{opacity:.55;margin-left:4px;}
+  .result-count{font-size:12.5px;color:var(--text-faint);margin-bottom:12px;font-weight:500;}
+
+  /* ---------- Dashboard gauges ---------- */
+  .gauge-grid{display:grid;grid-template-columns:repeat(auto-fit, minmax(230px,1fr));gap:18px;}
+  .gauge-card{background: var(--surface);border:1px solid var(--border);border-radius: var(--r-md);padding:22px;display:flex;flex-direction:column;align-items:center;backdrop-filter: blur(20px);-webkit-backdrop-filter: blur(20px);}
+  .gauge-label{font-size:13px;color:var(--text-dim);font-weight:600;margin-top:4px;}
+  .gauge-value{font-size:30px;font-weight:800;letter-spacing:-0.02em;margin-top:6px;}
+  .gauge-sub{font-size:11.5px;color:var(--text-faint);margin-top:2px;}
+  .gauge-svg{width:100%;max-width:190px;}
+  .gauge-needle{transition: transform 1s var(--ease);transform-box: view-box;transform-origin: 100px 100px;}
+
+  /* ---------- Documents (fiche membre) ---------- */
+  .doc-row{display:flex;justify-content:space-between;align-items:center;gap:14px;padding:16px;border:1px solid var(--border);border-radius: var(--r-md);background: rgba(255,255,255,0.03);flex-wrap:wrap;margin-bottom:12px;}
+  .doc-row .doc-title{font-weight:600;font-size:14.5px;}
+  .doc-row .doc-sub{font-size:12px;color:var(--text-faint);margin-top:4px;}
+  .doc-actions{display:flex;gap:8px;flex-wrap:wrap;}
+  .profile-warning{background: var(--amber-soft);border:1px solid rgba(255,209,102,0.3);color:var(--amber);font-size:13.5px;padding:14px 16px;border-radius: var(--r-sm);margin-bottom:18px;font-weight:500;line-height:1.5;}
 
   /* ---------- Hero XP (accueil) ---------- */
   .hero-wrap{display:flex;justify-content:center;margin-bottom:6px;}
@@ -228,6 +263,8 @@
   .status-pill.ok{background:var(--accent-soft);color:var(--accent);}
   .status-pill.pending{background: var(--amber-soft);color:var(--amber);}
   .status-pill.none{background:rgba(255,255,255,0.06);color:var(--text-faint);}
+  .status-pill.info{background:rgba(107,168,255,0.14);color:#6BA8FF;}
+  .status-pill.danger{background:var(--danger-soft);color:#FFB3A6;}
   .file-btn{position:relative;overflow:hidden;}
   .file-btn input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;}
   .checkbox-field{display:flex;align-items:center;gap:10px;font-size:13.5px;color:var(--text-dim);margin:4px 0 16px;}
@@ -299,7 +336,32 @@ let state = {
   answerError: "",
   profileError: "",
   profileSaved: false,
+  profileNotice: "",
+  docError: "",
+  gestionSearch: "",
+  gestionFilter: "all",
+  gestionSort: { field: "start_date", dir: "asc" },
 };
+
+const STATUS_LABELS = {
+  demande: "Demande envoyée",
+  accepte: "Acceptée",
+  loue: "En cours de location",
+  retourne: "Retournée",
+  refuse: "Refusée",
+};
+function statusPillHtml(status){
+  const cls = { demande:"pending", accepte:"info", loue:"ok", retourne:"none", refuse:"danger" }[status] || "none";
+  return `<span class="status-pill ${cls}">${STATUS_LABELS[status] || status}</span>`;
+}
+function isProfileComplete(p){
+  return !!(p && p.nom && p.prenom && p.date_naissance && p.telephone && p.adresse);
+}
+function clientDisplayName(p){
+  if(!p) return "";
+  const full = [p.prenom, p.nom].filter(Boolean).join(" ");
+  return full || p.username;
+}
 
 function currentProfile(){ return state.profiles.find(p => p.username === state.session?.username) || null; }
 
@@ -358,7 +420,7 @@ async function boot(){
   }
 
   state.loading = false;
-  state.view = state.session?.isMaster ? "utilisateurs" : "accueil";
+  state.view = state.session?.isMaster ? "dashboard" : "accueil";
   render();
   subscribeRealtime();
   bootDone = true;
@@ -416,7 +478,7 @@ async function doClientLogin(email, password){
   }
   await ensureClientProfile(email);
   state.session = { username: email, isMaster:false };
-  state.authError = ""; state.authNotice = "";
+  state.authError = ""; state.authNotice = ""; state.profileNotice = ""; state.docError = "";
   state.view = "accueil";
   render();
 }
@@ -430,15 +492,57 @@ async function doClientRegister(email, password, password2){
     email, password,
     options: { emailRedirectTo: SITE_URL }
   });
-  if(error){ state.authError = "Erreur lors de la création du compte : " + error.message; render(); return; }
+  if(error){
+    if(/rate limit|only request this after/i.test(error.message)){
+      state.authError = "Trop de tentatives rapprochées. Merci de patienter une minute avant de réessayer, ou utilisez « Renvoyer l'email de confirmation » ci-dessous.";
+    } else {
+      state.authError = "Erreur lors de la création du compte : " + error.message;
+    }
+    render(); return;
+  }
   state.authError = "";
   if(data.session){
     await ensureClientProfile(email);
     state.session = { username: email, isMaster:false };
     state.view = "accueil";
+    render();
+    return;
+  }
+  // Supabase renvoie un "utilisateur" sans identités quand le compte existe déjà mais n'est pas confirmé :
+  // dans ce cas on force nous-même un renvoi d'email, car un signUp répété ne le fait pas toujours de façon fiable.
+  const alreadyExists = data.user && Array.isArray(data.user.identities) && data.user.identities.length === 0;
+  if(alreadyExists){
+    const { error: resendErr } = await sb.auth.resend({ type: 'signup', email, options: { emailRedirectTo: SITE_URL } });
+    state.authNotice = resendErr
+      ? "Un compte existe déjà avec cet email mais n'est pas confirmé, et le renvoi automatique a échoué (" + resendErr.message + "). Utilisez le bouton « Renvoyer l'email de confirmation »."
+      : "Un compte existait déjà avec cet email mais n'était pas confirmé : nous venons de renvoyer l'email de confirmation à " + email + ".";
   } else {
     state.authNotice = "Un email de confirmation vient d'être envoyé à " + email + ". Ouvrez-le, cliquez sur le lien, puis connectez-vous ici.";
-    state.authTab = "login";
+  }
+  state.lastRegisterEmail = email;
+  state.authTab = "login";
+  render();
+}
+
+async function resendConfirmationEmail(email){
+  email = (email || state.lastRegisterEmail || "").trim().toLowerCase();
+  if(!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){
+    state.authError = "Merci d'indiquer votre adresse email dans le champ ci-dessus, puis de cliquer à nouveau sur « Renvoyer l'email de confirmation ».";
+    render(); return;
+  }
+  state.authError = ""; state.authNotice = "Envoi en cours...";
+  render();
+  const { error } = await sb.auth.resend({ type: 'signup', email, options: { emailRedirectTo: SITE_URL } });
+  if(error){
+    if(/rate limit|only request this after/i.test(error.message)){
+      state.authNotice = "";
+      state.authError = "Merci de patienter un peu avant de redemander un nouvel email (limite anti-spam).";
+    } else {
+      state.authNotice = "";
+      state.authError = "Erreur lors du renvoi : " + error.message;
+    }
+  } else {
+    state.authNotice = "Email de confirmation renvoyé à " + email + ". Pensez à vérifier vos spams.";
   }
   render();
 }
@@ -452,12 +556,13 @@ async function doAdminLogin(username, password){
   match.last_login = now;
   state.session = { username: match.username, isMaster:true };
   localStorage.setItem('ov_admin_session', JSON.stringify(state.session));
-  state.authError = "";
-  state.view = "utilisateurs";
+  state.authError = ""; state.profileNotice = ""; state.docError = "";
+  state.view = "dashboard";
   render();
 }
 
 function logout(){
+  state.profileNotice = ""; state.docError = ""; state.gestionSearch = ""; state.gestionFilter = "all";
   if(state.session?.isMaster){
     localStorage.removeItem('ov_admin_session');
     state.session = null; state.view = "accueil"; render();
@@ -491,11 +596,14 @@ async function grantXp(username, amount){
 /* ---------- Bookings ---------- */
 function overlaps(aStart, aEnd, bStart, bEnd){ return aStart <= bEnd && bStart <= aEnd; }
 function activeBookingsCount(itemId, start, end){
-  return state.bookings.filter(b => b.item_id === itemId && overlaps(b.start_date, b.end_date, start, end)).length;
+  // Seules les locations pas encore refusées / retournées bloquent le stock disponible.
+  return state.bookings.filter(b => b.item_id === itemId && ['demande','accepte','loue'].includes(b.status) && overlaps(b.start_date, b.end_date, start, end)).length;
 }
 async function submitBooking(itemId, start, end){
   const item = state.items.find(i => i.id === itemId);
   if(!item) return;
+  const u = currentProfile();
+  if(!isProfileComplete(u)){ state.bookingError = "Merci de compléter votre fiche membre avant de réserver."; render(); return; }
   if(!start || !end || start > end){ state.bookingError = "Merci de choisir une période valide."; render(); return; }
   if(start < todayStr()){ state.bookingError = "La date de début ne peut pas être dans le passé."; render(); return; }
   if(activeBookingsCount(itemId, start, end) >= item.qty){
@@ -506,13 +614,18 @@ async function submitBooking(itemId, start, end){
   state.bookings.push(data);
   await grantXp(state.session.username, item.xp_value);
   state.bookingError = "";
-  state.modal = null;
+  state.modal = { type: "bookConfirm", itemName: item.name };
   render();
 }
 async function cancelBooking(id){
   const b = state.bookings.find(x => x.id === id);
   if(!b) return;
-  if(b.username !== state.session.username && !state.session.isMaster) return;
+  const isOwner = b.username === state.session.username;
+  if(!isOwner && !state.session.isMaster) return;
+  if(isOwner && !state.session.isMaster && b.status !== 'demande'){
+    alert("Cette demande a déjà été traitée par notre équipe. Contactez-nous directement pour l'annuler.");
+    return;
+  }
   await sb.from('bookings').delete().eq('id', id);
   state.bookings = state.bookings.filter(x => x.id !== id);
   render();
@@ -581,6 +694,8 @@ async function deleteProfile(username){
   if(!confirm(`Supprimer définitivement le compte "${username}" ? Cette action est irréversible.`)) return;
   const { error } = await sb.from('profiles').delete().eq('username', username);
   if(error){ alert("Erreur : " + error.message); return; }
+  await sb.storage.from('documents').remove([`${username}/id_doc`, `${username}/address_doc`]);
+  await sb.storage.from('contracts').remove([`${username}/original.pdf`, `${username}/signed.pdf`]);
   state.profiles = state.profiles.filter(p => p.username !== username);
   state.bookings = state.bookings.filter(b => b.username !== username);
   state.completions = state.completions.filter(c => c.username !== username);
@@ -601,21 +716,91 @@ async function saveProfile(){
   if(error){ state.profileError = "Erreur : " + error.message; state.profileSaved = false; render(); return; }
   Object.assign(u, data);
   state.profileError = ""; state.profileSaved = true;
+  if(isProfileComplete(u)) state.profileNotice = "";
   render();
 }
 
 /* ---------- Contracts ---------- */
 async function masterUploadContract(username, file){
-  const path = `${username}/original_${Date.now()}.pdf`;
+  // Chemin stable (pas d'horodatage) : un nouvel envoi remplace l'ancien fichier au lieu de s'accumuler dans le stockage.
+  const path = `${username}/original.pdf`;
   const { error: upErr } = await sb.storage.from('contracts').upload(path, file, { upsert: true, contentType: 'application/pdf' });
   if(upErr){ alert("Erreur d'envoi du PDF : " + upErr.message); return; }
+  await sb.storage.from('contracts').remove([`${username}/signed.pdf`]);
   const { data: pub } = sb.storage.from('contracts').getPublicUrl(path);
-  const payload = { username, pdf_path: pub.publicUrl, uploaded_at: new Date().toISOString(), signed_pdf_path: null, signed_at: null };
+  const payload = { username, pdf_path: pub.publicUrl + '?v=' + Date.now(), uploaded_at: new Date().toISOString(), signed_pdf_path: null, signed_at: null };
   const { data, error } = await sb.from('contracts').upsert(payload, { onConflict: 'username' }).select().single();
   if(error){ alert("Erreur : " + error.message); return; }
   const idx = state.contracts.findIndex(c => c.username === username);
   if(idx > -1) state.contracts[idx] = data; else state.contracts.push(data);
   render();
+}
+async function masterDeleteContract(username){
+  if(!confirm(`Supprimer le contrat de "${username}" (original + version signée) ?`)) return;
+  await sb.storage.from('contracts').remove([`${username}/original.pdf`, `${username}/signed.pdf`]);
+  const { error } = await sb.from('contracts').delete().eq('username', username);
+  if(error){ alert("Erreur : " + error.message); return; }
+  state.contracts = state.contracts.filter(c => c.username !== username);
+  render();
+}
+
+/* ---------- Documents fiche membre (pièce d'identité / justificatif de domicile) ---------- */
+const MEMBER_DOC_DEFS = {
+  id: { pathCol: 'id_doc_path', dateCol: 'id_doc_uploaded_at', label: "Pièce d'identité" },
+  address: { pathCol: 'address_doc_path', dateCol: 'address_doc_uploaded_at', label: "Justificatif de domicile (- de 3 mois)" },
+};
+async function uploadMemberDoc(kind, file, username){
+  const def = MEMBER_DOC_DEFS[kind];
+  if(!def || !file) return;
+  const okType = /^image\//.test(file.type) || file.type === 'application/pdf';
+  if(!okType){ state.docError = "Format non supporté : merci d'envoyer une photo (JPG/PNG) ou un PDF."; render(); return; }
+  const storagePath = `${username}/${kind}_doc`;
+  const { error: upErr } = await sb.storage.from('documents').upload(storagePath, file, { upsert: true, contentType: file.type });
+  if(upErr){ state.docError = "Erreur d'envoi : " + upErr.message; render(); return; }
+  const payload = { [def.pathCol]: storagePath, [def.dateCol]: new Date().toISOString() };
+  const { data, error } = await sb.from('profiles').update(payload).eq('username', username).select().single();
+  if(error){ state.docError = "Erreur : " + error.message; render(); return; }
+  const p = state.profiles.find(x => x.username === username);
+  if(p) Object.assign(p, data);
+  state.docError = "";
+  render();
+}
+async function deleteMemberDoc(kind, username){
+  const def = MEMBER_DOC_DEFS[kind];
+  if(!def) return;
+  if(!confirm(`Supprimer ce document (${def.label}) ?`)) return;
+  await sb.storage.from('documents').remove([`${username}/${kind}_doc`]);
+  const payload = { [def.pathCol]: null, [def.dateCol]: null };
+  const { data, error } = await sb.from('profiles').update(payload).eq('username', username).select().single();
+  if(error){ state.docError = "Erreur : " + error.message; render(); return; }
+  const p = state.profiles.find(x => x.username === username);
+  if(p) Object.assign(p, data);
+  render();
+}
+function docRowHtml(kind, p, editable){
+  const def = MEMBER_DOC_DEFS[kind];
+  const has = !!p[def.pathCol];
+  return `
+    <div class="doc-row">
+      <div>
+        <div class="doc-title">${def.label}</div>
+        <div class="doc-sub">${has ? 'Envoyé le ' + fmtDate(p[def.dateCol]) : 'Aucun document envoyé'}</div>
+      </div>
+      <div class="doc-actions">
+        ${has ? `<button class="btn btn-ghost btn-sm" onclick="openMemberDoc('${kind}','${p.username}')">Voir</button>` : ''}
+        ${editable ? `<span class="btn btn-primary btn-sm file-btn">${has?'Remplacer':'Envoyer'}<input type="file" accept="image/*,application/pdf" onchange="handleMemberDocUpload(event,'${kind}','${p.username}')"></span>` : ''}
+        ${editable && has ? `<button class="btn btn-danger btn-sm" onclick="deleteMemberDoc('${kind}','${p.username}')">Supprimer</button>` : ''}
+      </div>
+    </div>`;
+}
+async function openMemberDoc(kind, username){
+  const def = MEMBER_DOC_DEFS[kind];
+  const p = state.profiles.find(x => x.username === username);
+  const path = p && p[def.pathCol];
+  if(!path) return;
+  const { data, error } = await sb.storage.from('documents').createSignedUrl(path, 600);
+  if(error){ alert("Erreur : " + error.message); return; }
+  window.open(data.signedUrl, '_blank', 'noopener');
 }
 
 let sigCtx = null, sigDrawing = false, sigHasInk = false;
@@ -701,11 +886,11 @@ async function submitSignature(){
     lastPage.drawText(`Signe electroniquement par ${state.session.username} le ${new Date().toLocaleDateString('fr-FR')}`, { x: 50, y: 40, size: 9, font, color: rgb(0.55,0.55,0.55) });
     const signedBytes = await pdfDoc.save();
     const blob = new Blob([signedBytes], { type: 'application/pdf' });
-    const signedPath = `${state.session.username}/signed_${Date.now()}.pdf`;
+    const signedPath = `${state.session.username}/signed.pdf`;
     const { error: upErr } = await sb.storage.from('contracts').upload(signedPath, blob, { upsert: true, contentType: 'application/pdf' });
     if(upErr) throw upErr;
     const { data: pub } = sb.storage.from('contracts').getPublicUrl(signedPath);
-    const { data, error } = await sb.from('contracts').update({ signed_pdf_path: pub.publicUrl, signed_at: new Date().toISOString() }).eq('username', state.session.username).select().single();
+    const { data, error } = await sb.from('contracts').update({ signed_pdf_path: pub.publicUrl + '?v=' + Date.now(), signed_at: new Date().toISOString() }).eq('username', state.session.username).select().single();
     if(error) throw error;
     const idx = state.contracts.findIndex(c => c.username === state.session.username);
     state.contracts[idx] = data;
@@ -719,6 +904,13 @@ async function submitSignature(){
     btn.textContent = oldLabel; btn.disabled = false;
   }
 }
+window.handleMemberDocUpload = (e, kind, username) => {
+  const file = e.target.files[0];
+  if(!file) return;
+  uploadMemberDoc(kind, file, username);
+};
+window.deleteMemberDoc = deleteMemberDoc;
+window.openMemberDoc = openMemberDoc;
 window.handleContractUpload = (e, username) => {
   const file = e.target.files[0];
   if(!file) return;
@@ -736,6 +928,8 @@ function iconFor(name){
     utilisateurs: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="9" cy="8" r="3.2"/><path d="M2.5 20c0-3.5 2.9-6 6.5-6s6.5 2.5 6.5 6"/><circle cx="17.5" cy="9" r="2.3"/><path d="M15.8 14.2c2.7.4 4.7 2.3 4.7 5.3"/></svg>',
     contrat: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H7a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/><path d="M9 13h6M9 17h6"/></svg>',
     profil: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>',
+    dashboard: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21a9 9 0 1 1 9-9"/><path d="M12 12l4.2-4.2"/><path d="M12 7v-1"/></svg>',
+    gestion: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 3h6v4H9z"/><rect x="4" y="7" width="16" height="14" rx="2"/><path d="M8 13h8M8 17h5"/></svg>',
   };
   return icons[name] || "";
 }
@@ -789,10 +983,11 @@ function renderGate(){
       ${state.authNotice ? `<div class="msg msg-ok">${esc(state.authNotice)}</div>` : ''}
       ${isLogin ? `
         <form onsubmit="return handleClientLogin(event)">
-          <div class="field"><label>Adresse email</label><input name="email" type="email" required autocomplete="username"></div>
+          <div class="field"><label>Adresse email</label><input id="login-email" name="email" type="email" required autocomplete="username" value="${esc(state.lastRegisterEmail||'')}"></div>
           <div class="field"><label>Mot de passe</label><input name="password" type="password" required autocomplete="current-password"></div>
           <button class="btn btn-primary" type="submit">Se connecter</button>
         </form>
+        <div class="admin-link-wrap"><button onclick="handleResendConfirmation()">Renvoyer l'email de confirmation</button></div>
       ` : `
         <form onsubmit="return handleClientRegister(event)">
           <div class="field"><label>Adresse email</label><input name="email" type="email" required autocomplete="email"></div>
@@ -810,7 +1005,7 @@ function renderGate(){
 /* ---------- Sidebar / nav ---------- */
 function navFor(isMaster){
   return isMaster
-    ? [["utilisateurs","Utilisateurs"],["catalogue","Catalogue JVN"],["planning","Planning global"],["missions","Missions"],["contrats","Contrats"]]
+    ? [["dashboard","Tableau de bord"],["gestion","Gestion location"],["utilisateurs","Utilisateurs"],["catalogue","Catalogue JVN"],["missions","Missions"],["contrats","Contrats"]]
     : [["accueil","Accueil"],["catalogue","Catalogue JVN"],["planning","Mes réservations"],["missions","Missions"],["contrat","Mon contrat"],["profil","Mon profil"]];
 }
 function renderSidebar(){
@@ -859,7 +1054,7 @@ function renderAccueil(){
     <div class="grid" style="margin-top:22px;">
       <div class="card">
         <div class="tag">Prochaine réservation</div>
-        ${nextBooking ? `<h3>${esc(state.items.find(i=>i.id===nextBooking.item_id)?.name || 'Matériel')}</h3><div class="card-desc">Du ${fmtDate(nextBooking.start_date)} au ${fmtDate(nextBooking.end_date)}${nextBooking.status==='confirme' ? ' · <span style="color:var(--accent)">Confirmée</span>' : ' · <span style="color:var(--amber)">Demande envoyée</span>'}</div>` : `<div class="card-desc">Aucune réservation à venir. Direction le catalogue !</div>`}
+        ${nextBooking ? `<h3>${esc(state.items.find(i=>i.id===nextBooking.item_id)?.name || 'Matériel')}</h3><div class="card-desc">Du ${fmtDate(nextBooking.start_date)} au ${fmtDate(nextBooking.end_date)} · ${statusPillHtml(nextBooking.status)}</div>` : `<div class="card-desc">Aucune réservation à venir. Direction le catalogue !</div>`}
         <button class="btn btn-ghost btn-sm" onclick="goto('catalogue')">Voir le catalogue</button>
       </div>
       <div class="card">
@@ -906,37 +1101,165 @@ function renderCatalogue(){
   `;
 }
 
-/* ---------- Planning ---------- */
-function renderPlanning(){
+/* ---------- Mes réservations (client) ---------- */
+function renderMesReservations(){
   const u = currentProfile();
-  const isMaster = u.is_master;
-  const source = isMaster ? state.bookings : state.bookings.filter(b => b.username === u.username);
-  const sorted = [...source].sort((a,b) => a.start_date.localeCompare(b.start_date));
-  const rows = sorted.map(b => {
+  const mine = state.bookings.filter(b => b.username === u.username).sort((a,b) => a.start_date.localeCompare(b.start_date));
+  const rows = mine.map(b => {
     const item = state.items.find(i => i.id === b.item_id);
-    const mine = b.username === u.username;
-    const confirmed = b.status === 'confirme';
-    const statusBadge = confirmed ? `<span class="status-pill ok">Confirmée</span>` : `<span class="status-pill pending">Demande envoyée</span>`;
     return `
       <tr>
         <td>${esc(item?.name || "Matériel supprimé")}</td>
-        ${isMaster ? `<td>${esc(b.username)}${mine?' <span style="color:var(--accent);font-size:11px">(vous)</span>':''}</td>` : ''}
         <td>${fmtDate(b.start_date)}</td>
         <td>${fmtDate(b.end_date)}</td>
-        <td>${statusBadge}</td>
-        <td><div style="display:flex;gap:6px;flex-wrap:wrap;">
-          ${isMaster && !confirmed ? `<button class="btn btn-primary btn-sm" onclick="setBookingStatus('${b.id}','confirme')">Confirmer</button>` : ''}
-          ${(mine||isMaster) ? `<button class="btn btn-ghost btn-sm" onclick="cancelBooking('${b.id}')">Annuler</button>` : ''}
-        </div></td>
+        <td>${statusPillHtml(b.status)}</td>
+        <td>${b.status === 'demande' ? `<button class="btn btn-ghost btn-sm" onclick="cancelBooking('${b.id}')">Annuler</button>` : ''}</td>
       </tr>`;
   }).join("");
   return `
     <div class="topbar">
-      <div><h1>${isMaster?'Planning global':'Mes réservations'}</h1><div class="desc">${isMaster ? "Chaque nouvelle demande arrive au statut « Demande envoyée ». Confirmez-la après l'appel téléphonique avec le client." : "Vos demandes de location. Une confirmation par téléphone est nécessaire avant que la réservation soit validée."}</div></div>
+      <div><h1>Mes réservations</h1><div class="desc">Vos demandes de location. Notre équipe vous contacte par téléphone dans les 24h pour confirmer chaque demande.</div></div>
       ${xpBarHtml(u)}
     </div>
     <div class="panel">
-      ${sorted.length ? `<table><thead><tr><th>Matériel</th>${isMaster?'<th>Client</th>':''}<th>Début</th><th>Fin</th><th>Statut</th><th></th></tr></thead><tbody>${rows}</tbody></table>` : `<div class="empty">${isMaster ? "Aucune demande de réservation." : "Vous n'avez aucune réservation. Direction le catalogue !"}</div>`}
+      ${mine.length ? `<table><thead><tr><th>Matériel</th><th>Début</th><th>Fin</th><th>Statut</th><th></th></tr></thead><tbody>${rows}</tbody></table>` : `<div class="empty">Vous n'avez aucune réservation. Direction le catalogue !</div>`}
+    </div>
+  `;
+}
+
+/* ---------- Gestion location (équipe) ---------- */
+function gestionFilteredSorted(){
+  const q = (state.gestionSearch||'').trim().toLowerCase();
+  let list = state.bookings.filter(b => {
+    if(state.gestionFilter !== 'all' && b.status !== state.gestionFilter) return false;
+    if(!q) return true;
+    const p = state.profiles.find(x => x.username === b.username);
+    const item = state.items.find(i => i.id === b.item_id);
+    const hay = [b.username, p?.nom, p?.prenom, item?.name].filter(Boolean).join(' ').toLowerCase();
+    return hay.includes(q);
+  });
+  const { field, dir } = state.gestionSort;
+  const mult = dir === 'asc' ? 1 : -1;
+  list.sort((a,b) => {
+    let av, bv;
+    if(field === 'client'){ av = clientDisplayName(state.profiles.find(x=>x.username===a.username)).toLowerCase(); bv = clientDisplayName(state.profiles.find(x=>x.username===b.username)).toLowerCase(); }
+    else if(field === 'status'){ av = a.status; bv = b.status; }
+    else if(field === 'item'){ av = (state.items.find(i=>i.id===a.item_id)?.name||'').toLowerCase(); bv = (state.items.find(i=>i.id===b.item_id)?.name||'').toLowerCase(); }
+    else { av = a.start_date; bv = b.start_date; }
+    if(av < bv) return -1 * mult;
+    if(av > bv) return 1 * mult;
+    return 0;
+  });
+  return list;
+}
+function gestionRowHtml(b){
+  const item = state.items.find(i => i.id === b.item_id);
+  const p = state.profiles.find(x => x.username === b.username);
+  const actions = [];
+  if(b.status === 'demande'){
+    actions.push(`<button class="btn btn-primary btn-sm" onclick="setBookingStatus('${b.id}','accepte')">Accepter</button>`);
+    actions.push(`<button class="btn btn-ghost btn-sm" onclick="setBookingStatus('${b.id}','refuse')">Refuser</button>`);
+  } else if(b.status === 'accepte'){
+    actions.push(`<button class="btn btn-primary btn-sm" onclick="setBookingStatus('${b.id}','loue')">Marquer loué</button>`);
+  } else if(b.status === 'loue'){
+    actions.push(`<button class="btn btn-primary btn-sm" onclick="setBookingStatus('${b.id}','retourne')">Marquer retourné</button>`);
+  }
+  actions.push(`<button class="btn btn-danger btn-sm" onclick="cancelBooking('${b.id}')">Supprimer</button>`);
+  return `
+    <tr>
+      <td>${esc(item?.name || "Matériel supprimé")}</td>
+      <td><button class="btn btn-ghost btn-sm" style="padding:6px 12px;" onclick="openViewProfile('${p?.username||b.username}')">${esc(p ? clientDisplayName(p) : b.username)}</button></td>
+      <td>${fmtDate(b.start_date)}</td>
+      <td>${fmtDate(b.end_date)}</td>
+      <td>${statusPillHtml(b.status)}</td>
+      <td><div style="display:flex;gap:6px;flex-wrap:wrap;">${actions.join('')}</div></td>
+    </tr>`;
+}
+function gestionTheadHtml(){
+  const arrow = (f) => state.gestionSort.field === f ? `<span class="sort-arrow">${state.gestionSort.dir === 'asc' ? '▲' : '▼'}</span>` : '';
+  return `<tr>
+    <th class="sortable" onclick="onGestionSort('item')">Matériel ${arrow('item')}</th>
+    <th class="sortable" onclick="onGestionSort('client')">Client ${arrow('client')}</th>
+    <th class="sortable" onclick="onGestionSort('start_date')">Début ${arrow('start_date')}</th>
+    <th>Fin</th>
+    <th class="sortable" onclick="onGestionSort('status')">Statut ${arrow('status')}</th>
+    <th></th>
+  </tr>`;
+}
+function refreshGestionView(){
+  const list = gestionFilteredSorted();
+  const tbody = document.getElementById('gestion-tbody');
+  const thead = document.getElementById('gestion-thead');
+  const count = document.getElementById('gestion-count');
+  if(!tbody) return;
+  thead.innerHTML = gestionTheadHtml();
+  tbody.innerHTML = list.length ? list.map(gestionRowHtml).join('') : `<tr><td colspan="6"><div class="empty">Aucune location ne correspond à cette recherche.</div></td></tr>`;
+  count.textContent = `${list.length} location${list.length>1?'s':''}`;
+}
+function renderGestionLocation(){
+  const list = gestionFilteredSorted();
+  return `
+    <div class="topbar"><div><h1>Gestion location</h1><div class="desc">Recherchez, filtrez et faites avancer chaque location : demande → acceptée → louée → retournée.</div></div></div>
+    <div class="filter-bar">
+      <input type="text" placeholder="Rechercher un client, un matériel..." value="${esc(state.gestionSearch)}" oninput="onGestionSearch(this.value)">
+      <select onchange="onGestionFilter(this.value)">
+        <option value="all" ${state.gestionFilter==='all'?'selected':''}>Tous les statuts</option>
+        <option value="demande" ${state.gestionFilter==='demande'?'selected':''}>Demandes</option>
+        <option value="accepte" ${state.gestionFilter==='accepte'?'selected':''}>Acceptées</option>
+        <option value="loue" ${state.gestionFilter==='loue'?'selected':''}>En cours (louées)</option>
+        <option value="retourne" ${state.gestionFilter==='retourne'?'selected':''}>Retournées</option>
+        <option value="refuse" ${state.gestionFilter==='refuse'?'selected':''}>Refusées</option>
+      </select>
+    </div>
+    <div class="result-count" id="gestion-count">${list.length} location${list.length>1?'s':''}</div>
+    <div class="panel">
+      <table>
+        <thead id="gestion-thead">${gestionTheadHtml()}</thead>
+        <tbody id="gestion-tbody">${list.length ? list.map(gestionRowHtml).join('') : `<tr><td colspan="6"><div class="empty">Aucune location ne correspond à cette recherche.</div></td></tr>`}</tbody>
+      </table>
+    </div>
+  `;
+}
+
+/* ---------- Tableau de bord (équipe) ---------- */
+function gaugeHtml(label, value, total, color){
+  const frac = total > 0 ? Math.min(1, value/total) : 0;
+  const len = Math.PI * 80;
+  const dashoffset = len * (1 - frac);
+  const angle = -90 + frac * 180;
+  return `
+    <div class="gauge-card">
+      <svg class="gauge-svg" viewBox="0 0 200 120">
+        <path d="M20,100 A80,80 0 0 1 180,100" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="14" stroke-linecap="round"/>
+        <path d="M20,100 A80,80 0 0 1 180,100" fill="none" stroke="${color}" stroke-width="14" stroke-linecap="round"
+              stroke-dasharray="${len.toFixed(2)}" stroke-dashoffset="${dashoffset.toFixed(2)}" style="transition: stroke-dashoffset 1s var(--ease);"/>
+        <line class="gauge-needle" x1="100" y1="100" x2="100" y2="32" stroke="var(--text)" stroke-width="3" stroke-linecap="round" style="transform:rotate(${angle.toFixed(1)}deg);"/>
+        <circle cx="100" cy="100" r="7" fill="var(--text)"/>
+      </svg>
+      <div class="gauge-value">${value}</div>
+      <div class="gauge-label">${esc(label)}</div>
+      <div class="gauge-sub">sur ${total} location${total>1?'s':''} au total</div>
+    </div>`;
+}
+function renderDashboard(){
+  const counts = { demande:0, accepte:0, loue:0, retourne:0, refuse:0 };
+  state.bookings.forEach(b => { if(counts[b.status] !== undefined) counts[b.status]++; });
+  const total = state.bookings.length;
+  return `
+    <div class="topbar"><div><h1>Tableau de bord</h1><div class="desc">Vue d'ensemble en temps réel de toutes les locations Owls Vision.</div></div></div>
+    <div class="gauge-grid">
+      ${gaugeHtml("Demandes en cours", counts.demande, total, "var(--amber)")}
+      ${gaugeHtml("Locations acceptées", counts.accepte, total, "#6BA8FF")}
+      ${gaugeHtml("En cours de location", counts.loue, total, "var(--accent)")}
+      ${gaugeHtml("Retournées", counts.retourne, total, "rgba(255,255,255,0.5)")}
+    </div>
+    <div class="panel" style="margin-top:18px;">
+      <div class="section-title">Résumé</div>
+      <div class="row">
+        <div><div style="font-size:12px;color:var(--text-faint);">Total locations</div><div style="font-size:22px;font-weight:700;">${total}</div></div>
+        <div><div style="font-size:12px;color:var(--text-faint);">Refusées</div><div style="font-size:22px;font-weight:700;">${counts.refuse}</div></div>
+        <div><div style="font-size:12px;color:var(--text-faint);">Comptes clients</div><div style="font-size:22px;font-weight:700;">${state.profiles.filter(p=>!p.is_master).length}</div></div>
+      </div>
     </div>
   `;
 }
@@ -1016,6 +1339,7 @@ function renderContratsAdmin(){
           ${c ? `<a class="btn btn-ghost btn-sm" href="${c.pdf_path}" target="_blank" rel="noopener">Original</a>` : ''}
           ${c && c.signed_pdf_path ? `<a class="btn btn-ghost btn-sm" href="${c.signed_pdf_path}" target="_blank" rel="noopener">Signé</a>` : ''}
           <span class="btn btn-primary btn-sm file-btn">${c?'Remplacer':'Uploader'} PDF<input type="file" accept="application/pdf" onchange="handleContractUpload(event,'${usr.username}')"></span>
+          ${c ? `<button class="btn btn-danger btn-sm" onclick="masterDeleteContract('${usr.username}')">Supprimer</button>` : ''}
         </div>
       </div>`;
   }).join("");
@@ -1047,22 +1371,30 @@ function renderContratClient(){
 /* ---------- Mon profil (client) ---------- */
 function renderProfilClient(){
   const u = currentProfile();
+  const complete = isProfileComplete(u);
   return `
-    <div class="topbar"><div><h1>Mon profil</h1><div class="desc">Ces informations nous permettent de préparer votre contrat de location.</div></div>${xpBarHtml(u)}</div>
+    <div class="topbar"><div><h1>Mon profil</h1><div class="desc">Ces informations nous permettent de préparer votre contrat de location. Elles sont obligatoires pour pouvoir réserver (le numéro de CNI est facultatif).</div></div>${xpBarHtml(u)}</div>
+    ${state.profileNotice ? `<div class="profile-warning">⚠️ ${esc(state.profileNotice)}</div>` : (!complete ? `<div class="profile-warning">⚠️ Fiche incomplète : tant que les champs obligatoires (nom, prénom, date de naissance, téléphone, adresse) ne sont pas remplis, vous ne pouvez pas faire de demande de location.</div>` : '')}
     <div class="panel">
       ${state.profileSaved ? `<div class="msg msg-ok">Profil enregistré.</div>` : ''}
       ${state.profileError ? `<div class="msg msg-error">${esc(state.profileError)}</div>` : ''}
       <div class="row">
-        <div class="field"><label>Nom</label><input id="pf-nom" value="${esc(u.nom||'')}"></div>
-        <div class="field"><label>Prénom</label><input id="pf-prenom" value="${esc(u.prenom||'')}"></div>
+        <div class="field"><label>Nom *</label><input id="pf-nom" value="${esc(u.nom||'')}"></div>
+        <div class="field"><label>Prénom *</label><input id="pf-prenom" value="${esc(u.prenom||'')}"></div>
       </div>
       <div class="row">
-        <div class="field"><label>Date de naissance</label><input id="pf-dob" type="date" value="${esc(u.date_naissance||'')}"></div>
-        <div class="field"><label>Téléphone</label><input id="pf-tel" value="${esc(u.telephone||'')}"></div>
+        <div class="field"><label>Date de naissance *</label><input id="pf-dob" type="date" value="${esc(u.date_naissance||'')}"></div>
+        <div class="field"><label>Téléphone *</label><input id="pf-tel" value="${esc(u.telephone||'')}"></div>
       </div>
-      <div class="field"><label>Numéro de carte d'identité / passeport</label><input id="pf-cni" value="${esc(u.numero_cni||'')}"></div>
-      <div class="field"><label>Adresse</label><input id="pf-adresse" value="${esc(u.adresse||'')}"></div>
+      <div class="field"><label>Numéro de carte d'identité / passeport (facultatif)</label><input id="pf-cni" value="${esc(u.numero_cni||'')}"></div>
+      <div class="field"><label>Adresse *</label><input id="pf-adresse" value="${esc(u.adresse||'')}"></div>
       <button class="btn btn-primary" onclick="saveProfile()">Enregistrer</button>
+    </div>
+    <div class="panel">
+      <div class="section-title">Documents</div>
+      ${state.docError ? `<div class="msg msg-error">${esc(state.docError)}</div>` : ''}
+      ${docRowHtml('id', u, true)}
+      ${docRowHtml('address', u, true)}
     </div>
   `;
 }
@@ -1084,6 +1416,15 @@ function renderModal(){
       <div id="bk-availability" style="font-size:12.5px;color:var(--accent);margin-bottom:8px;"></div>
       <div style="font-size:12px;color:var(--text-faint);">Votre demande sera envoyée à l'équipe, qui vous contactera par téléphone pour confirmer. Gain à l'envoi de la demande : +${item.xp_value} XP.</div>
       <div class="modal-actions"><button class="btn btn-ghost" onclick="closeModal()">Annuler</button><button class="btn btn-primary" onclick="confirmBooking('${item.id}')">Envoyer la demande</button></div>
+    </div></div>`;
+  }
+  if(m.type === "bookConfirm"){
+    return `
+    <div class="modal-bg"><div class="modal" style="text-align:center;">
+      <div style="font-size:40px;margin-bottom:8px;">✅</div>
+      <h3>Demande envoyée !</h3>
+      <p style="font-size:14px;color:var(--text-dim);line-height:1.6;">Votre demande de location pour <strong>${esc(m.itemName)}</strong> a bien été enregistrée.<br><br>Notre équipe va confirmer la location et ses modalités lors d'un appel dans les 24h.</p>
+      <div class="modal-actions"><button class="btn btn-primary" style="width:100%;" onclick="closeModal(); goto('planning');">Fermer</button></div>
     </div></div>`;
   }
   if(m.type === "newItem"){
@@ -1143,6 +1484,9 @@ function renderModal(){
       </div>
       <div class="field"><label>Numéro de carte d'identité / passeport</label><div class="static-val">${esc(p.numero_cni || '—')}</div></div>
       <div class="field"><label>Adresse</label><div class="static-val">${esc(p.adresse || '—')}</div></div>
+      <div class="section-title" style="margin-top:6px;">Documents</div>
+      ${docRowHtml('id', p, false)}
+      ${docRowHtml('address', p, false)}
       <div class="modal-actions"><button class="btn btn-ghost" style="width:100%;" onclick="closeModal()">Fermer</button></div>
     </div></div>`;
   }
@@ -1152,7 +1496,7 @@ function renderModal(){
 /* ---------- Router ---------- */
 function render(){
   const app = document.getElementById("app");
-  if(state.loading){ app.innerHTML = `<div class="gate"><div style="color:var(--text-faint)">Chargement…</div></div>`; return; }
+  if(state.loading){ app.innerHTML = `<div class="gate"><div style="text-align:center;"><img src="${LOGO}" alt="Owls Vision" style="width:56px;height:56px;border-radius:16px;margin-bottom:14px;"><div style="color:var(--text-faint)">Chargement…</div></div></div>`; return; }
   if(state.fatalError){ app.innerHTML = `<div class="gate"><div class="gate-card"><div class="msg msg-error">${esc(state.fatalError)}</div></div></div>`; return; }
   if(!state.session){ app.innerHTML = renderGate(); return; }
 
@@ -1164,7 +1508,9 @@ function render(){
   let content = "";
   if(state.view === "accueil") content = renderAccueil();
   else if(state.view === "catalogue") content = renderCatalogue();
-  else if(state.view === "planning") content = renderPlanning();
+  else if(state.view === "planning") content = renderMesReservations();
+  else if(state.view === "gestion") content = renderGestionLocation();
+  else if(state.view === "dashboard") content = renderDashboard();
   else if(state.view === "missions") content = renderMissions();
   else if(state.view === "utilisateurs") content = renderUtilisateurs();
   else if(state.view === "contrats") content = renderContratsAdmin();
@@ -1177,6 +1523,7 @@ function render(){
       <div class="main">
         <div class="mobile-topbar">
           <button class="hamburger" onclick="toggleSidebar()">☰</button>
+          <img src="${LOGO}" alt="Owls Vision">
           <div style="font-weight:700;">OWLS<span style="color:var(--accent)">VISION</span></div>
         </div>
         ${content}
@@ -1191,6 +1538,10 @@ window.setAuthTab = (tab) => { state.authTab = tab; state.authError = ""; state.
 window.toggleAdminLogin = () => { state.showAdminLogin = !state.showAdminLogin; state.authError = ""; render(); };
 window.handleClientLogin = (e) => { e.preventDefault(); doClientLogin(e.target.email.value, e.target.password.value); return false; };
 window.handleClientRegister = (e) => { e.preventDefault(); doClientRegister(e.target.email.value, e.target.password.value, e.target.password2.value); return false; };
+window.handleResendConfirmation = () => {
+  const field = document.getElementById('login-email');
+  resendConfirmationEmail(field ? field.value : "");
+};
 window.handleAdminLogin = (e) => { e.preventDefault(); doAdminLogin(e.target.username.value, e.target.password.value); return false; };
 window.logout = logout;
 window.goto = (view) => { state.view = view; state.sidebarOpen = false; state.profileSaved = false; render(); };
@@ -1198,11 +1549,26 @@ window.toggleSidebar = () => { state.sidebarOpen = !state.sidebarOpen; render();
 window.deleteItem = deleteItem;
 window.deleteTask = deleteTask;
 window.deleteProfile = deleteProfile;
+window.masterDeleteContract = masterDeleteContract;
 window.saveProfile = saveProfile;
 window.setBookingStatus = setBookingStatus;
+window.onGestionSearch = (v) => { state.gestionSearch = v; refreshGestionView(); };
+window.onGestionFilter = (v) => { state.gestionFilter = v; refreshGestionView(); };
+window.onGestionSort = (field) => {
+  if(state.gestionSort.field === field) state.gestionSort.dir = state.gestionSort.dir === 'asc' ? 'desc' : 'asc';
+  else state.gestionSort = { field, dir: 'asc' };
+  refreshGestionView();
+};
 window.completeTask = (taskId) => completeTask(taskId, null);
 window.cancelBooking = cancelBooking;
-window.openBookModal = (itemId) => { state.bookingError = ""; state.modal = { type:"book", itemId }; render(); updateAvailabilityPreview(itemId); };
+window.openBookModal = (itemId) => {
+  if(!isProfileComplete(currentProfile())){
+    state.profileNotice = "Merci de compléter votre fiche membre (numéro de CNI facultatif) avant de faire une demande de location.";
+    state.view = "profil"; state.sidebarOpen = false; render();
+    return;
+  }
+  state.bookingError = ""; state.modal = { type:"book", itemId }; render(); updateAvailabilityPreview(itemId);
+};
 window.openNewItemModal = () => { state.modal = { type:"newItem" }; render(); };
 window.openNewTaskModal = () => { state.modal = { type:"newTask" }; render(); };
 window.openAnswerModal = (taskId) => { state.answerError = ""; state.modal = { type:"answerTask", taskId }; render(); };
