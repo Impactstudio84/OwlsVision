@@ -82,6 +82,7 @@
     transition: border-color .18s var(--ease), box-shadow .18s var(--ease);
   }
   .field input:focus, .field select:focus, .field textarea:focus{ border-color: var(--accent-soft-2); box-shadow: 0 0 0 4px var(--accent-soft); }
+  .field .static-val{font-size:14.5px;color:var(--text);padding:12px 0 2px;}
   .btn{
     display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:13px 22px;border-radius: var(--r-pill);
     border:1px solid transparent;font-size:14.5px;font-weight:600;
@@ -123,7 +124,7 @@
   .side-foot{padding:16px;border-top:1px solid var(--border-soft);}
   .side-user{display:flex;align-items:center;gap:10px;margin-bottom:12px;}
   .avatar{width:34px;height:34px;border-radius:11px;background:var(--accent-soft);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:var(--accent);flex-shrink:0;}
-  .side-user .u-name{font-size:13.5px;font-weight:600;}
+  .side-user .u-name{font-size:13.5px;font-weight:600;word-break:break-all;}
   .side-user .u-rank{font-size:11.5px;color:var(--text-faint);}
 
   .main{flex:1;min-width:0;padding:12px 20px 60px;}
@@ -149,6 +150,8 @@
   .card:hover{background:var(--surface-hover);transform:translateY(-3px);box-shadow:var(--shadow-2);}
   .card h3{font-size:18px;font-weight:700;letter-spacing:-0.01em;}
   .card .card-desc{font-size:13.5px;color:var(--text-dim);line-height:1.55;flex:1;}
+  .card .card-photo{width:calc(100% + 44px);margin:-22px -22px 0;height:150px;object-fit:cover;display:block;border-radius:var(--r-md) var(--r-md) 0 0;}
+  .card .card-photo-ph{width:calc(100% + 44px);margin:-22px -22px 0;height:110px;display:flex;align-items:center;justify-content:center;font-size:34px;background:rgba(255,255,255,0.03);border-radius:var(--r-md) var(--r-md) 0 0;opacity:.5;}
   .tag{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:600;color:var(--accent);background:var(--accent-soft);padding:5px 12px;border-radius:var(--r-pill);width:fit-content;}
   .card-foot{display:flex;justify-content:space-between;align-items:center;gap:10px;padding-top:12px;border-top:1px solid var(--border-soft);}
   .qty-pill{font-size:12px;color:var(--text-faint);font-weight:500;}
@@ -162,12 +165,13 @@
   .row{display:flex;gap:14px;flex-wrap:wrap;}
   .row > *{flex:1;min-width:160px;}
   .empty{padding:36px 20px;text-align:center;color:var(--text-faint);border:1.5px dashed var(--border);border-radius: var(--r-md);font-size:14px;font-weight:500;}
-  .task-item{display:flex;justify-content:space-between;align-items:center;gap:16px;padding:18px 20px;border:1px solid var(--border);border-radius: var(--r-md);background: var(--surface);transition: background .2s var(--ease);flex-wrap:wrap;}
-  .task-item:hover{background:var(--surface-hover);}
-  .task-item.done{opacity:0.55;}
-  .task-item .t-title{font-weight:600;font-size:15px;}
-  .task-item .t-desc{font-size:13px;color:var(--text-dim);margin-top:4px;}
-  .task-xp{font-size:12.5px;color:var(--accent);font-weight:600;background:var(--accent-soft);padding:6px 12px;border-radius:var(--r-pill);white-space:nowrap;}
+
+  .mission-card{position:relative;}
+  .mission-card.done{opacity:.62;}
+  .mission-head{display:flex;align-items:flex-start;gap:12px;}
+  .mission-icon{width:44px;height:44px;border-radius:14px;background:var(--accent-soft);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;}
+  .mission-card.done .mission-icon{background:rgba(255,255,255,0.06);}
+  .task-xp{font-size:12.5px;color:var(--accent);font-weight:600;background:var(--accent-soft);padding:5px 11px;border-radius:var(--r-pill);white-space:nowrap;display:inline-block;margin-top:6px;}
   .submission-row{display:flex;justify-content:space-between;gap:10px;font-size:12.5px;color:var(--text-dim);padding:8px 0;border-top:1px solid var(--border-soft);}
   .modal-bg{position:fixed;inset:0;background:rgba(3,5,3,0.6);backdrop-filter: blur(6px);-webkit-backdrop-filter: blur(6px);display:flex;align-items:center;justify-content:center;z-index:50;padding:20px;}
   .modal{background: #0E100E;border:1px solid var(--border);border-radius: var(--r-lg);width:100%;max-width:430px;padding:26px;box-shadow: var(--shadow-2);max-height:90vh;overflow-y:auto;}
@@ -181,14 +185,20 @@
   /* ---------- Hero XP (accueil) ---------- */
   .hero-wrap{display:flex;justify-content:center;margin-bottom:6px;}
   .xp-hero{
-    width:100%;max-width:440px;text-align:center;padding:34px 28px;border-radius:var(--r-lg);
+    width:100%;max-width:460px;text-align:center;padding:38px 30px;border-radius:var(--r-lg);
     background: radial-gradient(120% 140% at 50% -10%, rgba(143,239,61,0.14), transparent 60%), var(--surface);
     border:1px solid var(--border);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);
     animation: heroGlow 4s ease-in-out infinite;
   }
   @keyframes heroGlow{ 0%,100%{ box-shadow: 0 0 0 0 rgba(143,239,61,0);} 50%{ box-shadow: 0 0 44px 6px rgba(143,239,61,0.10);} }
-  .xp-hero-owl{font-size:40px;margin-bottom:8px;filter: drop-shadow(0 0 14px rgba(143,239,61,0.45));}
-  .xp-hero-rank{font-size:23px;font-weight:800;letter-spacing:-0.02em;}
+  .xp-ring{
+    width:126px;height:126px;border-radius:50%;margin:0 auto 16px;position:relative;
+    background: conic-gradient(var(--accent) calc(var(--pct,0)*1%), rgba(255,255,255,0.07) 0);
+    display:flex;align-items:center;justify-content:center;
+  }
+  .xp-ring::before{content:"";position:absolute;inset:10px;border-radius:50%;background:#0c0e0c;}
+  .ring-owl{position:relative;font-size:42px;filter: drop-shadow(0 0 14px rgba(143,239,61,0.45));}
+  .xp-hero-rank{font-size:24px;font-weight:800;letter-spacing:-0.02em;}
   .xp-hero-level{font-size:13.5px;color:var(--accent);font-weight:700;margin:5px 0 20px;}
   .xp-bar-track-lg{height:16px;}
   .xp-hero-num{font-size:12.5px;color:var(--text-faint);margin-top:12px;font-weight:500;}
@@ -214,7 +224,7 @@
   .check-row{display:flex;align-items:flex-start;gap:10px;margin:18px 0;font-size:13.5px;color:var(--text-dim);line-height:1.4;}
   .check-row input{margin-top:3px;width:18px;height:18px;accent-color:var(--accent);flex-shrink:0;}
 
-  .status-pill{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;font-weight:600;padding:5px 12px;border-radius:var(--r-pill);}
+  .status-pill{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;font-weight:600;padding:5px 12px;border-radius:var(--r-pill);white-space:nowrap;}
   .status-pill.ok{background:var(--accent-soft);color:var(--accent);}
   .status-pill.pending{background: var(--amber-soft);color:var(--amber);}
   .status-pill.none{background:rgba(255,255,255,0.06);color:var(--text-faint);}
@@ -222,6 +232,12 @@
   .file-btn input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;}
   .checkbox-field{display:flex;align-items:center;gap:10px;font-size:13.5px;color:var(--text-dim);margin:4px 0 16px;}
   .checkbox-field input{width:18px;height:18px;accent-color:var(--accent);}
+  .list-row{display:flex;justify-content:space-between;align-items:center;gap:16px;padding:18px 20px;border:1px solid var(--border);border-radius: var(--r-md);background: var(--surface);transition: background .2s var(--ease);flex-wrap:wrap;}
+  .list-row:hover{background:var(--surface-hover);}
+  .list-row .t-title{font-weight:600;font-size:15px;}
+  .list-row .t-desc{font-size:13px;color:var(--text-dim);margin-top:4px;}
+  .admin-link-wrap{text-align:center;margin-top:20px;}
+  .admin-link-wrap button{background:none;border:none;color:var(--text-faint);font-size:11.5px;text-decoration:underline;padding:4px;}
 
   @media (max-width: 860px){
     .shell{padding:0;gap:0;}
@@ -242,13 +258,12 @@
 <script>
 /* =========================================================
    OWLS VISION — backend Supabase
-   ⚠️ Renseigne ton URL de projet et ta clé "anon" ci-dessous
-   (Supabase > Project Settings > API)
    ========================================================= */
 const SUPABASE_URL = "https://zopnuziuhmnkezyisoex.supabase.co";
 const SUPABASE_ANON_KEY = "sb_publishable_EJtogFic_Yu5eO9n1u2s0Q_LH4KbTVe";
 
 const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+let bootDone = false;
 
 const RANKS = [
   {min:0,   name:"Recrue"},
@@ -270,15 +285,19 @@ const fmtDateTime = (iso) => iso ? new Date(iso).toLocaleString('fr-FR') : 'Jama
 let state = {
   loading: true,
   fatalError: null,
-  session: null, // {username, isMaster}
+  session: null, // {username(=email pour les clients), isMaster}
   profiles: [], items: [], bookings: [], tasks: [], completions: [], contracts: [],
   view: "accueil",
   authTab: "login",
+  showAdminLogin: false,
   authError: "",
+  authNotice: "",
   sidebarOpen: false,
   modal: null,
   bookingError: "",
   answerError: "",
+  profileError: "",
+  profileSaved: false,
 };
 
 function currentProfile(){ return state.profiles.find(p => p.username === state.session?.username) || null; }
@@ -316,57 +335,134 @@ async function boot(){
     render();
     return;
   }
-  const saved = localStorage.getItem('ov_session');
-  if(saved){
+
+  // Session administrateur (stockée localement, hors Supabase Auth)
+  const savedAdmin = localStorage.getItem('ov_admin_session');
+  if(savedAdmin){
     try{
-      const parsed = JSON.parse(saved);
-      const stillExists = state.profiles.find(p => p.username === parsed.username);
-      if(stillExists){ state.session = { username: stillExists.username, isMaster: stillExists.is_master }; }
-      else localStorage.removeItem('ov_session');
-    }catch(e){ localStorage.removeItem('ov_session'); }
+      const parsed = JSON.parse(savedAdmin);
+      const stillExists = state.profiles.find(p => p.username === parsed.username && p.is_master);
+      if(stillExists){ state.session = { username: stillExists.username, isMaster:true }; }
+      else localStorage.removeItem('ov_admin_session');
+    }catch(e){ localStorage.removeItem('ov_admin_session'); }
   }
+
+  // Session client (Supabase Auth)
+  if(!state.session){
+    const { data: { session } } = await sb.auth.getSession();
+    if(session?.user?.email){
+      await ensureClientProfile(session.user.email);
+      state.session = { username: session.user.email, isMaster:false };
+    }
+  }
+
   state.loading = false;
   state.view = state.session?.isMaster ? "utilisateurs" : "accueil";
   render();
+  subscribeRealtime();
+  bootDone = true;
 }
 
-/* ---------- Auth ---------- */
-async function doLogin(username, password){
-  username = username.trim();
-  const match = state.profiles.find(p => p.username.toLowerCase() === username.toLowerCase() && p.password === password);
-  if(!match){ state.authError = "Identifiant ou mot de passe incorrect."; render(); return; }
+sb.auth.onAuthStateChange((event, session) => {
+  if(!bootDone) return;
+  if(event === 'SIGNED_IN' && session?.user?.email && (!state.session || state.session.isMaster === false)){
+    ensureClientProfile(session.user.email).then(() => {
+      state.session = { username: session.user.email, isMaster:false };
+      render();
+    });
+  }
+  if(event === 'SIGNED_OUT' && state.session && !state.session.isMaster){
+    state.session = null; state.view = "accueil"; render();
+  }
+});
+
+function subscribeRealtime(){
+  const channel = sb.channel('ov-sync');
+  ['items','bookings','tasks','task_completions','contracts','profiles'].forEach(table => {
+    channel.on('postgres_changes', { event:'*', schema:'public', table }, () => {
+      clearTimeout(window.__ovSyncTimer);
+      window.__ovSyncTimer = setTimeout(async () => {
+        try{ await fetchAll(); render(); }catch(e){}
+      }, 500);
+    });
+  });
+  channel.subscribe();
+}
+
+/* ---------- Auth : clients (Supabase Auth + email) ---------- */
+async function ensureClientProfile(email){
+  const key = email.toLowerCase();
+  let prof = state.profiles.find(p => p.username.toLowerCase() === key);
   const now = new Date().toISOString();
-  await sb.from('profiles').update({ last_login: now }).eq('username', match.username);
-  match.last_login = now;
-  state.session = { username: match.username, isMaster: match.is_master };
-  localStorage.setItem('ov_session', JSON.stringify(state.session));
-  state.authError = "";
-  state.view = match.is_master ? "utilisateurs" : "accueil";
+  if(!prof){
+    const { data, error } = await sb.from('profiles').insert({ username: email, is_master:false, xp:0, created_at: now, last_login: now }).select().single();
+    if(!error){ state.profiles.push(data); prof = data; }
+  } else {
+    await sb.from('profiles').update({ last_login: now }).eq('username', prof.username);
+    prof.last_login = now;
+  }
+  return prof;
+}
+
+async function doClientLogin(email, password){
+  email = email.trim().toLowerCase();
+  const { data, error } = await sb.auth.signInWithPassword({ email, password });
+  if(error){
+    state.authError = /confirm/i.test(error.message)
+      ? "Merci de confirmer votre adresse email avant de vous connecter (vérifiez votre boîte mail, y compris les spams)."
+      : "Email ou mot de passe incorrect.";
+    render(); return;
+  }
+  await ensureClientProfile(email);
+  state.session = { username: email, isMaster:false };
+  state.authError = ""; state.authNotice = "";
+  state.view = "accueil";
   render();
 }
 
-async function doRegister(username, password, password2){
-  username = username.trim();
-  if(username.length < 3){ state.authError = "Le pseudo doit faire au moins 3 caractères."; render(); return; }
-  if(password.length < 4){ state.authError = "Le mot de passe doit faire au moins 4 caractères."; render(); return; }
+async function doClientRegister(email, password, password2){
+  email = email.trim().toLowerCase();
+  if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){ state.authError = "Merci d'indiquer une adresse email valide."; render(); return; }
+  if(password.length < 6){ state.authError = "Le mot de passe doit faire au moins 6 caractères."; render(); return; }
   if(password !== password2){ state.authError = "Les mots de passe ne correspondent pas."; render(); return; }
-  if(state.profiles.some(p => p.username.toLowerCase() === username.toLowerCase())){ state.authError = "Ce pseudo est déjà pris."; render(); return; }
-  const now = new Date().toISOString();
-  const { data, error } = await sb.from('profiles').insert({ username, password, is_master:false, xp:0, last_login: now }).select().single();
+  const { data, error } = await sb.auth.signUp({
+    email, password,
+    options: { emailRedirectTo: window.location.origin + window.location.pathname }
+  });
   if(error){ state.authError = "Erreur lors de la création du compte : " + error.message; render(); return; }
-  state.profiles.push(data);
-  state.session = { username: data.username, isMaster:false };
-  localStorage.setItem('ov_session', JSON.stringify(state.session));
   state.authError = "";
-  state.view = "accueil";
+  if(data.session){
+    await ensureClientProfile(email);
+    state.session = { username: email, isMaster:false };
+    state.view = "accueil";
+  } else {
+    state.authNotice = "Un email de confirmation vient d'être envoyé à " + email + ". Ouvrez-le, cliquez sur le lien, puis connectez-vous ici.";
+    state.authTab = "login";
+  }
+  render();
+}
+
+/* ---------- Auth : équipe (identifiant/mot de passe local) ---------- */
+async function doAdminLogin(username, password){
+  const match = state.profiles.find(p => p.is_master && p.username.toLowerCase() === username.trim().toLowerCase() && p.password === password);
+  if(!match){ state.authError = "Identifiants incorrects."; render(); return; }
+  const now = new Date().toISOString();
+  await sb.from('profiles').update({ last_login: now }).eq('username', match.username);
+  match.last_login = now;
+  state.session = { username: match.username, isMaster:true };
+  localStorage.setItem('ov_admin_session', JSON.stringify(state.session));
+  state.authError = "";
+  state.view = "utilisateurs";
   render();
 }
 
 function logout(){
-  state.session = null;
-  localStorage.removeItem('ov_session');
-  state.view = "accueil";
-  render();
+  if(state.session?.isMaster){
+    localStorage.removeItem('ov_admin_session');
+    state.session = null; state.view = "accueil"; render();
+  } else {
+    sb.auth.signOut().finally(() => { state.session = null; state.view = "accueil"; render(); });
+  }
 }
 
 /* ---------- Level up feedback ---------- */
@@ -404,7 +500,7 @@ async function submitBooking(itemId, start, end){
   if(activeBookingsCount(itemId, start, end) >= item.qty){
     state.bookingError = `Aucun exemplaire disponible sur cette période (${item.qty} en stock).`; render(); return;
   }
-  const { data, error } = await sb.from('bookings').insert({ item_id: itemId, username: state.session.username, start_date: start, end_date: end }).select().single();
+  const { data, error } = await sb.from('bookings').insert({ item_id: itemId, username: state.session.username, start_date: start, end_date: end, status: 'demande' }).select().single();
   if(error){ state.bookingError = "Erreur : " + error.message; render(); return; }
   state.bookings.push(data);
   await grantXp(state.session.username, item.xp_value);
@@ -420,11 +516,19 @@ async function cancelBooking(id){
   state.bookings = state.bookings.filter(x => x.id !== id);
   render();
 }
+async function setBookingStatus(id, status){
+  if(!state.session.isMaster) return;
+  const { data, error } = await sb.from('bookings').update({ status }).eq('id', id).select().single();
+  if(error){ alert("Erreur : " + error.message); return; }
+  const idx = state.bookings.findIndex(b => b.id === id);
+  if(idx > -1) state.bookings[idx] = data;
+  render();
+}
 
-/* ---------- Items (master) ---------- */
-async function createItem(name, description, xpValue, qty){
+/* ---------- Items (équipe) ---------- */
+async function createItem(name, description, xpValue, qty, imageUrl){
   if(!name.trim()) return;
-  const { data, error } = await sb.from('items').insert({ name, description, xp_value: Number(xpValue)||10, qty: Number(qty)||1 }).select().single();
+  const { data, error } = await sb.from('items').insert({ name, description, xp_value: Number(xpValue)||10, qty: Number(qty)||1, image_url: imageUrl || null }).select().single();
   if(error){ alert("Erreur : " + error.message); return; }
   state.items.push(data);
   state.modal = null;
@@ -471,7 +575,7 @@ async function completeTask(taskId, answer){
   render();
 }
 
-/* ---------- Profiles (master) ---------- */
+/* ---------- Profiles (équipe) ---------- */
 async function deleteProfile(username){
   if(!confirm(`Supprimer définitivement le compte "${username}" ? Cette action est irréversible.`)) return;
   const { error } = await sb.from('profiles').delete().eq('username', username);
@@ -480,6 +584,22 @@ async function deleteProfile(username){
   state.bookings = state.bookings.filter(b => b.username !== username);
   state.completions = state.completions.filter(c => c.username !== username);
   state.contracts = state.contracts.filter(c => c.username !== username);
+  render();
+}
+async function saveProfile(){
+  const u = currentProfile();
+  const payload = {
+    nom: document.getElementById('pf-nom').value.trim(),
+    prenom: document.getElementById('pf-prenom').value.trim(),
+    date_naissance: document.getElementById('pf-dob').value || null,
+    telephone: document.getElementById('pf-tel').value.trim(),
+    numero_cni: document.getElementById('pf-cni').value.trim(),
+    adresse: document.getElementById('pf-adresse').value.trim(),
+  };
+  const { data, error } = await sb.from('profiles').update(payload).eq('username', u.username).select().single();
+  if(error){ state.profileError = "Erreur : " + error.message; state.profileSaved = false; render(); return; }
+  Object.assign(u, data);
+  state.profileError = ""; state.profileSaved = true;
   render();
 }
 
@@ -614,6 +734,7 @@ function iconFor(name){
     missions: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l2 2 4-4"/><circle cx="12" cy="12" r="9"/></svg>',
     utilisateurs: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="9" cy="8" r="3.2"/><path d="M2.5 20c0-3.5 2.9-6 6.5-6s6.5 2.5 6.5 6"/><circle cx="17.5" cy="9" r="2.3"/><path d="M15.8 14.2c2.7.4 4.7 2.3 4.7 5.3"/></svg>',
     contrat: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H7a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/><path d="M9 13h6M9 17h6"/></svg>',
+    profil: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>',
   };
   return icons[name] || "";
 }
@@ -631,6 +752,25 @@ function xpBarHtml(u){
 
 /* ---------- Gate (login/register) ---------- */
 function renderGate(){
+  if(state.showAdminLogin){
+    return `
+    <div class="gate">
+      <div class="gate-card">
+        <div class="gate-brand">
+          <img src="${LOGO}" alt="Owls Vision">
+          <div class="brand-name">OWLS<span>VISION</span></div>
+          <div class="brand-tag">ACCÈS ÉQUIPE</div>
+        </div>
+        ${state.authError ? `<div class="msg msg-error">${esc(state.authError)}</div>` : ''}
+        <form onsubmit="return handleAdminLogin(event)">
+          <div class="field"><label>Identifiant</label><input name="username" required autocomplete="username"></div>
+          <div class="field"><label>Mot de passe</label><input name="password" type="password" required autocomplete="current-password"></div>
+          <button class="btn btn-primary" type="submit">Se connecter</button>
+        </form>
+        <div class="admin-link-wrap"><button onclick="toggleAdminLogin()">← Retour à l'espace client</button></div>
+      </div>
+    </div>`;
+  }
   const isLogin = state.authTab === "login";
   return `
   <div class="gate">
@@ -645,20 +785,23 @@ function renderGate(){
         <button class="${!isLogin?'active':''}" onclick="setAuthTab('register')">Créer un compte</button>
       </div>
       ${state.authError ? `<div class="msg msg-error">${esc(state.authError)}</div>` : ''}
+      ${state.authNotice ? `<div class="msg msg-ok">${esc(state.authNotice)}</div>` : ''}
       ${isLogin ? `
-        <form onsubmit="return handleLogin(event)">
-          <div class="field"><label>Pseudo</label><input name="username" required autocomplete="username"></div>
+        <form onsubmit="return handleClientLogin(event)">
+          <div class="field"><label>Adresse email</label><input name="email" type="email" required autocomplete="username"></div>
           <div class="field"><label>Mot de passe</label><input name="password" type="password" required autocomplete="current-password"></div>
           <button class="btn btn-primary" type="submit">Se connecter</button>
         </form>
       ` : `
-        <form onsubmit="return handleRegister(event)">
-          <div class="field"><label>Pseudo</label><input name="username" required></div>
-          <div class="field"><label>Mot de passe</label><input name="password" type="password" required></div>
-          <div class="field"><label>Confirmer le mot de passe</label><input name="password2" type="password" required></div>
+        <form onsubmit="return handleClientRegister(event)">
+          <div class="field"><label>Adresse email</label><input name="email" type="email" required autocomplete="email"></div>
+          <div class="field"><label>Mot de passe</label><input name="password" type="password" required autocomplete="new-password" minlength="6"></div>
+          <div class="field"><label>Confirmer le mot de passe</label><input name="password2" type="password" required autocomplete="new-password" minlength="6"></div>
           <button class="btn btn-primary" type="submit">Créer mon compte</button>
         </form>
+        <div style="font-size:11.5px;color:var(--text-faint);margin-top:10px;text-align:center;">Un email de confirmation vous sera envoyé pour activer votre compte.</div>
       `}
+      <div class="admin-link-wrap"><button onclick="toggleAdminLogin()">Accès équipe</button></div>
     </div>
   </div>`;
 }
@@ -667,7 +810,7 @@ function renderGate(){
 function navFor(isMaster){
   return isMaster
     ? [["utilisateurs","Utilisateurs"],["catalogue","Catalogue JVN"],["planning","Planning global"],["missions","Missions"],["contrats","Contrats"]]
-    : [["accueil","Accueil"],["catalogue","Catalogue JVN"],["planning","Mes réservations"],["missions","Missions"],["contrat","Mon contrat"]];
+    : [["accueil","Accueil"],["catalogue","Catalogue JVN"],["planning","Mes réservations"],["missions","Missions"],["contrat","Mon contrat"],["profil","Mon profil"]];
 }
 function renderSidebar(){
   const u = currentProfile();
@@ -684,7 +827,7 @@ function renderSidebar(){
         <div class="avatar">${esc(u.username.slice(0,2).toUpperCase())}</div>
         <div>
           <div class="u-name">${esc(u.username)}${u.is_master?' 👑':''}</div>
-          <div class="u-rank">${u.is_master ? 'Compte maître' : esc(rankFor(u.xp))}</div>
+          <div class="u-rank">${u.is_master ? 'Équipe Owls Vision' : esc(rankFor(u.xp))}</div>
         </div>
       </div>
       <button class="btn btn-ghost btn-sm" style="width:100%" onclick="logout()">Se déconnecter</button>
@@ -705,7 +848,7 @@ function renderAccueil(){
   return `
     <div class="hero-wrap">
       <div class="xp-hero">
-        <div class="xp-hero-owl">🦉</div>
+        <div class="xp-ring" style="--pct:${pct}"><span class="ring-owl">🦉</span></div>
         <div class="xp-hero-rank">${esc(rankFor(u.xp))}</div>
         <div class="xp-hero-level">NIVEAU ${levelFor(u.xp)}</div>
         <div class="xp-bar-track xp-bar-track-lg"><div class="xp-bar-fill" style="width:${pct}%"></div></div>
@@ -715,7 +858,7 @@ function renderAccueil(){
     <div class="grid" style="margin-top:22px;">
       <div class="card">
         <div class="tag">Prochaine réservation</div>
-        ${nextBooking ? `<h3>${esc(state.items.find(i=>i.id===nextBooking.item_id)?.name || 'Matériel')}</h3><div class="card-desc">Du ${fmtDate(nextBooking.start_date)} au ${fmtDate(nextBooking.end_date)}</div>` : `<div class="card-desc">Aucune réservation à venir. Direction le catalogue !</div>`}
+        ${nextBooking ? `<h3>${esc(state.items.find(i=>i.id===nextBooking.item_id)?.name || 'Matériel')}</h3><div class="card-desc">Du ${fmtDate(nextBooking.start_date)} au ${fmtDate(nextBooking.end_date)}${nextBooking.status==='confirme' ? ' · <span style="color:var(--accent)">Confirmée</span>' : ' · <span style="color:var(--amber)">Demande envoyée</span>'}</div>` : `<div class="card-desc">Aucune réservation à venir. Direction le catalogue !</div>`}
         <button class="btn btn-ghost btn-sm" onclick="goto('catalogue')">Voir le catalogue</button>
       </div>
       <div class="card">
@@ -727,7 +870,7 @@ function renderAccueil(){
       <div class="card">
         <div class="tag">Contrat</div>
         <h3>${!contract ? 'Aucun contrat' : (contract.signed_at ? 'Signé ✓' : 'À signer')}</h3>
-        <div class="card-desc">${!contract ? "Le compte maître ne vous a pas encore assigné de contrat." : (contract.signed_at ? `Signé le ${fmtDate(contract.signed_at)}` : "Un contrat vous attend.")}</div>
+        <div class="card-desc">${!contract ? "Aucun contrat ne vous a encore été transmis." : (contract.signed_at ? `Signé le ${fmtDate(contract.signed_at)}` : "Un contrat vous attend.")}</div>
         ${contract ? `<button class="btn btn-ghost btn-sm" onclick="goto('contrat')">Ouvrir</button>` : ''}
       </div>
     </div>
@@ -741,6 +884,7 @@ function renderCatalogue(){
     const dispo = item.qty - activeBookingsCount(item.id, todayStr(), todayStr());
     return `
       <div class="card">
+        ${item.image_url ? `<img class="card-photo" src="${item.image_url}" alt="${esc(item.name)}">` : `<div class="card-photo-ph">🔭</div>`}
         <span class="tag">+${item.xp_value} XP à la location</span>
         <h3>${esc(item.name)}</h3>
         <div class="card-desc">${esc(item.description || '')}</div>
@@ -770,22 +914,28 @@ function renderPlanning(){
   const rows = sorted.map(b => {
     const item = state.items.find(i => i.id === b.item_id);
     const mine = b.username === u.username;
+    const confirmed = b.status === 'confirme';
+    const statusBadge = confirmed ? `<span class="status-pill ok">Confirmée</span>` : `<span class="status-pill pending">Demande envoyée</span>`;
     return `
       <tr>
         <td>${esc(item?.name || "Matériel supprimé")}</td>
         ${isMaster ? `<td>${esc(b.username)}${mine?' <span style="color:var(--accent);font-size:11px">(vous)</span>':''}</td>` : ''}
         <td>${fmtDate(b.start_date)}</td>
         <td>${fmtDate(b.end_date)}</td>
-        <td>${(mine||isMaster) ? `<button class="btn btn-ghost btn-sm" onclick="cancelBooking('${b.id}')">Annuler</button>` : '—'}</td>
+        <td>${statusBadge}</td>
+        <td><div style="display:flex;gap:6px;flex-wrap:wrap;">
+          ${isMaster && !confirmed ? `<button class="btn btn-primary btn-sm" onclick="setBookingStatus('${b.id}','confirme')">Confirmer</button>` : ''}
+          ${(mine||isMaster) ? `<button class="btn btn-ghost btn-sm" onclick="cancelBooking('${b.id}')">Annuler</button>` : ''}
+        </div></td>
       </tr>`;
   }).join("");
   return `
     <div class="topbar">
-      <div><h1>${isMaster?'Planning global':'Mes réservations'}</h1><div class="desc">${isMaster ? "Vue d'ensemble de toutes les locations de tous les clients." : "Vos locations à venir et passées. Visibles par vous seul et le compte maître."}</div></div>
+      <div><h1>${isMaster?'Planning global':'Mes réservations'}</h1><div class="desc">${isMaster ? "Chaque nouvelle demande arrive au statut « Demande envoyée ». Confirmez-la après l'appel téléphonique avec le client." : "Vos demandes de location. Une confirmation par téléphone est nécessaire avant que la réservation soit validée."}</div></div>
       ${xpBarHtml(u)}
     </div>
     <div class="panel">
-      ${sorted.length ? `<table><thead><tr><th>Matériel</th>${isMaster?'<th>Client</th>':''}<th>Début</th><th>Fin</th><th></th></tr></thead><tbody>${rows}</tbody></table>` : `<div class="empty">${isMaster ? "Aucune réservation planifiée." : "Vous n'avez aucune réservation. Direction le catalogue !"}</div>`}
+      ${sorted.length ? `<table><thead><tr><th>Matériel</th>${isMaster?'<th>Client</th>':''}<th>Début</th><th>Fin</th><th>Statut</th><th></th></tr></thead><tbody>${rows}</tbody></table>` : `<div class="empty">${isMaster ? "Aucune demande de réservation." : "Vous n'avez aucune réservation. Direction le catalogue !"}</div>`}
     </div>
   `;
 }
@@ -795,36 +945,43 @@ function renderMissions(){
   const u = currentProfile();
   const isMaster = u.is_master;
   const items = state.tasks.slice().sort((a,b) => b.created_at.localeCompare(a.created_at));
-  const rows = items.map(t => {
-    const done = !isMaster && hasCompleted(t.id, u.username);
+  const doneIds = isMaster ? [] : state.completions.filter(c => c.username === u.username).map(c => c.task_id);
+  const cards = items.map(t => {
+    const done = !isMaster && doneIds.includes(t.id);
     const submissions = isMaster ? state.completions.filter(c => c.task_id === t.id) : [];
     return `
-    <div class="task-item ${done?'done':''}">
-      <div style="flex:1;min-width:200px;">
-        <div class="t-title">${esc(t.title)}</div>
-        ${t.description ? `<div class="t-desc">${esc(t.description)}</div>` : ''}
-        ${done ? `<div class="t-desc">Mission accomplie ✓</div>` : ''}
-        ${isMaster && t.requires_answer ? `<div class="t-desc">Champ demandé : ${esc(t.answer_label)}</div>` : ''}
-        ${isMaster && submissions.length ? submissions.map(s => `<div class="submission-row"><span>${esc(s.username)}${t.requires_answer ? ' — ' + esc(s.answer||'') : ''}</span><span>${fmtDate(s.completed_at)}</span></div>`).join("") : ''}
+    <div class="card mission-card ${done?'done':''}">
+      <div class="mission-head">
+        <div class="mission-icon">${done ? '✅' : '🎯'}</div>
+        <div style="flex:1;min-width:0;">
+          <h3 style="font-size:16.5px;">${esc(t.title)}</h3>
+          <span class="task-xp">+${t.xp_reward} XP</span>
+        </div>
       </div>
-      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
-        <span class="task-xp">+${t.xp_reward} XP</span>
-        ${(!isMaster && !done) ? (t.requires_answer ? `<button class="btn btn-primary btn-sm" onclick="openAnswerModal('${t.id}')">Compléter</button>` : `<button class="btn btn-primary btn-sm" onclick="completeTask('${t.id}')">Marquer accomplie</button>`) : ''}
-        ${isMaster ? `<button class="btn btn-danger btn-sm" onclick="deleteTask('${t.id}')">Suppr.</button>` : ''}
-      </div>
+      ${t.description ? `<div class="card-desc">${esc(t.description)}</div>` : ''}
+      ${done ? `<div class="card-desc" style="color:var(--accent);flex:0;">Mission accomplie ✓</div>` : ''}
+      ${isMaster && t.requires_answer ? `<div class="card-desc" style="flex:0;">Champ demandé : ${esc(t.answer_label)}</div>` : ''}
+      ${isMaster && submissions.length ? `<div>${submissions.map(s => `<div class="submission-row"><span>${esc(s.username)}${t.requires_answer ? ' — ' + esc(s.answer||'') : ''}</span><span>${fmtDate(s.completed_at)}</span></div>`).join("")}</div>` : ''}
+      ${(!isMaster && !done) ? `<div class="card-foot" style="border-top:none;padding-top:0;">${t.requires_answer ? `<button class="btn btn-primary btn-sm" style="width:100%;" onclick="openAnswerModal('${t.id}')">Compléter</button>` : `<button class="btn btn-primary btn-sm" style="width:100%;" onclick="completeTask('${t.id}')">Marquer accomplie</button>`}</div>` : ''}
+      ${isMaster ? `<div class="card-foot"><button class="btn btn-danger btn-sm" onclick="deleteTask('${t.id}')">Supprimer</button></div>` : ''}
     </div>`;
   }).join("");
+  const progressPct = items.length ? Math.round((doneIds.length / items.length) * 100) : 0;
   return `
     <div class="topbar">
-      <div><h1>Missions</h1><div class="desc">${isMaster ? "Créez des missions et suivez qui les a accomplies (et leurs réponses)." : "Missions créées par le compte maître. Elles ne peuvent être supprimées que par lui."}</div></div>
+      <div><h1>Missions</h1><div class="desc">${isMaster ? "Créez des missions et suivez qui les a accomplies (et leurs réponses)." : "Accomplissez des missions pour gagner de l'XP."}</div></div>
       ${xpBarHtml(u)}
     </div>
     ${isMaster ? `<button class="btn btn-primary btn-sm" style="width:auto;margin-bottom:18px;" onclick="openNewTaskModal()">+ Créer une mission</button>` : ''}
-    <div style="display:flex;flex-direction:column;gap:10px;">${items.length ? rows : `<div class="empty">Aucune mission disponible pour le moment.</div>`}</div>
+    ${!isMaster && items.length ? `<div class="panel" style="margin-bottom:18px;">
+      <div style="display:flex;justify-content:space-between;margin-bottom:10px;font-size:13px;color:var(--text-dim);font-weight:600;"><span>Missions accomplies</span><span>${doneIds.length}/${items.length}</span></div>
+      <div class="xp-bar-track"><div class="xp-bar-fill" style="width:${progressPct}%"></div></div>
+    </div>` : ''}
+    <div class="grid">${items.length ? cards : `<div class="empty">Aucune mission disponible pour le moment.</div>`}</div>
   `;
 }
 
-/* ---------- Utilisateurs (master) ---------- */
+/* ---------- Utilisateurs (équipe) ---------- */
 function renderUtilisateurs(){
   const rows = state.profiles.slice().sort((a,b) => b.xp - a.xp).map(p => `
     <tr>
@@ -832,7 +989,10 @@ function renderUtilisateurs(){
       <td>${p.is_master ? '—' : `${p.xp} XP · Niv. ${levelFor(p.xp)}`}</td>
       <td>${fmtDate(p.created_at)}</td>
       <td>${fmtDateTime(p.last_login)}</td>
-      <td>${!p.is_master ? `<button class="btn btn-danger btn-sm" onclick="deleteProfile('${p.username}')">Supprimer</button>` : ''}</td>
+      <td><div style="display:flex;gap:6px;flex-wrap:wrap;">
+        ${!p.is_master ? `<button class="btn btn-ghost btn-sm" onclick="openViewProfile('${p.username}')">Fiche</button>` : ''}
+        ${!p.is_master ? `<button class="btn btn-danger btn-sm" onclick="deleteProfile('${p.username}')">Supprimer</button>` : ''}
+      </div></td>
     </tr>`).join("");
   return `
     <div class="topbar"><div><h1>Utilisateurs</h1><div class="desc">Tous les comptes Owls Vision, leur XP et leur dernière connexion.</div></div></div>
@@ -840,7 +1000,7 @@ function renderUtilisateurs(){
   `;
 }
 
-/* ---------- Contrats (master) ---------- */
+/* ---------- Contrats (équipe) ---------- */
 function renderContratsAdmin(){
   const clients = state.profiles.filter(p => !p.is_master);
   const rows = clients.map(usr => {
@@ -849,7 +1009,7 @@ function renderContratsAdmin(){
     if(c && c.signed_at) pill = `<span class="status-pill ok">Signé le ${fmtDate(c.signed_at)}</span>`;
     else if(c) pill = `<span class="status-pill pending">En attente de signature</span>`;
     return `
-      <div class="task-item">
+      <div class="list-row">
         <div><div class="t-title">${esc(usr.username)}</div><div class="t-desc">${pill}</div></div>
         <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
           ${c ? `<a class="btn btn-ghost btn-sm" href="${c.pdf_path}" target="_blank" rel="noopener">Original</a>` : ''}
@@ -871,7 +1031,7 @@ function renderContratClient(){
   return `
     <div class="topbar"><div><h1>Mon contrat</h1><div class="desc">Consultez et signez votre contrat directement depuis votre mobile.</div></div>${xpBarHtml(u)}</div>
     <div class="panel">
-      ${!c ? `<div class="empty">Le compte maître ne vous a pas encore transmis de contrat.</div>` : `
+      ${!c ? `<div class="empty">Aucun contrat ne vous a encore été transmis.</div>` : `
         <div style="display:flex;flex-direction:column;gap:14px;align-items:flex-start;">
           ${c.signed_at ? `<span class="status-pill ok">Signé le ${fmtDate(c.signed_at)}</span>` : `<span class="status-pill pending">En attente de votre signature</span>`}
           <a class="btn btn-ghost" style="width:100%;" href="${c.pdf_path}" target="_blank" rel="noopener">📄 Ouvrir le contrat (PDF)</a>
@@ -879,6 +1039,29 @@ function renderContratClient(){
           ${!c.signed_at ? `<button class="btn btn-primary" style="width:100%;" onclick="openSignaturePad()">✒️ Signer mon contrat</button>` : ''}
         </div>
       `}
+    </div>
+  `;
+}
+
+/* ---------- Mon profil (client) ---------- */
+function renderProfilClient(){
+  const u = currentProfile();
+  return `
+    <div class="topbar"><div><h1>Mon profil</h1><div class="desc">Ces informations nous permettent de préparer votre contrat de location.</div></div>${xpBarHtml(u)}</div>
+    <div class="panel">
+      ${state.profileSaved ? `<div class="msg msg-ok">Profil enregistré.</div>` : ''}
+      ${state.profileError ? `<div class="msg msg-error">${esc(state.profileError)}</div>` : ''}
+      <div class="row">
+        <div class="field"><label>Nom</label><input id="pf-nom" value="${esc(u.nom||'')}"></div>
+        <div class="field"><label>Prénom</label><input id="pf-prenom" value="${esc(u.prenom||'')}"></div>
+      </div>
+      <div class="row">
+        <div class="field"><label>Date de naissance</label><input id="pf-dob" type="date" value="${esc(u.date_naissance||'')}"></div>
+        <div class="field"><label>Téléphone</label><input id="pf-tel" value="${esc(u.telephone||'')}"></div>
+      </div>
+      <div class="field"><label>Numéro de carte d'identité / passeport</label><input id="pf-cni" value="${esc(u.numero_cni||'')}"></div>
+      <div class="field"><label>Adresse</label><input id="pf-adresse" value="${esc(u.adresse||'')}"></div>
+      <button class="btn btn-primary" onclick="saveProfile()">Enregistrer</button>
     </div>
   `;
 }
@@ -898,8 +1081,8 @@ function renderModal(){
         <div class="field"><label>Fin</label><input id="bk-end" type="date" min="${todayStr()}" value="${todayStr()}" oninput="updateAvailabilityPreview('${item.id}')"></div>
       </div>
       <div id="bk-availability" style="font-size:12.5px;color:var(--accent);margin-bottom:8px;"></div>
-      <div style="font-size:12px;color:var(--text-faint);">Gain à la réservation : +${item.xp_value} XP pour vous.</div>
-      <div class="modal-actions"><button class="btn btn-ghost" onclick="closeModal()">Annuler</button><button class="btn btn-primary" onclick="confirmBooking('${item.id}')">Confirmer</button></div>
+      <div style="font-size:12px;color:var(--text-faint);">Votre demande sera envoyée à l'équipe, qui vous contactera par téléphone pour confirmer. Gain à l'envoi de la demande : +${item.xp_value} XP.</div>
+      <div class="modal-actions"><button class="btn btn-ghost" onclick="closeModal()">Annuler</button><button class="btn btn-primary" onclick="confirmBooking('${item.id}')">Envoyer la demande</button></div>
     </div></div>`;
   }
   if(m.type === "newItem"){
@@ -912,7 +1095,9 @@ function renderModal(){
         <div class="field"><label>XP gagnée à la location</label><input id="it-xp" type="number" value="20" min="1"></div>
         <div class="field"><label>Quantité en stock</label><input id="it-qty" type="number" value="1" min="1"></div>
       </div>
-      <div class="modal-actions"><button class="btn btn-ghost" onclick="closeModal()">Annuler</button><button class="btn btn-primary" onclick="confirmNewItem()">Ajouter</button></div>
+      <div class="field"><label>Photo (optionnel)</label><input id="it-photo" type="file" accept="image/*"></div>
+      <div id="it-error"></div>
+      <div class="modal-actions"><button class="btn btn-ghost" onclick="closeModal()">Annuler</button><button class="btn btn-primary" onclick="confirmNewItem(event)">Ajouter</button></div>
     </div></div>`;
   }
   if(m.type === "newTask"){
@@ -940,6 +1125,26 @@ function renderModal(){
       <div class="modal-actions"><button class="btn btn-ghost" onclick="closeModal()">Annuler</button><button class="btn btn-primary" onclick="confirmAnswerTask('${task.id}')">Valider</button></div>
     </div></div>`;
   }
+  if(m.type === "viewProfile"){
+    const p = state.profiles.find(x => x.username === m.username);
+    if(!p) return "";
+    return `
+    <div class="modal-bg" onclick="closeModalBg(event)"><div class="modal">
+      <h3>Fiche client</h3>
+      <div class="field"><label>Email</label><div class="static-val">${esc(p.username)}</div></div>
+      <div class="row">
+        <div class="field"><label>Nom</label><div class="static-val">${esc(p.nom || '—')}</div></div>
+        <div class="field"><label>Prénom</label><div class="static-val">${esc(p.prenom || '—')}</div></div>
+      </div>
+      <div class="row">
+        <div class="field"><label>Date de naissance</label><div class="static-val">${fmtDate(p.date_naissance)}</div></div>
+        <div class="field"><label>Téléphone</label><div class="static-val">${esc(p.telephone || '—')}</div></div>
+      </div>
+      <div class="field"><label>Numéro de carte d'identité / passeport</label><div class="static-val">${esc(p.numero_cni || '—')}</div></div>
+      <div class="field"><label>Adresse</label><div class="static-val">${esc(p.adresse || '—')}</div></div>
+      <div class="modal-actions"><button class="btn btn-ghost" style="width:100%;" onclick="closeModal()">Fermer</button></div>
+    </div></div>`;
+  }
   return "";
 }
 
@@ -963,6 +1168,7 @@ function render(){
   else if(state.view === "utilisateurs") content = renderUtilisateurs();
   else if(state.view === "contrats") content = renderContratsAdmin();
   else if(state.view === "contrat") content = renderContratClient();
+  else if(state.view === "profil") content = renderProfilClient();
 
   app.innerHTML = `
     <div class="shell">
@@ -980,21 +1186,26 @@ function render(){
 }
 
 /* ---------- Global handlers ---------- */
-window.setAuthTab = (tab) => { state.authTab = tab; state.authError = ""; render(); };
-window.handleLogin = (e) => { e.preventDefault(); doLogin(e.target.username.value, e.target.password.value); return false; };
-window.handleRegister = (e) => { e.preventDefault(); doRegister(e.target.username.value, e.target.password.value, e.target.password2.value); return false; };
+window.setAuthTab = (tab) => { state.authTab = tab; state.authError = ""; state.authNotice = ""; render(); };
+window.toggleAdminLogin = () => { state.showAdminLogin = !state.showAdminLogin; state.authError = ""; render(); };
+window.handleClientLogin = (e) => { e.preventDefault(); doClientLogin(e.target.email.value, e.target.password.value); return false; };
+window.handleClientRegister = (e) => { e.preventDefault(); doClientRegister(e.target.email.value, e.target.password.value, e.target.password2.value); return false; };
+window.handleAdminLogin = (e) => { e.preventDefault(); doAdminLogin(e.target.username.value, e.target.password.value); return false; };
 window.logout = logout;
-window.goto = (view) => { state.view = view; state.sidebarOpen = false; render(); };
+window.goto = (view) => { state.view = view; state.sidebarOpen = false; state.profileSaved = false; render(); };
 window.toggleSidebar = () => { state.sidebarOpen = !state.sidebarOpen; render(); };
 window.deleteItem = deleteItem;
 window.deleteTask = deleteTask;
 window.deleteProfile = deleteProfile;
+window.saveProfile = saveProfile;
+window.setBookingStatus = setBookingStatus;
 window.completeTask = (taskId) => completeTask(taskId, null);
 window.cancelBooking = cancelBooking;
 window.openBookModal = (itemId) => { state.bookingError = ""; state.modal = { type:"book", itemId }; render(); updateAvailabilityPreview(itemId); };
 window.openNewItemModal = () => { state.modal = { type:"newItem" }; render(); };
 window.openNewTaskModal = () => { state.modal = { type:"newTask" }; render(); };
 window.openAnswerModal = (taskId) => { state.answerError = ""; state.modal = { type:"answerTask", taskId }; render(); };
+window.openViewProfile = (username) => { state.modal = { type:"viewProfile", username }; render(); };
 window.closeModal = () => { state.modal = null; state.bookingError = ""; state.answerError = ""; render(); };
 window.closeModalBg = (e) => { if(e.target.classList.contains('modal-bg')) window.closeModal(); };
 window.confirmBooking = (itemId) => {
@@ -1002,13 +1213,27 @@ window.confirmBooking = (itemId) => {
   const end = document.getElementById("bk-end").value;
   submitBooking(itemId, start, end);
 };
-window.confirmNewItem = () => {
-  createItem(
-    document.getElementById("it-name").value.trim(),
-    document.getElementById("it-desc").value.trim(),
-    document.getElementById("it-xp").value,
-    document.getElementById("it-qty").value
-  );
+window.confirmNewItem = async (e) => {
+  const name = document.getElementById("it-name").value.trim();
+  const desc = document.getElementById("it-desc").value.trim();
+  const xp = document.getElementById("it-xp").value;
+  const qty = document.getElementById("it-qty").value;
+  const file = document.getElementById("it-photo").files[0];
+  const btn = e.target; const oldLabel = btn.textContent; btn.textContent = "Ajout..."; btn.disabled = true;
+  try{
+    let imageUrl = null;
+    if(file){
+      const path = `item_${Date.now()}_${file.name.replace(/[^a-zA-Z0-9.]/g,'_')}`;
+      const { error: upErr } = await sb.storage.from('items').upload(path, file, { upsert:true, contentType: file.type });
+      if(upErr) throw upErr;
+      const { data: pub } = sb.storage.from('items').getPublicUrl(path);
+      imageUrl = pub.publicUrl;
+    }
+    await createItem(name, desc, xp, qty, imageUrl);
+  }catch(err){
+    document.getElementById('it-error').innerHTML = `<div class="msg msg-error">Erreur photo : ${esc(err.message||String(err))}</div>`;
+    btn.textContent = oldLabel; btn.disabled = false;
+  }
 };
 window.confirmNewTask = () => {
   createTask(
