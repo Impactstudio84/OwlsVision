@@ -261,6 +261,7 @@
    ========================================================= */
 const SUPABASE_URL = "https://zopnuziuhmnkezyisoex.supabase.co";
 const SUPABASE_ANON_KEY = "sb_publishable_EJtogFic_Yu5eO9n1u2s0Q_LH4KbTVe";
+const SITE_URL = "https://impactstudio84.github.io/OwlsVision/";
 
 const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 let bootDone = false;
@@ -427,7 +428,7 @@ async function doClientRegister(email, password, password2){
   if(password !== password2){ state.authError = "Les mots de passe ne correspondent pas."; render(); return; }
   const { data, error } = await sb.auth.signUp({
     email, password,
-    options: { emailRedirectTo: window.location.origin + window.location.pathname }
+    options: { emailRedirectTo: SITE_URL }
   });
   if(error){ state.authError = "Erreur lors de la création du compte : " + error.message; render(); return; }
   state.authError = "";
