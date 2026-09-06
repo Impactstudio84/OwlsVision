@@ -195,6 +195,8 @@
   .filter-bar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:16px;}
   .filter-bar input[type=text]{flex:2;min-width:200px;background: rgba(255,255,255,0.055);border:1px solid var(--border-soft);color:var(--text);padding:11px 14px;border-radius: var(--r-sm);font-size:14px;outline:none;}
   .filter-bar select{flex:1;min-width:150px;background: rgba(255,255,255,0.055);border:1px solid var(--border-soft);color:var(--text);padding:11px 14px;border-radius: var(--r-sm);font-size:14px;outline:none;}
+  select option{background:#12140f;color:var(--text);}
+  .field select option{background:#12140f;color:var(--text);}
   .filter-bar input:focus, .filter-bar select:focus{border-color: var(--accent-soft-2); box-shadow: 0 0 0 4px var(--accent-soft);}
   th.sortable{cursor:pointer;user-select:none;}
   th.sortable:hover{color:var(--text);}
@@ -216,6 +218,12 @@
   .doc-row .doc-sub{font-size:12px;color:var(--text-faint);margin-top:4px;}
   .doc-actions{display:flex;gap:8px;flex-wrap:wrap;}
   .profile-warning{background: var(--amber-soft);border:1px solid rgba(255,209,102,0.3);color:var(--amber);font-size:13.5px;padding:14px 16px;border-radius: var(--r-sm);margin-bottom:18px;font-weight:500;line-height:1.5;}
+  .star-row{display:flex;gap:4px;margin-bottom:14px;}
+  .star-btn{background:none;border:none;font-size:24px;line-height:1;cursor:pointer;color:rgba(255,255,255,0.2);padding:2px;transition:color .12s var(--ease), transform .12s var(--ease);}
+  .star-btn:hover{transform:scale(1.15);}
+  .star-btn.filled{color:var(--amber);}
+  .badge-dot{display:inline-flex;align-items:center;justify-content:center;min-width:18px;height:18px;padding:0 5px;border-radius:999px;background:var(--danger);color:#fff;font-size:10.5px;font-weight:700;margin-left:auto;}
+  .nav button{position:relative;}
 
   /* ---------- Hero XP (accueil) ---------- */
   .hero-wrap{display:flex;justify-content:center;margin-bottom:6px;}
@@ -254,8 +262,8 @@
   .modal-full-back{width:40px;height:40px;border-radius:var(--r-sm);background:var(--surface);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:18px;color:var(--text);}
   .modal-full-title{font-weight:700;font-size:15.5px;}
   .modal-full-body{flex:1;overflow-y:auto;padding:20px 18px calc(48px + env(safe-area-inset-bottom));}
-  .sig-pad-wrap{border:1.5px dashed var(--border);border-radius:var(--r-md);background:rgba(255,255,255,0.03);overflow:hidden;margin-bottom:12px;}
-  #sig-canvas{width:100%;height:220px;display:block;touch-action:none;}
+  .sig-pad-wrap{border:1.5px dashed var(--border);border-radius:var(--r-md);background:#ffffff;overflow:hidden;margin-bottom:12px;}
+  #sig-canvas{width:100%;height:220px;display:block;touch-action:none;background:#ffffff;}
   .check-row{display:flex;align-items:flex-start;gap:10px;margin:18px 0;font-size:13.5px;color:var(--text-dim);line-height:1.4;}
   .check-row input{margin-top:3px;width:18px;height:18px;accent-color:var(--accent);flex-shrink:0;}
 
@@ -324,7 +332,7 @@ let state = {
   loading: true,
   fatalError: null,
   session: null, // {username(=email pour les clients), isMaster}
-  profiles: [], items: [], bookings: [], tasks: [], completions: [], contracts: [],
+  profiles: [], items: [], bookings: [], tasks: [], completions: [], contracts: [], mission_groups: [],
   view: "accueil",
   authTab: "login",
   showAdminLogin: false,
@@ -367,13 +375,14 @@ function currentProfile(){ return state.profiles.find(p => p.username === state.
 
 /* ---------- Boot & data ---------- */
 async function fetchAll(){
-  const [profiles, items, bookings, tasks, completions, contracts] = await Promise.all([
+  const [profiles, items, bookings, tasks, completions, contracts, groups] = await Promise.all([
     sb.from('profiles').select('*'),
     sb.from('items').select('*').order('created_at'),
     sb.from('bookings').select('*'),
     sb.from('tasks').select('*').order('created_at'),
     sb.from('task_completions').select('*'),
     sb.from('contracts').select('*'),
+    sb.from('mission_groups').select('*').order('created_at'),
   ]);
   state.profiles = profiles.data || [];
   state.items = items.data || [];
@@ -381,6 +390,7 @@ async function fetchAll(){
   state.tasks = tasks.data || [];
   state.completions = completions.data || [];
   state.contracts = contracts.data || [];
+  state.mission_groups = groups.data || [];
 }
 
 async function boot(){
@@ -441,7 +451,7 @@ sb.auth.onAuthStateChange((event, session) => {
 
 function subscribeRealtime(){
   const channel = sb.channel('ov-sync');
-  ['items','bookings','tasks','task_completions','contracts','profiles'].forEach(table => {
+  ['items','bookings','tasks','task_completions','contracts','profiles','mission_groups'].forEach(table => {
     channel.on('postgres_changes', { event:'*', schema:'public', table }, () => {
       clearTimeout(window.__ovSyncTimer);
       window.__ovSyncTimer = setTimeout(async () => {
@@ -649,18 +659,54 @@ async function createItem(name, description, xpValue, qty, imageUrl){
   render();
 }
 async function deleteItem(id){
+  if(!confirm("Supprimer ce matériel du catalogue ? Son historique de locations sera aussi supprimé.")) return;
   await sb.from('items').delete().eq('id', id);
   state.items = state.items.filter(i => i.id !== id);
   state.bookings = state.bookings.filter(b => b.item_id !== id);
   render();
 }
+async function updateItem(id, fields){
+  const { data, error } = await sb.from('items').update(fields).eq('id', id).select().single();
+  if(error){ alert("Erreur : " + error.message); return false; }
+  const idx = state.items.findIndex(i => i.id === id);
+  if(idx > -1) state.items[idx] = data;
+  render();
+  return true;
+}
+async function adjustItemQty(id, delta){
+  const item = state.items.find(i => i.id === id);
+  if(!item) return;
+  const newQty = Math.max(0, item.qty + delta);
+  if(newQty === item.qty) return;
+  await updateItem(id, { qty: newQty });
+}
+
+/* ---------- Groupes de missions ---------- */
+async function createMissionGroup(name){
+  if(!name.trim()) return;
+  const { data, error } = await sb.from('mission_groups').insert({ name: name.trim() }).select().single();
+  if(error){ alert("Erreur : " + error.message); return; }
+  state.mission_groups.push(data);
+  state.modal = null;
+  render();
+}
+async function deleteMissionGroup(id){
+  if(!confirm("Supprimer ce groupe ? Les missions qu'il contient repasseront en « Sans groupe ».")) return;
+  await sb.from('tasks').update({ group_id: null }).eq('group_id', id);
+  state.tasks.forEach(t => { if(t.group_id === id) t.group_id = null; });
+  const { error } = await sb.from('mission_groups').delete().eq('id', id);
+  if(error){ alert("Erreur : " + error.message); return; }
+  state.mission_groups = state.mission_groups.filter(g => g.id !== id);
+  render();
+}
 
 /* ---------- Tasks / missions ---------- */
-async function createTask(title, description, xpReward, requiresAnswer, answerLabel){
+async function createTask(title, description, xpReward, requiresAnswer, answerLabel, groupId){
   if(!title.trim()) return;
   const { data, error } = await sb.from('tasks').insert({
     title, description, xp_reward: Number(xpReward)||10,
-    requires_answer: !!requiresAnswer, answer_label: requiresAnswer ? (answerLabel || "Votre réponse") : null
+    requires_answer: !!requiresAnswer, answer_label: requiresAnswer ? (answerLabel || "Votre réponse") : null,
+    group_id: groupId || null
   }).select().single();
   if(error){ alert("Erreur : " + error.message); return; }
   state.tasks.push(data);
@@ -669,24 +715,63 @@ async function createTask(title, description, xpReward, requiresAnswer, answerLa
 }
 async function deleteTask(id){
   if(!state.session.isMaster) return;
+  if(!confirm("Supprimer définitivement cette mission ?")) return;
   await sb.from('tasks').delete().eq('id', id);
   state.tasks = state.tasks.filter(t => t.id !== id);
   state.completions = state.completions.filter(c => c.task_id !== id);
   render();
 }
+// Une soumission "en attente" ou déjà "validée" bloque une nouvelle tentative ; une mission "refusée" peut être retentée.
+function blockingCompletion(taskId, username){
+  return state.completions.find(c => c.task_id === taskId && c.username === username && (c.status === 'attente' || c.status === 'validee'));
+}
 function hasCompleted(taskId, username){
-  return state.completions.some(c => c.task_id === taskId && c.username === username);
+  return !!blockingCompletion(taskId, username);
 }
 async function completeTask(taskId, answer){
   const task = state.tasks.find(t => t.id === taskId);
-  if(!task || hasCompleted(taskId, state.session.username)) return;
-  const { data, error } = await sb.from('task_completions').insert({ task_id: taskId, username: state.session.username, answer: answer || null }).select().single();
+  if(!task || blockingCompletion(taskId, state.session.username)) return;
+  const { data, error } = await sb.from('task_completions').insert({
+    task_id: taskId, username: state.session.username, answer: answer || null,
+    status: 'attente', client_seen: true
+  }).select().single();
   if(error){ state.answerError = "Erreur : " + error.message; render(); return; }
   state.completions.push(data);
-  await grantXp(state.session.username, task.xp_reward);
   state.answerError = "";
   state.modal = null;
   render();
+}
+async function validateCompletion(completionId){
+  if(!state.session.isMaster) return;
+  const c = state.completions.find(x => x.id === completionId);
+  if(!c || c.status !== 'attente') return;
+  const task = state.tasks.find(t => t.id === c.task_id);
+  const { data, error } = await sb.from('task_completions').update({ status:'validee', client_seen:false }).eq('id', completionId).select().single();
+  if(error){ alert("Erreur : " + error.message); return; }
+  Object.assign(c, data);
+  if(task) await grantXp(c.username, task.xp_reward);
+  render();
+}
+async function rejectCompletion(completionId){
+  if(!state.session.isMaster) return;
+  const c = state.completions.find(x => x.id === completionId);
+  if(!c || c.status !== 'attente') return;
+  const { data, error } = await sb.from('task_completions').update({ status:'refusee', client_seen:false }).eq('id', completionId).select().single();
+  if(error){ alert("Erreur : " + error.message); return; }
+  Object.assign(c, data);
+  render();
+}
+function markMissionsSeen(username){
+  const toMark = state.completions.filter(c => c.username === username && c.client_seen === false);
+  if(!toMark.length) return;
+  toMark.forEach(c => c.client_seen = true);
+  sb.from('task_completions').update({ client_seen: true }).eq('username', username).eq('client_seen', false).then(()=>{});
+}
+function markContractsSeen(){
+  const toMark = state.contracts.filter(c => c.signed_at && c.signed_seen_by_master === false);
+  if(!toMark.length) return;
+  toMark.forEach(c => c.signed_seen_by_master = true);
+  sb.from('contracts').update({ signed_seen_by_master: true }).not('signed_at','is',null).eq('signed_seen_by_master', false).then(()=>{});
 }
 
 /* ---------- Profiles (équipe) ---------- */
@@ -728,7 +813,7 @@ async function masterUploadContract(username, file){
   if(upErr){ alert("Erreur d'envoi du PDF : " + upErr.message); return; }
   await sb.storage.from('contracts').remove([`${username}/signed.pdf`]);
   const { data: pub } = sb.storage.from('contracts').getPublicUrl(path);
-  const payload = { username, pdf_path: pub.publicUrl + '?v=' + Date.now(), uploaded_at: new Date().toISOString(), signed_pdf_path: null, signed_at: null };
+  const payload = { username, pdf_path: pub.publicUrl + '?v=' + Date.now(), uploaded_at: new Date().toISOString(), signed_pdf_path: null, signed_at: null, signed_seen_by_master: true };
   const { data, error } = await sb.from('contracts').upsert(payload, { onConflict: 'username' }).select().single();
   if(error){ alert("Erreur : " + error.message); return; }
   const idx = state.contracts.findIndex(c => c.username === username);
@@ -741,6 +826,15 @@ async function masterDeleteContract(username){
   const { error } = await sb.from('contracts').delete().eq('username', username);
   if(error){ alert("Erreur : " + error.message); return; }
   state.contracts = state.contracts.filter(c => c.username !== username);
+  render();
+}
+async function masterRemoveSignature(username){
+  if(!confirm(`Retirer la signature de "${username}" ? Le contrat original reste en place, mais le client devra re-signer.`)) return;
+  await sb.storage.from('contracts').remove([`${username}/signed.pdf`]);
+  const { data, error } = await sb.from('contracts').update({ signed_pdf_path: null, signed_at: null, signed_seen_by_master: true }).eq('username', username).select().single();
+  if(error){ alert("Erreur : " + error.message); return; }
+  const idx = state.contracts.findIndex(c => c.username === username);
+  if(idx > -1) state.contracts[idx] = data;
   render();
 }
 
@@ -773,6 +867,21 @@ async function deleteMemberDoc(kind, username){
   const payload = { [def.pathCol]: null, [def.dateCol]: null };
   const { data, error } = await sb.from('profiles').update(payload).eq('username', username).select().single();
   if(error){ state.docError = "Erreur : " + error.message; render(); return; }
+  const p = state.profiles.find(x => x.username === username);
+  if(p) Object.assign(p, data);
+  render();
+}
+async function saveClientRating(username, rating){
+  const { data, error } = await sb.from('profiles').update({ master_rating: rating }).eq('username', username).select().single();
+  if(error){ alert("Erreur : " + error.message); return; }
+  const p = state.profiles.find(x => x.username === username);
+  if(p) Object.assign(p, data);
+  render();
+}
+async function saveClientNote(username){
+  const note = document.getElementById('client-note').value.trim();
+  const { data, error } = await sb.from('profiles').update({ master_note: note }).eq('username', username).select().single();
+  if(error){ alert("Erreur : " + error.message); return; }
   const p = state.profiles.find(x => x.username === username);
   if(p) Object.assign(p, data);
   render();
@@ -842,9 +951,12 @@ function initSignaturePad(){
   canvas.height = rect.height * ratio;
   sigCtx = canvas.getContext('2d');
   sigCtx.scale(ratio, ratio);
+  sigCtx.fillStyle = '#ffffff';
+  sigCtx.fillRect(0, 0, rect.width, rect.height);
   sigCtx.lineWidth = 2.4;
   sigCtx.lineCap = 'round';
-  sigCtx.strokeStyle = '#F4F7F1';
+  sigCtx.lineJoin = 'round';
+  sigCtx.strokeStyle = '#111111';
   sigHasInk = false;
   const pos = (e) => { const r = canvas.getBoundingClientRect(); const t = e.touches ? e.touches[0] : e; return { x: t.clientX - r.left, y: t.clientY - r.top }; };
   const start = (e) => { e.preventDefault(); sigDrawing = true; const p = pos(e); sigCtx.beginPath(); sigCtx.moveTo(p.x, p.y); };
@@ -859,7 +971,11 @@ function initSignaturePad(){
 }
 window.clearSignature = () => {
   const c = document.getElementById('sig-canvas'); if(!c) return;
-  const ctx = c.getContext('2d'); ctx.clearRect(0, 0, c.width, c.height); sigHasInk = false;
+  const ctx = c.getContext('2d');
+  ctx.clearRect(0, 0, c.width, c.height);
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(0, 0, c.width, c.height);
+  sigHasInk = false;
 };
 async function submitSignature(){
   const errEl = document.getElementById('sig-error');
@@ -883,14 +999,17 @@ async function submitSignature(){
     const dims = pngImage.scale(0.35);
     lastPage.drawImage(pngImage, { x: width - dims.width - 50, y: 60, width: dims.width, height: dims.height });
     const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
-    lastPage.drawText(`Signe electroniquement par ${state.session.username} le ${new Date().toLocaleDateString('fr-FR')}`, { x: 50, y: 40, size: 9, font, color: rgb(0.55,0.55,0.55) });
+    const signDate = new Date();
+    const dateStr = signDate.toLocaleDateString('fr-FR');
+    const timeStr = signDate.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+    lastPage.drawText(`Signe electroniquement par ${state.session.username} le ${dateStr} a ${timeStr}`, { x: 50, y: 40, size: 9, font, color: rgb(0,0,0) });
     const signedBytes = await pdfDoc.save();
     const blob = new Blob([signedBytes], { type: 'application/pdf' });
     const signedPath = `${state.session.username}/signed.pdf`;
     const { error: upErr } = await sb.storage.from('contracts').upload(signedPath, blob, { upsert: true, contentType: 'application/pdf' });
     if(upErr) throw upErr;
     const { data: pub } = sb.storage.from('contracts').getPublicUrl(signedPath);
-    const { data, error } = await sb.from('contracts').update({ signed_pdf_path: pub.publicUrl + '?v=' + Date.now(), signed_at: new Date().toISOString() }).eq('username', state.session.username).select().single();
+    const { data, error } = await sb.from('contracts').update({ signed_pdf_path: pub.publicUrl + '?v=' + Date.now(), signed_at: new Date().toISOString(), signed_seen_by_master: false }).eq('username', state.session.username).select().single();
     if(error) throw error;
     const idx = state.contracts.findIndex(c => c.username === state.session.username);
     state.contracts[idx] = data;
@@ -930,6 +1049,7 @@ function iconFor(name){
     profil: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>',
     dashboard: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21a9 9 0 1 1 9-9"/><path d="M12 12l4.2-4.2"/><path d="M12 7v-1"/></svg>',
     gestion: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 3h6v4H9z"/><rect x="4" y="7" width="16" height="14" rx="2"/><path d="M8 13h8M8 17h5"/></svg>',
+    stock: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-5 9 5-9 5-9-5Z"/><path d="M3 9v6l9 5 9-5V9"/><path d="M12 14v6"/></svg>',
   };
   return icons[name] || "";
 }
@@ -1005,12 +1125,29 @@ function renderGate(){
 /* ---------- Sidebar / nav ---------- */
 function navFor(isMaster){
   return isMaster
-    ? [["dashboard","Tableau de bord"],["gestion","Gestion location"],["utilisateurs","Utilisateurs"],["catalogue","Catalogue JVN"],["missions","Missions"],["contrats","Contrats"]]
+    ? [["dashboard","Tableau de bord"],["gestion","Gestion location"],["stock","Gestion de stock"],["utilisateurs","Utilisateurs"],["catalogue","Catalogue JVN"],["missions","Missions"],["contrats","Contrats"]]
     : [["accueil","Accueil"],["catalogue","Catalogue JVN"],["planning","Mes réservations"],["missions","Missions"],["contrat","Mon contrat"],["profil","Mon profil"]];
+}
+function navBadgeCount(id, u){
+  if(u.is_master){
+    if(id === 'gestion') return state.bookings.filter(b => b.status === 'demande').length;
+    if(id === 'missions') return state.completions.filter(c => c.status === 'attente').length;
+    if(id === 'contrats') return state.contracts.filter(c => c.signed_at && c.signed_seen_by_master === false).length;
+  } else {
+    if(id === 'missions') return state.completions.filter(c => c.username === u.username && c.status !== 'attente' && c.client_seen === false).length;
+    if(id === 'contrat'){
+      const c = state.contracts.find(x => x.username === u.username);
+      return (c && !c.signed_at) ? 1 : 0;
+    }
+  }
+  return 0;
 }
 function renderSidebar(){
   const u = currentProfile();
-  const items = navFor(u.is_master).map(([id,label]) => `<button class="${state.view===id?'active':''}" onclick="goto('${id}')">${iconFor(id)}<span>${label}</span></button>`).join("");
+  const items = navFor(u.is_master).map(([id,label]) => {
+    const badge = navBadgeCount(id, u);
+    return `<button class="${state.view===id?'active':''}" onclick="goto('${id}')">${iconFor(id)}<span>${label}</span>${badge>0?`<span class="badge-dot">${badge>99?'99+':badge}</span>`:''}</button>`;
+  }).join("");
   return `
   <div class="sidebar ${state.sidebarOpen?'open':''}">
     <div class="side-brand">
@@ -1088,7 +1225,7 @@ function renderCatalogue(){
           <span class="qty-pill">${dispo > 0 ? dispo+" dispo. aujourd'hui" : "complet aujourd'hui"} · stock ${item.qty}</span>
           ${u.is_master ? '' : `<button class="btn btn-primary btn-sm" onclick="openBookModal('${item.id}')">Réserver</button>`}
         </div>
-        ${u.is_master ? `<button class="btn btn-danger btn-sm" onclick="deleteItem('${item.id}')">Retirer du catalogue</button>` : ''}
+        ${u.is_master ? `<div style="display:flex;gap:8px;"><button class="btn btn-ghost btn-sm" style="flex:1;" onclick="openEditItemModal('${item.id}')">Modifier</button><button class="btn btn-danger btn-sm" style="flex:1;" onclick="deleteItem('${item.id}')">Retirer</button></div>` : ''}
       </div>`;
   }).join("");
   return `
@@ -1221,6 +1358,36 @@ function renderGestionLocation(){
   `;
 }
 
+/* ---------- Gestion de stock (équipe) ---------- */
+function renderGestionStock(){
+  const rows = state.items.map(item => {
+    const enCours = state.bookings.filter(b => b.item_id === item.id && b.status === 'loue').length;
+    const dispo = Math.max(0, item.qty - activeBookingsCount(item.id, todayStr(), todayStr()));
+    return `
+      <div class="list-row">
+        <div style="display:flex;align-items:center;gap:14px;">
+          ${item.image_url ? `<img src="${item.image_url}" style="width:52px;height:52px;object-fit:cover;border-radius:12px;">` : `<div style="width:52px;height:52px;border-radius:12px;background:rgba(255,255,255,0.05);display:flex;align-items:center;justify-content:center;font-size:22px;">🔭</div>`}
+          <div>
+            <div class="t-title">${esc(item.name)}</div>
+            <div class="t-desc">${dispo} disponible${dispo>1?'s':''} aujourd'hui · ${enCours} en cours de location</div>
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;">
+          <div style="display:flex;align-items:center;gap:10px;">
+            <button class="btn btn-ghost btn-sm" onclick="adjustItemQty('${item.id}',-1)" ${item.qty<=0?'disabled':''}>−</button>
+            <span style="font-size:18px;font-weight:700;min-width:24px;text-align:center;">${item.qty}</span>
+            <button class="btn btn-ghost btn-sm" onclick="adjustItemQty('${item.id}',1)">+</button>
+          </div>
+          <button class="btn btn-ghost btn-sm" onclick="openEditItemModal('${item.id}')">Modifier</button>
+        </div>
+      </div>`;
+  }).join("");
+  return `
+    <div class="topbar"><div><h1>Gestion de stock</h1><div class="desc">Ajustez la quantité en stock de chaque matériel, sans avoir à le supprimer et le recréer.</div></div></div>
+    <div style="display:flex;flex-direction:column;gap:10px;">${state.items.length ? rows : `<div class="empty">Aucun matériel enregistré pour le moment.</div>`}</div>
+  `;
+}
+
 /* ---------- Tableau de bord (équipe) ---------- */
 function gaugeHtml(label, value, total, color){
   const frac = total > 0 ? Math.min(1, value/total) : 0;
@@ -1265,43 +1432,103 @@ function renderDashboard(){
 }
 
 /* ---------- Missions ---------- */
-function renderMissions(){
-  const u = currentProfile();
-  const isMaster = u.is_master;
-  const items = state.tasks.slice().sort((a,b) => b.created_at.localeCompare(a.created_at));
-  const doneIds = isMaster ? [] : state.completions.filter(c => c.username === u.username).map(c => c.task_id);
-  const cards = items.map(t => {
-    const done = !isMaster && doneIds.includes(t.id);
-    const submissions = isMaster ? state.completions.filter(c => c.task_id === t.id) : [];
-    return `
-    <div class="card mission-card ${done?'done':''}">
+function latestCompletionFor(taskId, username){
+  const mine = state.completions.filter(c => c.task_id === taskId && c.username === username);
+  if(!mine.length) return null;
+  return mine.find(c => c.status !== 'refusee')
+    || mine.slice().sort((a,b) => (b.completed_at||'').localeCompare(a.completed_at||''))[0];
+}
+function missionCardHtml(t, isMaster, u){
+  const mine = isMaster ? null : latestCompletionFor(t.id, u.username);
+  const status = mine ? mine.status : null;
+  const submissions = isMaster ? state.completions.filter(c => c.task_id === t.id).sort((a,b)=>(b.completed_at||'').localeCompare(a.completed_at||'')) : [];
+  const icon = status === 'validee' ? '✅' : status === 'attente' ? '⏳' : status === 'refusee' ? '❌' : '🎯';
+  let clientStatusLine = '';
+  if(status === 'validee') clientStatusLine = `<div class="card-desc" style="color:var(--accent);flex:0;">Mission accomplie ✓</div>`;
+  else if(status === 'attente') clientStatusLine = `<div class="card-desc" style="color:var(--amber);flex:0;">En attente de validation par l'équipe.</div>`;
+  else if(status === 'refusee') clientStatusLine = `<div class="card-desc" style="color:#FFB3A6;flex:0;">Non validée par l'équipe — vous pouvez retenter.</div>`;
+  let clientAction = '';
+  if(!isMaster && (!mine || status === 'refusee')){
+    clientAction = `<div class="card-foot" style="border-top:none;padding-top:0;">${t.requires_answer ? `<button class="btn btn-primary btn-sm" style="width:100%;" onclick="openAnswerModal('${t.id}')">${status==='refusee'?'Retenter':'Compléter'}</button>` : `<button class="btn btn-primary btn-sm" style="width:100%;" onclick="completeTask('${t.id}')">${status==='refusee'?'Retenter':'Marquer accomplie'}</button>`}</div>`;
+  }
+  return `
+    <div class="card mission-card ${status==='validee'?'done':''}">
       <div class="mission-head">
-        <div class="mission-icon">${done ? '✅' : '🎯'}</div>
+        <div class="mission-icon">${icon}</div>
         <div style="flex:1;min-width:0;">
           <h3 style="font-size:16.5px;">${esc(t.title)}</h3>
           <span class="task-xp">+${t.xp_reward} XP</span>
         </div>
       </div>
       ${t.description ? `<div class="card-desc">${esc(t.description)}</div>` : ''}
-      ${done ? `<div class="card-desc" style="color:var(--accent);flex:0;">Mission accomplie ✓</div>` : ''}
+      ${clientStatusLine}
       ${isMaster && t.requires_answer ? `<div class="card-desc" style="flex:0;">Champ demandé : ${esc(t.answer_label)}</div>` : ''}
-      ${isMaster && submissions.length ? `<div>${submissions.map(s => `<div class="submission-row"><span>${esc(s.username)}${t.requires_answer ? ' — ' + esc(s.answer||'') : ''}</span><span>${fmtDate(s.completed_at)}</span></div>`).join("")}</div>` : ''}
-      ${(!isMaster && !done) ? `<div class="card-foot" style="border-top:none;padding-top:0;">${t.requires_answer ? `<button class="btn btn-primary btn-sm" style="width:100%;" onclick="openAnswerModal('${t.id}')">Compléter</button>` : `<button class="btn btn-primary btn-sm" style="width:100%;" onclick="completeTask('${t.id}')">Marquer accomplie</button>`}</div>` : ''}
+      ${isMaster && submissions.length ? `<div>${submissions.map(s => `
+        <div class="submission-row" style="flex-direction:column;align-items:stretch;gap:4px;">
+          <div style="display:flex;justify-content:space-between;"><span>${esc(s.username)}${t.requires_answer ? ' — ' + esc(s.answer||'') : ''}</span><span>${fmtDate(s.completed_at)}</span></div>
+          <div style="display:flex;justify-content:space-between;align-items:center;">
+            ${statusPillHtml(s.status === 'attente' ? 'demande' : s.status === 'validee' ? 'accepte' : 'refuse')}
+            ${s.status === 'attente' ? `<div style="display:flex;gap:6px;"><button class="btn btn-primary btn-sm" onclick="validateCompletion('${s.id}')">Valider</button><button class="btn btn-ghost btn-sm" onclick="rejectCompletion('${s.id}')">Refuser</button></div>` : ''}
+          </div>
+        </div>`).join("")}</div>` : ''}
+      ${clientAction}
       ${isMaster ? `<div class="card-foot"><button class="btn btn-danger btn-sm" onclick="deleteTask('${t.id}')">Supprimer</button></div>` : ''}
     </div>`;
-  }).join("");
-  const progressPct = items.length ? Math.round((doneIds.length / items.length) * 100) : 0;
+}
+function groupProgress(groupId, username){
+  const tasksIn = state.tasks.filter(t => (t.group_id||null) === groupId);
+  const total = tasksIn.reduce((s,t) => s + (t.xp_reward||0), 0);
+  const earned = tasksIn.reduce((s,t) => {
+    const c = state.completions.find(x => x.task_id === t.id && x.username === username && x.status === 'validee');
+    return s + (c ? (t.xp_reward||0) : 0);
+  }, 0);
+  return { tasksIn, total, earned, pct: total > 0 ? Math.round((earned/total)*100) : 0 };
+}
+function renderMissions(){
+  const u = currentProfile();
+  const isMaster = u.is_master;
+  const groups = state.mission_groups.slice().sort((a,b) => a.created_at.localeCompare(b.created_at));
+  const groupBuckets = groups.map(g => ({ group: g, tasks: state.tasks.filter(t => t.group_id === g.id) }));
+  const ungrouped = state.tasks.filter(t => !t.group_id);
+  const validatedCount = isMaster ? 0 : state.completions.filter(c => c.username === u.username && c.status === 'validee').length;
+  const totalCount = state.tasks.length;
+  const overallPct = totalCount ? Math.round((validatedCount/totalCount)*100) : 0;
+
+  const sectionHtml = (title, tasksIn, groupId) => {
+    if(!isMaster && !tasksIn.length) return '';
+    const sorted = tasksIn.slice().sort((a,b) => b.created_at.localeCompare(a.created_at));
+    const cards = sorted.map(t => missionCardHtml(t, isMaster, u)).join("");
+    const prog = !isMaster ? groupProgress(groupId, u.username) : null;
+    return `
+      <div style="margin-bottom:26px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:10px;">
+          <div class="section-title" style="margin-bottom:0;">${esc(title)}${isMaster && groupId ? `<button class="btn btn-ghost btn-sm" style="margin-left:10px;padding:4px 10px;" onclick="deleteMissionGroup('${groupId}')">Supprimer le groupe</button>` : ''}</div>
+          ${prog && prog.total > 0 ? `<div style="font-size:12px;color:var(--text-faint);">${prog.earned}/${prog.total} XP du groupe</div>` : ''}
+        </div>
+        ${prog && prog.total > 0 ? `<div class="xp-bar-track" style="margin-bottom:14px;"><div class="xp-bar-fill" style="width:${prog.pct}%"></div></div>` : ''}
+        ${sorted.length ? `<div class="grid">${cards}</div>` : `<div class="empty">Aucune mission dans ce groupe.</div>`}
+      </div>`;
+  };
+
+  let body = '';
+  groupBuckets.forEach(({group, tasks}) => { body += sectionHtml(group.name, tasks, group.id); });
+  body += sectionHtml('Sans groupe', ungrouped, null);
+  if(!body.trim()) body = `<div class="empty">Aucune mission disponible pour le moment.</div>`;
+
   return `
     <div class="topbar">
-      <div><h1>Missions</h1><div class="desc">${isMaster ? "Créez des missions et suivez qui les a accomplies (et leurs réponses)." : "Accomplissez des missions pour gagner de l'XP."}</div></div>
+      <div><h1>Missions</h1><div class="desc">${isMaster ? "Créez des missions, regroupez-les par thème, et validez les soumissions des clients." : "Accomplissez des missions pour gagner de l'XP. Chaque soumission est validée par notre équipe."}</div></div>
       ${xpBarHtml(u)}
     </div>
-    ${isMaster ? `<button class="btn btn-primary btn-sm" style="width:auto;margin-bottom:18px;" onclick="openNewTaskModal()">+ Créer une mission</button>` : ''}
-    ${!isMaster && items.length ? `<div class="panel" style="margin-bottom:18px;">
-      <div style="display:flex;justify-content:space-between;margin-bottom:10px;font-size:13px;color:var(--text-dim);font-weight:600;"><span>Missions accomplies</span><span>${doneIds.length}/${items.length}</span></div>
-      <div class="xp-bar-track"><div class="xp-bar-fill" style="width:${progressPct}%"></div></div>
+    ${isMaster ? `<div style="display:flex;gap:10px;margin-bottom:18px;flex-wrap:wrap;">
+      <button class="btn btn-primary btn-sm" style="width:auto;" onclick="openNewTaskModal()">+ Créer une mission</button>
+      <button class="btn btn-ghost btn-sm" style="width:auto;" onclick="openNewGroupModal()">+ Créer un groupe</button>
     </div>` : ''}
-    <div class="grid">${items.length ? cards : `<div class="empty">Aucune mission disponible pour le moment.</div>`}</div>
+    ${!isMaster && totalCount ? `<div class="panel" style="margin-bottom:22px;">
+      <div style="display:flex;justify-content:space-between;margin-bottom:10px;font-size:13px;color:var(--text-dim);font-weight:600;"><span>Missions accomplies (toutes catégories)</span><span>${validatedCount}/${totalCount}</span></div>
+      <div class="xp-bar-track"><div class="xp-bar-fill" style="width:${overallPct}%"></div></div>
+    </div>` : ''}
+    ${body}
   `;
 }
 
@@ -1339,6 +1566,7 @@ function renderContratsAdmin(){
           ${c ? `<a class="btn btn-ghost btn-sm" href="${c.pdf_path}" target="_blank" rel="noopener">Original</a>` : ''}
           ${c && c.signed_pdf_path ? `<a class="btn btn-ghost btn-sm" href="${c.signed_pdf_path}" target="_blank" rel="noopener">Signé</a>` : ''}
           <span class="btn btn-primary btn-sm file-btn">${c?'Remplacer':'Uploader'} PDF<input type="file" accept="application/pdf" onchange="handleContractUpload(event,'${usr.username}')"></span>
+          ${c && c.signed_at ? `<button class="btn btn-ghost btn-sm" onclick="masterRemoveSignature('${usr.username}')">Retirer la signature</button>` : ''}
           ${c ? `<button class="btn btn-danger btn-sm" onclick="masterDeleteContract('${usr.username}')">Supprimer</button>` : ''}
         </div>
       </div>`;
@@ -1427,33 +1655,52 @@ function renderModal(){
       <div class="modal-actions"><button class="btn btn-primary" style="width:100%;" onclick="closeModal(); goto('planning');">Fermer</button></div>
     </div></div>`;
   }
-  if(m.type === "newItem"){
+  if(m.type === "newItem" || m.type === "editItem"){
+    const editing = m.type === "editItem";
+    const it = editing ? state.items.find(i => i.id === m.itemId) : null;
+    if(editing && !it) return "";
     return `
     <div class="modal-bg" onclick="closeModalBg(event)"><div class="modal">
-      <h3>Ajouter un matériel</h3>
-      <div class="field"><label>Nom</label><input id="it-name" placeholder="ex. PVS-31 Bino"></div>
-      <div class="field"><label>Description</label><textarea id="it-desc" rows="3" placeholder="Détails techniques, usage recommandé..."></textarea></div>
+      <h3>${editing ? 'Modifier ce matériel' : 'Ajouter un matériel'}</h3>
+      <div class="field"><label>Nom</label><input id="it-name" placeholder="ex. PVS-31 Bino" value="${editing?esc(it.name):''}"></div>
+      <div class="field"><label>Description</label><textarea id="it-desc" rows="3" placeholder="Détails techniques, usage recommandé...">${editing?esc(it.description||''):''}</textarea></div>
       <div class="row">
-        <div class="field"><label>XP gagnée à la location</label><input id="it-xp" type="number" value="20" min="1"></div>
-        <div class="field"><label>Quantité en stock</label><input id="it-qty" type="number" value="1" min="1"></div>
+        <div class="field"><label>XP gagnée à la location</label><input id="it-xp" type="number" value="${editing?it.xp_value:20}" min="1"></div>
+        <div class="field"><label>Quantité en stock</label><input id="it-qty" type="number" value="${editing?it.qty:1}" min="0"></div>
       </div>
-      <div class="field"><label>Photo (optionnel)</label><input id="it-photo" type="file" accept="image/*"></div>
+      <div class="field"><label>Photo ${editing?'(laisser vide pour garder la photo actuelle)':'(optionnel)'}</label><input id="it-photo" type="file" accept="image/*"></div>
+      ${editing && it.image_url ? `<img src="${it.image_url}" style="width:100%;height:110px;object-fit:cover;border-radius:var(--r-sm);margin:-4px 0 6px;">` : ''}
       <div id="it-error"></div>
-      <div class="modal-actions"><button class="btn btn-ghost" onclick="closeModal()">Annuler</button><button class="btn btn-primary" onclick="confirmNewItem(event)">Ajouter</button></div>
+      <div class="modal-actions">
+        <button class="btn btn-ghost" onclick="closeModal()">Annuler</button>
+        <button class="btn btn-primary" onclick="confirmNewItem(event,${editing?`'${it.id}'`:'null'})">${editing?'Enregistrer':'Ajouter'}</button>
+      </div>
     </div></div>`;
   }
   if(m.type === "newTask"){
+    const groupOptions = state.mission_groups.map(g => `<option value="${g.id}">${esc(g.name)}</option>`).join("");
     return `
     <div class="modal-bg" onclick="closeModalBg(event)"><div class="modal">
       <h3>Créer une mission</h3>
       <div class="field"><label>Titre</label><input id="tk-title" placeholder="ex. Laisser un avis Google"></div>
       <div class="field"><label>Description</label><textarea id="tk-desc" rows="3" placeholder="Détail de la mission..."></textarea></div>
-      <div class="field"><label>XP gagnée par le client</label><input id="tk-xp" type="number" value="15" min="1"></div>
+      <div class="row">
+        <div class="field"><label>XP gagnée par le client</label><input id="tk-xp" type="number" value="15" min="1"></div>
+        <div class="field"><label>Groupe</label><select id="tk-group"><option value="">Sans groupe</option>${groupOptions}</select></div>
+      </div>
       <label class="checkbox-field"><input type="checkbox" id="tk-requires" onchange="document.getElementById('tk-answer-wrap').style.display=this.checked?'block':'none'"> Demander une réponse au client (ex. son pseudo)</label>
       <div id="tk-answer-wrap" style="display:none;">
         <div class="field"><label>Intitulé du champ demandé</label><input id="tk-answer-label" placeholder="ex. Votre pseudo utilisé pour l'avis Google"></div>
       </div>
       <div class="modal-actions"><button class="btn btn-ghost" onclick="closeModal()">Annuler</button><button class="btn btn-primary" onclick="confirmNewTask()">Créer</button></div>
+    </div></div>`;
+  }
+  if(m.type === "newGroup"){
+    return `
+    <div class="modal-bg" onclick="closeModalBg(event)"><div class="modal">
+      <h3>Créer un groupe de missions</h3>
+      <div class="field"><label>Nom du groupe</label><input id="grp-name" placeholder="ex. Avis &amp; réseaux sociaux"></div>
+      <div class="modal-actions"><button class="btn btn-ghost" onclick="closeModal()">Annuler</button><button class="btn btn-primary" onclick="confirmNewGroup()">Créer</button></div>
     </div></div>`;
   }
   if(m.type === "answerTask"){
@@ -1487,6 +1734,10 @@ function renderModal(){
       <div class="section-title" style="margin-top:6px;">Documents</div>
       ${docRowHtml('id', p, false)}
       ${docRowHtml('address', p, false)}
+      <div class="section-title" style="margin-top:6px;">Note interne (visible équipe uniquement)</div>
+      <div class="star-row">${[1,2,3,4,5].map(n => `<button class="star-btn ${(p.master_rating||0)>=n?'filled':''}" onclick="saveClientRating('${p.username}',${n})">★</button>`).join("")}</div>
+      <div class="field"><label>Commentaire</label><textarea id="client-note" rows="3" placeholder="Notes internes sur ce client...">${esc(p.master_note||'')}</textarea></div>
+      <button class="btn btn-ghost btn-sm" onclick="saveClientNote('${p.username}')">Enregistrer la note</button>
       <div class="modal-actions"><button class="btn btn-ghost" style="width:100%;" onclick="closeModal()">Fermer</button></div>
     </div></div>`;
   }
@@ -1510,6 +1761,7 @@ function render(){
   else if(state.view === "catalogue") content = renderCatalogue();
   else if(state.view === "planning") content = renderMesReservations();
   else if(state.view === "gestion") content = renderGestionLocation();
+  else if(state.view === "stock") content = renderGestionStock();
   else if(state.view === "dashboard") content = renderDashboard();
   else if(state.view === "missions") content = renderMissions();
   else if(state.view === "utilisateurs") content = renderUtilisateurs();
@@ -1544,7 +1796,13 @@ window.handleResendConfirmation = () => {
 };
 window.handleAdminLogin = (e) => { e.preventDefault(); doAdminLogin(e.target.username.value, e.target.password.value); return false; };
 window.logout = logout;
-window.goto = (view) => { state.view = view; state.sidebarOpen = false; state.profileSaved = false; render(); };
+window.goto = (view) => {
+  state.view = view; state.sidebarOpen = false; state.profileSaved = false;
+  const u = currentProfile();
+  if(u && !u.is_master && view === 'missions') markMissionsSeen(u.username);
+  if(u && u.is_master && view === 'contrats') markContractsSeen();
+  render();
+};
 window.toggleSidebar = () => { state.sidebarOpen = !state.sidebarOpen; render(); };
 window.deleteItem = deleteItem;
 window.deleteTask = deleteTask;
@@ -1570,6 +1828,7 @@ window.openBookModal = (itemId) => {
   state.bookingError = ""; state.modal = { type:"book", itemId }; render(); updateAvailabilityPreview(itemId);
 };
 window.openNewItemModal = () => { state.modal = { type:"newItem" }; render(); };
+window.openEditItemModal = (itemId) => { state.modal = { type:"editItem", itemId }; render(); };
 window.openNewTaskModal = () => { state.modal = { type:"newTask" }; render(); };
 window.openAnswerModal = (taskId) => { state.answerError = ""; state.modal = { type:"answerTask", taskId }; render(); };
 window.openViewProfile = (username) => { state.modal = { type:"viewProfile", username }; render(); };
@@ -1580,13 +1839,13 @@ window.confirmBooking = (itemId) => {
   const end = document.getElementById("bk-end").value;
   submitBooking(itemId, start, end);
 };
-window.confirmNewItem = async (e) => {
+window.confirmNewItem = async (e, itemId) => {
   const name = document.getElementById("it-name").value.trim();
   const desc = document.getElementById("it-desc").value.trim();
   const xp = document.getElementById("it-xp").value;
   const qty = document.getElementById("it-qty").value;
   const file = document.getElementById("it-photo").files[0];
-  const btn = e.target; const oldLabel = btn.textContent; btn.textContent = "Ajout..."; btn.disabled = true;
+  const btn = e.target; const oldLabel = btn.textContent; btn.textContent = itemId ? "Enregistrement..." : "Ajout..."; btn.disabled = true;
   try{
     let imageUrl = null;
     if(file){
@@ -1596,7 +1855,15 @@ window.confirmNewItem = async (e) => {
       const { data: pub } = sb.storage.from('items').getPublicUrl(path);
       imageUrl = pub.publicUrl;
     }
-    await createItem(name, desc, xp, qty, imageUrl);
+    if(itemId){
+      const fields = { name, description: desc, xp_value: Number(xp)||10, qty: Number(qty)||0 };
+      if(imageUrl) fields.image_url = imageUrl;
+      const ok = await updateItem(itemId, fields);
+      if(ok) state.modal = null;
+      render();
+    } else {
+      await createItem(name, desc, xp, qty, imageUrl);
+    }
   }catch(err){
     document.getElementById('it-error').innerHTML = `<div class="msg msg-error">Erreur photo : ${esc(err.message||String(err))}</div>`;
     btn.textContent = oldLabel; btn.disabled = false;
@@ -1608,9 +1875,15 @@ window.confirmNewTask = () => {
     document.getElementById("tk-desc").value.trim(),
     document.getElementById("tk-xp").value,
     document.getElementById("tk-requires").checked,
-    document.getElementById("tk-answer-label")?.value.trim()
+    document.getElementById("tk-answer-label")?.value.trim(),
+    document.getElementById("tk-group").value || null
   );
 };
+window.openNewGroupModal = () => { state.modal = { type:"newGroup" }; render(); };
+window.confirmNewGroup = () => { createMissionGroup(document.getElementById("grp-name").value); };
+window.deleteMissionGroup = deleteMissionGroup;
+window.validateCompletion = validateCompletion;
+window.rejectCompletion = rejectCompletion;
 window.confirmAnswerTask = (taskId) => {
   const val = document.getElementById("ans-input").value.trim();
   if(!val){ state.answerError = "Merci de renseigner une réponse."; render(); return; }
