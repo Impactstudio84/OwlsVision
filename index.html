@@ -137,6 +137,12 @@
   .nav button:hover{background:rgba(255,255,255,0.05);color:var(--text);}
   .nav button.active{background:var(--accent-soft);color:var(--accent);font-weight:600;}
   .nav button.active svg{opacity:1;}
+  .nav-group{display:flex;flex-direction:column;}
+  .nav-chevron{margin-left:auto;font-size:11px;opacity:0.55;transition:transform .16s var(--ease);flex-shrink:0;}
+  .nav-chevron.open{transform:rotate(90deg);}
+  .nav-sub{display:flex;flex-direction:column;gap:2px;max-height:0;overflow:hidden;transition:max-height .2s var(--ease);}
+  .nav-sub.open{max-height:160px;}
+  .nav-sub button{padding-left:46px;}
   .side-foot{padding:16px;border-top:1px solid var(--border-soft);}
   .side-user{display:flex;align-items:center;gap:10px;margin-bottom:12px;}
   .avatar{width:34px;height:34px;border-radius:11px;background:var(--accent-soft);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:var(--accent);flex-shrink:0;}
@@ -320,11 +326,9 @@
   /* ---------- Direction "Phosphore" — finition & motion (Lot 5, corrigé) ----------
      Retour d'expérience : les couches ambiantes en boucle (grain + trame verte animée en
      permanence) donnaient une impression de "vert partout" changeant sans arrêt et cassaient
-     le contraste — supprimées. Ne restent que des réactions ponctuelles à une vraie action
-     (survol, clic, changement de valeur), jamais d'animation qui tourne toute seule en fond. */
-  .nv-flash{position:fixed;inset:0;z-index:90;background:rgba(143,239,61,0.12);pointer-events:none;}
-  .nv-flash.play{animation:nvFlash .28s ease-out forwards;}
-  @keyframes nvFlash{0%{opacity:1;}35%{opacity:.1;}55%{opacity:.4;}100%{opacity:0;}}
+     le contraste — supprimées. Le flash de transition au changement d'onglet a ensuite provoqué
+     un scintillement vert/noir sur PC — supprimé aussi. Ne restent que des réactions ponctuelles
+     à une vraie action (survol, clic, changement de valeur), jamais d'animation en boucle. */
 
   /* boutons : reflet diagonal au survol seulement (rien tant qu'on n'interagit pas) */
   .btn-primary{position:relative;overflow:hidden;}
@@ -363,7 +367,6 @@
 </style>
 </head>
 <body>
-<div class="nv-flash" id="nv-flash"></div>
 <div id="app"></div>
 
 <script>
@@ -411,6 +414,7 @@ let state = {
   authError: "",
   authNotice: "",
   sidebarOpen: false,
+  missionsNavOpen: false,
   modal: null,
   bookingError: "",
   answerError: "",
@@ -820,12 +824,12 @@ async function deleteMissionGroup(id){
 }
 
 /* ---------- Tasks / missions ---------- */
-async function createTask(title, description, xpReward, requiresAnswer, answerLabel, groupId){
+async function createTask(title, description, xpReward, requiresAnswer, answerLabel, groupId, isRecurring){
   if(!title.trim()) return;
   const { data, error } = await sb.from('tasks').insert({
     title, description, xp_reward: Number(xpReward)||10,
     requires_answer: !!requiresAnswer, answer_label: requiresAnswer ? (answerLabel || "Votre réponse") : null,
-    group_id: groupId || null
+    group_id: groupId || null, is_recurring: !!isRecurring
   }).select().single();
   if(error){ alert("Erreur : " + error.message); return; }
   state.tasks.push(data);
@@ -840,9 +844,16 @@ async function deleteTask(id){
   state.completions = state.completions.filter(c => c.task_id !== id);
   render();
 }
-// Une soumission "en attente" ou déjà "validée" bloque une nouvelle tentative ; une mission "refusée" peut être retentée.
+// Une soumission "en attente" ou déjà "validée" bloque une nouvelle tentative ; une mission "refusée" peut être
+// retentée. Exception : une mission marquée "récurrente" par le master redevient disponible une fois validée
+// et l'XP créditée — seule une soumission "en attente" la bloque encore (pour éviter un double envoi).
 function blockingCompletion(taskId, username){
-  return state.completions.find(c => c.task_id === taskId && c.username === username && (c.status === 'attente' || c.status === 'validee'));
+  const c = state.completions.find(x => x.task_id === taskId && x.username === username && (x.status === 'attente' || x.status === 'validee'));
+  if(c && c.status === 'validee'){
+    const task = state.tasks.find(t => t.id === taskId);
+    if(task && task.is_recurring) return null;
+  }
+  return c;
 }
 function hasCompleted(taskId, username){
   return !!blockingCompletion(taskId, username);
@@ -1426,9 +1437,23 @@ function navBadgeCount(id, u){
   }
   return 0;
 }
+function missionsNavGroupHtml(u){
+  const count = navBadgeCount('missions', u);
+  const badgeHtml = count>0 ? `<span class="badge-dot">${count>99?'99+':count}</span>` : '';
+  const isSubActive = state.view === 'missions-validation' || state.view === 'missions-creation';
+  return `
+    <div class="nav-group">
+      <button type="button" class="${isSubActive?'active':''}" onclick="toggleMissionsNav()">${iconFor('missions')}<span>Missions</span>${badgeHtml}<span class="nav-chevron ${state.missionsNavOpen?'open':''}">›</span></button>
+      <div class="nav-sub ${state.missionsNavOpen?'open':''}">
+        <button type="button" class="${state.view==='missions-validation'?'active':''}" onclick="goto('missions-validation')"><span>Validation</span>${badgeHtml}</button>
+        <button type="button" class="${state.view==='missions-creation'?'active':''}" onclick="goto('missions-creation')"><span>Création</span></button>
+      </div>
+    </div>`;
+}
 function renderSidebar(){
   const u = currentProfile();
   const items = navFor(u.is_master).map(([id,label]) => {
+    if(u.is_master && id === 'missions') return missionsNavGroupHtml(u);
     const badge = navBadgeCount(id, u);
     return `<button class="${state.view===id?'active':''}" onclick="goto('${id}')">${iconFor(id)}<span>${label}</span>${badge>0?`<span class="badge-dot">${badge>99?'99+':badge}</span>`:''}</button>`;
   }).join("");
@@ -1458,8 +1483,7 @@ function renderAccueil(){
   const u = currentProfile();
   const myBookings = state.bookings.filter(b => b.username === u.username).sort((a,b) => a.start_date.localeCompare(b.start_date));
   const nextBooking = myBookings.find(b => b.end_date >= todayStr());
-  const myDone = state.completions.filter(c => c.username === u.username).map(c => c.task_id);
-  const pending = state.tasks.filter(t => !myDone.includes(t.id));
+  const pending = state.tasks.filter(t => !hasCompleted(t.id, u.username));
   const contract = state.contracts.find(c => c.username === u.username);
   const inLevel = xpInLevel(u.xp);
   const pct = Math.round((inLevel / XP_STEP) * 100);
@@ -1482,11 +1506,15 @@ function renderAccueil(){
       </div>
       ${pending.length ? `
         <div class="mission-spotlight-list">
-          ${pending.slice(0,3).map(t => `
+          ${pending.slice(0,3).map(t => {
+            const mine = latestCompletionFor(t.id, u.username);
+            const label = mine && mine.status === 'refusee' ? 'Retenter' : (mine && mine.status === 'validee' ? 'Refaire' : (t.requires_answer ? 'Compléter' : 'Marquer accomplie'));
+            return `
             <div class="mission-spotlight-row">
-              <div><div class="msr-title">${esc(t.title)}</div><span class="task-xp">+${t.xp_reward} XP</span></div>
-              ${t.requires_answer ? `<button class="btn btn-primary btn-sm" onclick="openAnswerModal('${t.id}')">Compléter</button>` : `<button class="btn btn-primary btn-sm" onclick="completeTask('${t.id}')">Marquer accomplie</button>`}
-            </div>`).join('')}
+              <div><div class="msr-title">${esc(t.title)}${t.is_recurring ? ' <span class="tag" style="margin-left:4px;">Récurrente</span>' : ''}</div><span class="task-xp">+${t.xp_reward} XP</span></div>
+              ${t.requires_answer ? `<button class="btn btn-primary btn-sm" onclick="openAnswerModal('${t.id}')">${label}</button>` : `<button class="btn btn-primary btn-sm" onclick="completeTask('${t.id}')">${label}</button>`}
+            </div>`;
+          }).join('')}
           ${pending.length > 3 ? `<div class="card-desc" style="text-align:center;">+ ${pending.length - 3} autre${pending.length-3>1?'s':''} mission${pending.length-3>1?'s':''}...</div>` : ''}
         </div>` : `<div class="card-desc">Toutes les missions sont accomplies, bravo ! Revenez bientôt pour de nouvelles missions.</div>`}
     </div>
@@ -1777,22 +1805,24 @@ function latestCompletionFor(taskId, username){
 function missionCardHtml(t, isMaster, u){
   const mine = isMaster ? null : latestCompletionFor(t.id, u.username);
   const status = mine ? mine.status : null;
+  const canRedo = t.is_recurring && status === 'validee';
   const submissions = isMaster ? state.completions.filter(c => c.task_id === t.id).sort((a,b)=>(b.completed_at||'').localeCompare(a.completed_at||'')) : [];
   const icon = status === 'validee' ? '✅' : status === 'attente' ? '⏳' : status === 'refusee' ? '❌' : '🎯';
   let clientStatusLine = '';
-  if(status === 'validee') clientStatusLine = `<div class="card-desc" style="color:var(--accent);flex:0;">Mission accomplie ✓</div>`;
+  if(status === 'validee') clientStatusLine = `<div class="card-desc" style="color:var(--accent);flex:0;">Mission accomplie ✓${canRedo ? ' · mission récurrente, refaisable dès maintenant' : ''}</div>`;
   else if(status === 'attente') clientStatusLine = `<div class="card-desc" style="color:var(--amber);flex:0;">En attente de validation par l'équipe.</div>`;
   else if(status === 'refusee') clientStatusLine = `<div class="card-desc" style="color:#FFB3A6;flex:0;">Non validée par l'équipe — vous pouvez retenter.</div>`;
   let clientAction = '';
-  if(!isMaster && (!mine || status === 'refusee')){
-    clientAction = `<div class="card-foot" style="border-top:none;padding-top:0;">${t.requires_answer ? `<button class="btn btn-primary btn-sm" style="width:100%;" onclick="openAnswerModal('${t.id}')">${status==='refusee'?'Retenter':'Compléter'}</button>` : `<button class="btn btn-primary btn-sm" style="width:100%;" onclick="completeTask('${t.id}')">${status==='refusee'?'Retenter':'Marquer accomplie'}</button>`}</div>`;
+  if(!isMaster && (!mine || status === 'refusee' || canRedo)){
+    const label = status === 'refusee' ? 'Retenter' : canRedo ? 'Refaire' : (t.requires_answer ? 'Compléter' : 'Marquer accomplie');
+    clientAction = `<div class="card-foot" style="border-top:none;padding-top:0;">${t.requires_answer ? `<button class="btn btn-primary btn-sm" style="width:100%;" onclick="openAnswerModal('${t.id}')">${label}</button>` : `<button class="btn btn-primary btn-sm" style="width:100%;" onclick="completeTask('${t.id}')">${label}</button>`}</div>`;
   }
   return `
-    <div class="card mission-card ${status==='validee'?'done':''}">
+    <div class="card mission-card ${status==='validee' && !canRedo?'done':''}">
       <div class="mission-head">
         <div class="mission-icon">${icon}</div>
         <div style="flex:1;min-width:0;">
-          <h3 style="font-size:16.5px;">${esc(t.title)}</h3>
+          <h3 style="font-size:16.5px;">${esc(t.title)}${t.is_recurring ? ' <span class="tag" style="margin-left:4px;">Récurrente</span>' : ''}</h3>
           <span class="task-xp">+${t.xp_reward} XP</span>
         </div>
       </div>
@@ -1868,6 +1898,93 @@ function renderMissions(){
       <div class="xp-bar-track"><div class="xp-bar-fill" style="width:${overallPct}%"></div></div>
     </div>` : ''}
     ${body}
+  `;
+}
+
+/* ---------- Missions (master) : Création — gérer missions/groupes, sans la validation ---------- */
+function missionManageCardHtml(t){
+  const submissionsCount = state.completions.filter(c => c.task_id === t.id).length;
+  return `
+    <div class="card">
+      <div class="mission-head">
+        <div class="mission-icon">🎯</div>
+        <div style="flex:1;min-width:0;">
+          <h3 style="font-size:16.5px;">${esc(t.title)}${t.is_recurring ? ' <span class="tag" style="margin-left:4px;">Récurrente</span>' : ''}</h3>
+          <span class="task-xp">+${t.xp_reward} XP</span>
+        </div>
+      </div>
+      ${t.description ? `<div class="card-desc">${esc(t.description)}</div>` : ''}
+      ${t.requires_answer ? `<div class="card-desc" style="flex:0;">Champ demandé : ${esc(t.answer_label)}</div>` : ''}
+      <div class="card-desc" style="flex:0;color:var(--text-faint);">${submissionsCount} soumission${submissionsCount>1?'s':''} au total</div>
+      <div class="card-foot"><button class="btn btn-danger btn-sm" onclick="deleteTask('${t.id}')">Supprimer</button></div>
+    </div>`;
+}
+function renderMissionsCreation(){
+  const groups = state.mission_groups.slice().sort((a,b) => a.created_at.localeCompare(b.created_at));
+  const groupBuckets = groups.map(g => ({ group: g, tasks: state.tasks.filter(t => t.group_id === g.id) }));
+  const ungrouped = state.tasks.filter(t => !t.group_id);
+
+  const sectionHtml = (title, tasksIn, groupId) => {
+    const sorted = tasksIn.slice().sort((a,b) => b.created_at.localeCompare(a.created_at));
+    const cards = sorted.map(missionManageCardHtml).join("");
+    return `
+      <div style="margin-bottom:30px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:10px;padding-bottom:10px;border-bottom:1px solid var(--border-soft);">
+          <h2 style="font-size:19px;font-weight:800;letter-spacing:-0.01em;">${esc(title)}</h2>
+          ${groupId ? `<button class="btn btn-ghost btn-sm" onclick="deleteMissionGroup('${groupId}')">Supprimer le groupe</button>` : ''}
+        </div>
+        ${sorted.length ? `<div class="grid">${cards}</div>` : `<div class="empty">Aucune mission dans ce groupe.</div>`}
+      </div>`;
+  };
+
+  let body = '';
+  groupBuckets.forEach(({group, tasks}) => { body += sectionHtml(group.name, tasks, group.id); });
+  body += sectionHtml('Sans groupe', ungrouped, null);
+  if(!state.tasks.length) body = `<div class="empty">Aucune mission créée pour le moment.</div>`;
+
+  return `
+    <div class="topbar"><div><h1>Missions — Création</h1><div class="desc">Créez des missions, regroupez-les par thème. La validation des soumissions se fait dans le sous-onglet « Validation ».</div></div></div>
+    <div style="display:flex;gap:10px;margin-bottom:18px;flex-wrap:wrap;">
+      <button class="btn btn-primary btn-sm" style="width:auto;" onclick="openNewTaskModal()">+ Créer une mission</button>
+      <button class="btn btn-ghost btn-sm" style="width:auto;" onclick="openNewGroupModal()">+ Créer un groupe</button>
+    </div>
+    ${body}
+  `;
+}
+
+/* ---------- Missions (master) : Validation — soumissions des clients, avec plus de contexte ---------- */
+function validationRowHtml(c){
+  const task = state.tasks.find(t => t.id === c.task_id);
+  const p = state.profiles.find(x => x.username === c.username);
+  const group = task && task.group_id ? state.mission_groups.find(g => g.id === task.group_id) : null;
+  return `
+    <div class="list-row" style="align-items:flex-start;flex-direction:column;gap:10px;">
+      <div style="display:flex;justify-content:space-between;width:100%;gap:12px;flex-wrap:wrap;">
+        <div>
+          <div class="t-title">${esc(task ? task.title : 'Mission supprimée')}${task && task.is_recurring ? ' <span class="tag" style="margin-left:6px;">Récurrente</span>' : ''}</div>
+          <div class="t-desc">${esc(p ? clientDisplayName(p) : c.username)}${group ? ' · ' + esc(group.name) : ''} · soumise le ${fmtDateTime(c.completed_at)}</div>
+        </div>
+        <span class="task-xp">+${task ? task.xp_reward : '?'} XP</span>
+      </div>
+      ${task && task.requires_answer ? `<div class="card-desc" style="flex:0;"><strong>${esc(task.answer_label||'Réponse')}</strong> : ${esc(c.answer||'—')}</div>` : ''}
+      <div style="display:flex;gap:8px;"><button class="btn btn-primary btn-sm" onclick="validateCompletion('${c.id}')">Valider</button><button class="btn btn-ghost btn-sm" onclick="rejectCompletion('${c.id}')">Refuser</button></div>
+    </div>`;
+}
+function renderMissionsValidation(){
+  const pending = state.completions.filter(c => c.status === 'attente').sort((a,b) => (a.completed_at||'').localeCompare(b.completed_at||''));
+  const recent = state.completions.filter(c => c.status !== 'attente').sort((a,b) => (b.completed_at||'').localeCompare(a.completed_at||'')).slice(0,15);
+  return `
+    <div class="topbar"><div><h1>Missions — Validation${pending.length ? ` (${pending.length})` : ''}</h1><div class="desc">Passez en revue chaque soumission de client et créditez l'XP. La création des missions se fait dans le sous-onglet « Création ».</div></div></div>
+    ${pending.length ? `<div style="display:flex;flex-direction:column;gap:12px;">${pending.map(validationRowHtml).join('')}</div>` : `<div class="empty">Aucune soumission en attente de validation.</div>`}
+    ${recent.length ? `
+      <div class="section-title" style="margin-top:30px;">Historique récent</div>
+      <div class="panel"><table><thead><tr><th>Mission</th><th>Client</th><th>Statut</th><th>Soumise le</th></tr></thead><tbody>
+        ${recent.map(c => {
+          const task = state.tasks.find(t => t.id === c.task_id);
+          const p = state.profiles.find(x => x.username === c.username);
+          return `<tr><td>${esc(task ? task.title : 'Mission supprimée')}</td><td>${esc(p ? clientDisplayName(p) : c.username)}</td><td>${statusPillHtml(c.status === 'validee' ? 'accepte' : 'refuse')}</td><td>${fmtDateTime(c.completed_at)}</td></tr>`;
+        }).join('')}
+      </tbody></table></div>` : ''}
   `;
 }
 
@@ -2193,6 +2310,7 @@ function renderModal(){
       <div id="tk-answer-wrap" style="display:none;">
         <div class="field"><label>Intitulé du champ demandé</label><input id="tk-answer-label" placeholder="ex. Votre pseudo utilisé pour l'avis Google"></div>
       </div>
+      <label class="checkbox-field"><input type="checkbox" id="tk-recurring"> Mission récurrente — redevient disponible pour le client dès qu'elle est validée et l'XP créditée</label>
       <div class="modal-actions"><button class="btn btn-ghost" onclick="closeModal()">Annuler</button><button class="btn btn-primary" onclick="confirmNewTask()">Créer</button></div>
     </div></div>`;
   }
@@ -2258,7 +2376,7 @@ function render(){
 
   const u = currentProfile();
   if(!u){ logout(); return; }
-  const allowed = navFor(u.is_master).map(x => x[0]);
+  const allowed = navFor(u.is_master).flatMap(([id]) => (u.is_master && id === 'missions') ? ['missions-validation','missions-creation'] : [id]);
   if(!allowed.includes(state.view)) state.view = allowed[0];
 
   let content = "";
@@ -2270,6 +2388,8 @@ function render(){
   else if(state.view === "recompenses") content = renderRecompenses();
   else if(state.view === "dashboard") content = renderDashboard();
   else if(state.view === "missions") content = renderMissions();
+  else if(state.view === "missions-validation") content = renderMissionsValidation();
+  else if(state.view === "missions-creation") content = renderMissionsCreation();
   else if(state.view === "utilisateurs") content = renderUtilisateurs();
   else if(state.view === "contrats") content = renderContratsAdmin();
   else if(state.view === "contrat") content = renderContratClient();
@@ -2313,17 +2433,6 @@ function animateXpTotal(){
   }
   requestAnimationFrame(step);
 }
-// Bref flash façon "acquisition" d'un appareil optique, joué uniquement sur une vraie
-// navigation (goto) — jamais sur les ré-rendus dus aux données, pour ne pas clignoter en boucle.
-function triggerNavFlash(){
-  const el = document.getElementById('nv-flash');
-  if(!el) return;
-  if(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-  el.classList.remove('play');
-  void el.offsetWidth;
-  el.classList.add('play');
-}
-
 /* ---------- Global handlers ---------- */
 window.setAuthTab = (tab) => { state.authTab = tab; state.authError = ""; state.authNotice = ""; render(); };
 window.togglePasswordVisibility = (id) => {
@@ -2344,14 +2453,15 @@ window.handleResendConfirmation = () => {
 window.handleAdminLogin = (e) => { e.preventDefault(); doAdminLogin(e.target.username.value, e.target.password.value); return false; };
 window.logout = logout;
 window.goto = (view) => {
-  if(view !== state.view) triggerNavFlash();
   state.view = view; state.sidebarOpen = false; state.profileSaved = false;
+  if(view === 'missions-validation' || view === 'missions-creation') state.missionsNavOpen = true;
   const u = currentProfile();
   if(u && !u.is_master && view === 'missions') markMissionsSeen(u.username);
   if(u && u.is_master && view === 'contrats') markContractsSeen();
   if(u && !u.is_master && view === 'recompenses') markRedemptionsSeen(u.username);
   render();
 };
+window.toggleMissionsNav = () => { state.missionsNavOpen = !state.missionsNavOpen; render(); };
 window.toggleSidebar = () => { state.sidebarOpen = !state.sidebarOpen; render(); };
 window.deleteItem = deleteItem;
 window.deleteTask = deleteTask;
@@ -2428,7 +2538,8 @@ window.confirmNewTask = () => {
     document.getElementById("tk-xp").value,
     document.getElementById("tk-requires").checked,
     document.getElementById("tk-answer-label")?.value.trim(),
-    document.getElementById("tk-group").value || null
+    document.getElementById("tk-group").value || null,
+    document.getElementById("tk-recurring").checked
   );
 };
 window.openNewGroupModal = () => { state.modal = { type:"newGroup" }; render(); };
