@@ -424,6 +424,7 @@ let state = {
   docError: "",
   gestionSearch: "",
   gestionFilter: "all",
+  validationSearch: "",
   gestionSort: { field: "start_date", dir: "asc" },
   contratsSort: "client_asc",
 };
@@ -671,7 +672,7 @@ async function doAdminLogin(username, password){
 }
 
 function logout(){
-  state.profileNotice = ""; state.docError = ""; state.gestionSearch = ""; state.gestionFilter = "all";
+  state.profileNotice = ""; state.docError = ""; state.gestionSearch = ""; state.gestionFilter = "all"; state.validationSearch = "";
   if(state.session?.isMaster){
     localStorage.removeItem('ov_admin_session');
     state.session = null; state.view = "accueil"; render();
@@ -902,6 +903,31 @@ async function rejectCompletion(completionId){
   const { data, error } = await sb.from('task_completions').update({ status:'refusee', client_seen:false }).eq('id', completionId).select().single();
   if(error){ alert("Erreur : " + error.message); return; }
   Object.assign(c, data);
+  render();
+}
+async function deleteValidation(completionId){
+  if(!state.session.isMaster) return;
+  const c = state.completions.find(x => x.id === completionId);
+  if(!c) return;
+  // Supprimer une soumission déjà validée ne retire PAS automatiquement l'XP déjà créditée
+  // (crédité une fois pour toutes via grantXp sur profiles.xp) — on prévient explicitement le
+  // master plutôt que de faire un retrait silencieux non demandé.
+  const msg = c.status === 'validee'
+    ? "Supprimer définitivement cette soumission validée ? L'XP déjà créditée au client ne sera PAS retirée automatiquement (utilisez « Réinitialiser niveau 1 » sur sa fiche si besoin)."
+    : "Supprimer définitivement cette soumission ?";
+  if(!confirm(msg)) return;
+  const { error } = await sb.from('task_completions').delete().eq('id', completionId);
+  if(error){ alert("Erreur : " + error.message); return; }
+  state.completions = state.completions.filter(x => x.id !== completionId);
+  render();
+}
+async function updateValidationAnswer(completionId, answer){
+  if(!state.session.isMaster) return;
+  const { data, error } = await sb.from('task_completions').update({ answer: answer || null }).eq('id', completionId).select().single();
+  if(error){ alert("Erreur : " + error.message); return; }
+  const c = state.completions.find(x => x.id === completionId);
+  if(c) Object.assign(c, data);
+  state.modal = null;
   render();
 }
 function markMissionsSeen(username){
@@ -1953,6 +1979,22 @@ function renderMissionsCreation(){
 }
 
 /* ---------- Missions (master) : Validation — soumissions des clients, avec plus de contexte ---------- */
+function validationMatchesSearch(c, q){
+  if(!q) return true;
+  const p = state.profiles.find(x => x.username === c.username);
+  const name = p ? clientDisplayName(p).toLowerCase() : '';
+  return name.includes(q) || c.username.toLowerCase().includes(q);
+}
+function validationFilteredPending(){
+  const q = (state.validationSearch||'').trim().toLowerCase();
+  return state.completions.filter(c => c.status === 'attente' && validationMatchesSearch(c, q))
+    .sort((a,b) => (a.completed_at||'').localeCompare(b.completed_at||''));
+}
+function validationFilteredRecent(){
+  const q = (state.validationSearch||'').trim().toLowerCase();
+  return state.completions.filter(c => c.status !== 'attente' && validationMatchesSearch(c, q))
+    .sort((a,b) => (b.completed_at||'').localeCompare(a.completed_at||'')).slice(0,15);
+}
 function validationRowHtml(c){
   const task = state.tasks.find(t => t.id === c.task_id);
   const p = state.profiles.find(x => x.username === c.username);
@@ -1967,24 +2009,54 @@ function validationRowHtml(c){
         <span class="task-xp">+${task ? task.xp_reward : '?'} XP</span>
       </div>
       ${task && task.requires_answer ? `<div class="card-desc" style="flex:0;"><strong>${esc(task.answer_label||'Réponse')}</strong> : ${esc(c.answer||'—')}</div>` : ''}
-      <div style="display:flex;gap:8px;"><button class="btn btn-primary btn-sm" onclick="validateCompletion('${c.id}')">Valider</button><button class="btn btn-ghost btn-sm" onclick="rejectCompletion('${c.id}')">Refuser</button></div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <button class="btn btn-primary btn-sm" onclick="validateCompletion('${c.id}')">Valider</button>
+        <button class="btn btn-ghost btn-sm" onclick="rejectCompletion('${c.id}')">Refuser</button>
+        ${task && task.requires_answer ? `<button class="btn btn-ghost btn-sm" onclick="openEditValidationModal('${c.id}')">Modifier</button>` : ''}
+        <button class="btn btn-danger btn-sm" onclick="deleteValidation('${c.id}')">Supprimer</button>
+      </div>
     </div>`;
 }
+function validationHistoryRowHtml(c){
+  const task = state.tasks.find(t => t.id === c.task_id);
+  const p = state.profiles.find(x => x.username === c.username);
+  return `<tr>
+    <td>${esc(task ? task.title : 'Mission supprimée')}</td>
+    <td>${esc(p ? clientDisplayName(p) : c.username)}</td>
+    <td>${statusPillHtml(c.status === 'validee' ? 'accepte' : 'refuse')}</td>
+    <td>${fmtDateTime(c.completed_at)}</td>
+    <td><div style="display:flex;gap:6px;flex-wrap:wrap;">
+      ${task && task.requires_answer ? `<button class="btn btn-ghost btn-sm" onclick="openEditValidationModal('${c.id}')">Modifier</button>` : ''}
+      <button class="btn btn-danger btn-sm" onclick="deleteValidation('${c.id}')">Supprimer</button>
+    </div></td>
+  </tr>`;
+}
+function refreshValidationView(){
+  const pendingList = validationFilteredPending();
+  const recentList = validationFilteredRecent();
+  const q = (state.validationSearch||'').trim();
+  const pendingContainer = document.getElementById('validation-pending');
+  const recentBody = document.getElementById('validation-recent-body');
+  if(!pendingContainer) return;
+  pendingContainer.innerHTML = pendingList.length ? pendingList.map(validationRowHtml).join('') : `<div class="empty">Aucune soumission en attente${q ? ' pour cette recherche' : ' de validation'}.</div>`;
+  if(recentBody) recentBody.innerHTML = recentList.length ? recentList.map(validationHistoryRowHtml).join('') : `<tr><td colspan="5"><div class="empty">Aucun historique${q ? ' pour cette recherche' : ''}.</div></td></tr>`;
+}
 function renderMissionsValidation(){
-  const pending = state.completions.filter(c => c.status === 'attente').sort((a,b) => (a.completed_at||'').localeCompare(b.completed_at||''));
-  const recent = state.completions.filter(c => c.status !== 'attente').sort((a,b) => (b.completed_at||'').localeCompare(a.completed_at||'')).slice(0,15);
+  const allPendingCount = state.completions.filter(c => c.status === 'attente').length;
+  const pending = validationFilteredPending();
+  const recent = validationFilteredRecent();
   return `
-    <div class="topbar"><div><h1>Missions — Validation${pending.length ? ` (${pending.length})` : ''}</h1><div class="desc">Passez en revue chaque soumission de client et créditez l'XP. La création des missions se fait dans le sous-onglet « Création ».</div></div></div>
-    ${pending.length ? `<div style="display:flex;flex-direction:column;gap:12px;">${pending.map(validationRowHtml).join('')}</div>` : `<div class="empty">Aucune soumission en attente de validation.</div>`}
-    ${recent.length ? `
-      <div class="section-title" style="margin-top:30px;">Historique récent</div>
-      <div class="panel"><table><thead><tr><th>Mission</th><th>Client</th><th>Statut</th><th>Soumise le</th></tr></thead><tbody>
-        ${recent.map(c => {
-          const task = state.tasks.find(t => t.id === c.task_id);
-          const p = state.profiles.find(x => x.username === c.username);
-          return `<tr><td>${esc(task ? task.title : 'Mission supprimée')}</td><td>${esc(p ? clientDisplayName(p) : c.username)}</td><td>${statusPillHtml(c.status === 'validee' ? 'accepte' : 'refuse')}</td><td>${fmtDateTime(c.completed_at)}</td></tr>`;
-        }).join('')}
-      </tbody></table></div>` : ''}
+    <div class="topbar"><div><h1>Missions — Validation${allPendingCount ? ` (${allPendingCount})` : ''}</h1><div class="desc">Passez en revue chaque soumission de client et créditez l'XP. La création des missions se fait dans le sous-onglet « Création ».</div></div></div>
+    <div class="filter-bar">
+      <input type="text" placeholder="Rechercher un client par nom..." value="${esc(state.validationSearch)}" oninput="onValidationSearch(this.value)">
+    </div>
+    <div id="validation-pending" style="display:flex;flex-direction:column;gap:12px;">
+      ${pending.length ? pending.map(validationRowHtml).join('') : `<div class="empty">Aucune soumission en attente${state.validationSearch.trim() ? ' pour cette recherche' : ' de validation'}.</div>`}
+    </div>
+    <div class="section-title" style="margin-top:30px;">Historique récent</div>
+    <div class="panel"><table><thead><tr><th>Mission</th><th>Client</th><th>Statut</th><th>Soumise le</th><th></th></tr></thead>
+      <tbody id="validation-recent-body">${recent.length ? recent.map(validationHistoryRowHtml).join('') : `<tr><td colspan="5"><div class="empty">Aucun historique${state.validationSearch.trim() ? ' pour cette recherche' : ''}.</div></td></tr>`}</tbody>
+    </table></div>
   `;
 }
 
@@ -2333,6 +2405,18 @@ function renderModal(){
       <div class="modal-actions"><button class="btn btn-ghost" onclick="closeModal()">Annuler</button><button class="btn btn-primary" onclick="confirmAnswerTask('${task.id}')">Valider</button></div>
     </div></div>`;
   }
+  if(m.type === "editValidationAnswer"){
+    const c = state.completions.find(x => x.id === m.completionId);
+    const task = c ? state.tasks.find(t => t.id === c.task_id) : null;
+    if(!c || !task) return "";
+    return `
+    <div class="modal-bg" onclick="closeModalBg(event)"><div class="modal">
+      <h3>Modifier la réponse</h3>
+      <p style="font-size:13.5px;color:var(--text-dim);margin:-6px 0 14px;">${esc(task.title)} — ${esc(clientDisplayName(state.profiles.find(p => p.username === c.username)) || c.username)}</p>
+      <div class="field"><label>${esc(task.answer_label || 'Réponse')}</label><textarea id="edit-answer-input" rows="3">${esc(c.answer||'')}</textarea></div>
+      <div class="modal-actions"><button class="btn btn-ghost" onclick="closeModal()">Annuler</button><button class="btn btn-primary" onclick="confirmEditValidationAnswer('${c.id}')">Enregistrer</button></div>
+    </div></div>`;
+  }
   if(m.type === "viewProfile"){
     const p = state.profiles.find(x => x.username === m.username);
     if(!p) return "";
@@ -2547,6 +2631,13 @@ window.confirmNewGroup = () => { createMissionGroup(document.getElementById("grp
 window.deleteMissionGroup = deleteMissionGroup;
 window.validateCompletion = validateCompletion;
 window.rejectCompletion = rejectCompletion;
+window.deleteValidation = deleteValidation;
+window.openEditValidationModal = (id) => { state.modal = { type: "editValidationAnswer", completionId: id }; render(); };
+window.confirmEditValidationAnswer = (id) => {
+  const val = document.getElementById('edit-answer-input').value.trim();
+  updateValidationAnswer(id, val);
+};
+window.onValidationSearch = (v) => { state.validationSearch = v; refreshValidationView(); };
 window.openNewRewardModal = () => { state.modal = { type:"newReward" }; render(); };
 window.openEditRewardModal = (rewardId) => { state.modal = { type:"editReward", rewardId }; render(); };
 window.deleteReward = deleteReward;
