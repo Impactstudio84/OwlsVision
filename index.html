@@ -141,8 +141,13 @@
   .nav-chevron{margin-left:auto;font-size:11px;opacity:0.55;transition:transform .16s var(--ease);flex-shrink:0;}
   .nav-chevron.open{transform:rotate(90deg);}
   .nav-sub{display:flex;flex-direction:column;gap:2px;max-height:0;overflow:hidden;transition:max-height .2s var(--ease);}
-  .nav-sub.open{max-height:160px;}
+  .nav-sub.open{max-height:220px;}
   .nav-sub button{padding-left:46px;}
+  .nav-draggable > button{cursor:grab;}
+  .nav-draggable .nav-group > button{cursor:grab;}
+  .nav button.dragging{opacity:0.35;}
+  .nav-draggable > button.drag-over{outline:2px dashed var(--accent-soft-2);outline-offset:-2px;}
+  .nav-group.drag-over{outline:2px dashed var(--accent-soft-2);outline-offset:2px;border-radius:var(--r-sm);}
   .side-foot{padding:16px;border-top:1px solid var(--border-soft);}
   .side-user{display:flex;align-items:center;gap:10px;margin-bottom:12px;}
   .avatar{width:34px;height:34px;border-radius:11px;background:var(--accent-soft);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:var(--accent);flex-shrink:0;}
@@ -183,6 +188,10 @@
   th{text-align:left;padding:12px 14px;color:var(--text-faint);font-weight:600;font-size:12px;border-bottom:1px solid var(--border-soft);}
   td{padding:14px;border-bottom:1px solid var(--border-soft);color:var(--text);}
   tr:last-child td{border-bottom:none;}
+  .tbl-compact th{padding:8px 12px;font-size:11px;}
+  .tbl-compact td{padding:7px 12px;font-size:12.5px;}
+  .tbl-compact .t-title{font-size:13px;font-weight:600;}
+  .tbl-compact .t-desc{font-size:11px;color:var(--text-faint);margin-top:1px;}
   .panel{background: var(--surface);border:1px solid var(--border);border-radius: var(--r-md);padding:22px;backdrop-filter: blur(20px);-webkit-backdrop-filter: blur(20px);}
   .panel + .panel{margin-top:18px;}
   .row{display:flex;gap:14px;flex-wrap:wrap;}
@@ -268,7 +277,11 @@
     display:flex;align-items:center;justify-content:center;
   }
   .xp-ring::before{content:"";position:absolute;inset:10px;border-radius:50%;background:#0c0e0c;}
-  .ring-owl{position:relative;font-size:36px;}
+  .ring-owl{position:relative;color:var(--accent);display:flex;}
+  .ring-owl svg{width:42px;height:42px;}
+  .rank-step .rank-icon{color:var(--text-faint);margin:0 auto 5px;display:flex;justify-content:center;}
+  .rank-step.done .rank-icon{color:var(--text-dim);}
+  .rank-step.current .rank-icon{color:var(--accent);}
   .xp-hero-rank{font-family:var(--font-disp);font-size:25px;font-weight:700;letter-spacing:0.01em;}
   .xp-hero-level{font-size:13px;color:var(--text-dim);font-weight:700;margin:4px 0 18px;}
   .xp-bar-track-lg{height:14px;}
@@ -398,6 +411,32 @@ function rankFor(xp){ let r = RANKS[0]; for(const c of RANKS){ if(xp >= c.min) r
 function rankIndexFor(xp){ let i = 0; for(let k=0;k<RANKS.length;k++){ if(xp >= RANKS[k].min) i = k; } return i; }
 function levelFor(xp){ return Math.floor(xp / XP_STEP) + 1; }
 function xpInLevel(xp){ return xp % XP_STEP; }
+// Logo du grade : un hibou qui s'équipe progressivement en optique de vision nocturne.
+// Palier 1 = hibou nu (Novice, Explorateur) — palier 2 = + monoculaire (Confirmé) —
+// palier 3 = + binoculaire (Spécialiste) — palier 4 = + quadtube (Vétéran, Navy Seal).
+function owlTierForRankIndex(idx){
+  if(idx <= 1) return 1;
+  if(idx === 2) return 2;
+  if(idx === 3) return 3;
+  return 4;
+}
+function owlEyesSvg(tier){
+  if(tier === 1) return '<circle cx="8.7" cy="12" r="1.7"/><circle cx="15.3" cy="12" r="1.7"/>';
+  if(tier === 2) return '<circle cx="8.7" cy="12" r="1.7"/><circle cx="15.3" cy="12" r="3"/><path d="M11.6 12h1.2"/>';
+  if(tier === 3) return '<circle cx="8.7" cy="12" r="2.6"/><circle cx="15.3" cy="12" r="2.6"/><path d="M11.3 12h1.4"/>';
+  return '<circle cx="8.2" cy="10.4" r="2.05"/><circle cx="15.8" cy="10.4" r="2.05"/><circle cx="8.2" cy="14.7" r="2.05"/><circle cx="15.8" cy="14.7" r="2.05"/>';
+}
+function owlIconSvg(tier, opts){
+  opts = opts || {};
+  const size = opts.size || 22;
+  return `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M6.6 3.6 4.2 7.6M17.4 3.6 19.8 7.6"/>
+    <path d="M12 3.3c-4.6 0-7.5 3.4-7.5 8.1 0 4.5 2.9 8.1 7.5 8.1s7.5-3.6 7.5-8.1c0-4.7-2.9-8.1-7.5-8.1Z"/>
+    ${owlEyesSvg(tier)}
+    <path d="M12 14.6 10.8 17.1h2.4L12 14.6Z"/>
+    ${opts.elite ? '<path d="M12 1.4l.6 1.3 1.4.2-1 1 .2 1.4-1.2-.7-1.2.7.2-1.4-1-1 1.4-.2Z" fill="currentColor" stroke="none"/>' : ''}
+  </svg>`;
+}
 const todayStr = () => new Date().toISOString().slice(0,10);
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const fmtDate = (iso) => iso ? new Date(iso).toLocaleDateString('fr-FR') : '—';
@@ -408,13 +447,14 @@ let state = {
   fatalError: null,
   session: null, // {username(=email pour les clients), isMaster}
   profiles: [], items: [], bookings: [], tasks: [], completions: [], contracts: [], mission_groups: [], rewards: [], redemptions: [],
+  contractTemplate: null,
   view: "accueil",
   authTab: "login",
   showAdminLogin: false,
   authError: "",
   authNotice: "",
   sidebarOpen: false,
-  missionsNavOpen: false,
+  navOpenGroups: { 'gestion-group': false, 'missions-group': false },
   modal: null,
   bookingError: "",
   answerError: "",
@@ -425,6 +465,7 @@ let state = {
   gestionSearch: "",
   gestionFilter: "all",
   validationSearch: "",
+  usersSearch: "",
   gestionSort: { field: "start_date", dir: "asc" },
   contratsSort: "client_asc",
 };
@@ -456,7 +497,7 @@ function currentProfile(){ return state.profiles.find(p => p.username === state.
 
 /* ---------- Boot & data ---------- */
 async function fetchAll(){
-  const [profiles, items, bookings, tasks, completions, contracts, groups, rewards, redemptions] = await Promise.all([
+  const [profiles, items, bookings, tasks, completions, contracts, groups, rewards, redemptions, template] = await Promise.all([
     sb.from('profiles').select('*'),
     sb.from('items').select('*').order('created_at'),
     sb.from('bookings').select('*'),
@@ -466,6 +507,10 @@ async function fetchAll(){
     sb.from('mission_groups').select('*').order('created_at'),
     sb.from('rewards').select('*').order('created_at'),
     sb.from('reward_redemptions').select('*'),
+    // Table du Lot 7 (contrat type) : peut ne pas encore exister tant que la migration n'a pas
+    // été exécutée — sb renvoie {data:null, error} sans lever d'exception, donc ça ne bloque
+    // jamais le chargement du reste de l'app.
+    sb.from('contract_template').select('*').eq('id', 'default').maybeSingle(),
   ]);
   state.profiles = profiles.data || [];
   state.items = items.data || [];
@@ -476,6 +521,7 @@ async function fetchAll(){
   state.mission_groups = groups.data || [];
   state.rewards = rewards.data || [];
   state.redemptions = redemptions.data || [];
+  state.contractTemplate = template.data || null;
 }
 
 async function boot(){
@@ -672,7 +718,7 @@ async function doAdminLogin(username, password){
 }
 
 function logout(){
-  state.profileNotice = ""; state.docError = ""; state.gestionSearch = ""; state.gestionFilter = "all"; state.validationSearch = "";
+  state.profileNotice = ""; state.docError = ""; state.gestionSearch = ""; state.gestionFilter = "all"; state.validationSearch = ""; state.usersSearch = "";
   if(state.session?.isMaster){
     localStorage.removeItem('ov_admin_session');
     state.session = null; state.view = "accueil"; render();
@@ -1085,19 +1131,48 @@ async function saveProfile(){
 }
 
 /* ---------- Contracts ---------- */
+// Étape commune une fois le PDF en place à `${username}/original.pdf`, que ce PDF vienne d'un
+// envoi sur mesure (masterUploadContract) ou d'une copie du contrat type (applyContractTemplate).
+// Réinitialise la signature : un nouveau contrat doit toujours être re-signé.
+async function finalizeContractAssignment(username, path){
+  const { data: pub } = sb.storage.from('contracts').getPublicUrl(path);
+  const payload = { username, pdf_path: pub.publicUrl + '?v=' + Date.now(), uploaded_at: new Date().toISOString(), signed_pdf_path: null, signed_at: null, signed_seen_by_master: true };
+  const { data, error } = await sb.from('contracts').upsert(payload, { onConflict: 'username' }).select().single();
+  if(error){ alert("Erreur : " + error.message); return false; }
+  const idx = state.contracts.findIndex(c => c.username === username);
+  if(idx > -1) state.contracts[idx] = data; else state.contracts.push(data);
+  return true;
+}
 async function masterUploadContract(username, file){
   // Chemin stable (pas d'horodatage) : un nouvel envoi remplace l'ancien fichier au lieu de s'accumuler dans le stockage.
   const path = `${username}/original.pdf`;
   const { error: upErr } = await sb.storage.from('contracts').upload(path, file, { upsert: true, contentType: 'application/pdf' });
   if(upErr){ alert("Erreur d'envoi du PDF : " + upErr.message); return; }
   await sb.storage.from('contracts').remove([`${username}/signed.pdf`]);
+  if(await finalizeContractAssignment(username, path)) render();
+}
+// Contrat type : un PDF de référence unique, envoyé une fois, réutilisable pour tout client
+// d'un simple clic (copie du fichier dans le dossier de ce client — le reste du flux est
+// identique à un envoi sur mesure, y compris la notification "à signer" côté client).
+async function uploadContractTemplate(file){
+  const path = `_template/contrat-type.pdf`;
+  const { error: upErr } = await sb.storage.from('contracts').upload(path, file, { upsert: true, contentType: 'application/pdf' });
+  if(upErr){ alert("Erreur d'envoi du contrat type : " + upErr.message); return; }
   const { data: pub } = sb.storage.from('contracts').getPublicUrl(path);
-  const payload = { username, pdf_path: pub.publicUrl + '?v=' + Date.now(), uploaded_at: new Date().toISOString(), signed_pdf_path: null, signed_at: null, signed_seen_by_master: true };
-  const { data, error } = await sb.from('contracts').upsert(payload, { onConflict: 'username' }).select().single();
+  const payload = { id: 'default', pdf_path: pub.publicUrl + '?v=' + Date.now(), uploaded_at: new Date().toISOString() };
+  const { data, error } = await sb.from('contract_template').upsert(payload, { onConflict: 'id' }).select().single();
   if(error){ alert("Erreur : " + error.message); return; }
-  const idx = state.contracts.findIndex(c => c.username === username);
-  if(idx > -1) state.contracts[idx] = data; else state.contracts.push(data);
+  state.contractTemplate = data;
   render();
+}
+async function applyContractTemplate(username){
+  if(!state.contractTemplate){ alert("Aucun contrat type n'a encore été envoyé — utilisez le bouton « Envoyer le contrat type » en haut de la page."); return; }
+  if(!confirm(`Rendre le contrat type disponible pour "${username}" ? Un contrat déjà présent pour ce client (et sa signature) sera remplacé.`)) return;
+  const path = `${username}/original.pdf`;
+  const { error: cpErr } = await sb.storage.from('contracts').copy('_template/contrat-type.pdf', path);
+  if(cpErr){ alert("Erreur : " + cpErr.message); return; }
+  await sb.storage.from('contracts').remove([`${username}/signed.pdf`]);
+  if(await finalizeContractAssignment(username, path)) render();
 }
 async function masterDeleteContract(username){
   if(!confirm(`Supprimer le contrat de "${username}" (original + version signée) ?`)) return;
@@ -1315,6 +1390,13 @@ window.handleContractUpload = (e, username) => {
   if(file.type !== 'application/pdf'){ alert("Merci de sélectionner un fichier PDF."); return; }
   masterUploadContract(username, file);
 };
+window.handleContractTemplateUpload = (e) => {
+  const file = e.target.files[0];
+  if(!file) return;
+  if(file.type !== 'application/pdf'){ alert("Merci de sélectionner un fichier PDF."); return; }
+  uploadContractTemplate(file);
+};
+window.applyContractTemplate = applyContractTemplate;
 
 /* ---------- Icons ---------- */
 function iconFor(name){
@@ -1356,6 +1438,7 @@ function ranksRoadmapHtml(xp){
     <div class="ranks-roadmap">
       ${RANKS.map((r, i) => `
         <div class="rank-step ${i<curIdx?'done':i===curIdx?'current':'locked'}">
+          <div class="rank-icon">${owlIconSvg(owlTierForRankIndex(i), { size:22, elite: i===RANKS.length-1 })}</div>
           <div class="rank-name">${i<curIdx?'✓ ':''}${esc(r.name)}</div>
           <div class="rank-xp">${r.min} XP</div>
         </div>`).join('')}
@@ -1442,54 +1525,93 @@ function renderGate(){
 }
 
 /* ---------- Sidebar / nav ---------- */
+// Structure de nav data-driven : chaque entrée master peut porter un "badge" (compteur de
+// notification) et/ou un "sub" (sous-onglets repliables). Les ids des sous-onglets sont ceux
+// utilisés par le routeur (state.view) ; les ids de groupe ("gestion-group", "missions-group")
+// ne sont JAMAIS des vues elles-mêmes, seulement des repères de rangement dans le menu.
+function masterNavDef(){
+  return [
+    { id: "dashboard", label: "Tableau de bord" },
+    { id: "gestion-group", label: "Gestion", icon: "gestion",
+      badge: () => state.bookings.filter(b => b.status === 'demande').length,
+      sub: [
+        { id: "gestion", label: "Location", badge: () => state.bookings.filter(b => b.status === 'demande').length },
+        { id: "stock", label: "Stock" },
+        { id: "catalogue", label: "Catalogue" },
+      ] },
+    { id: "utilisateurs", label: "Utilisateurs" },
+    { id: "missions-group", label: "Missions", icon: "missions",
+      badge: () => state.completions.filter(c => c.status === 'attente').length,
+      sub: [
+        { id: "missions-validation", label: "Validation", badge: () => state.completions.filter(c => c.status === 'attente').length },
+        { id: "missions-creation", label: "Création" },
+      ] },
+    { id: "recompenses", label: "À gagner", badge: () => state.redemptions.filter(r => r.status === 'attente').length },
+    { id: "contrats", label: "Contrats", badge: () => state.contracts.filter(c => c.signed_at && c.signed_seen_by_master === false).length },
+  ];
+}
+function clientNavDef(){
+  return [
+    { id: "accueil", label: "Accueil" },
+    { id: "catalogue", label: "Catalogue location JVN" },
+    { id: "planning", label: "Mes réservations" },
+    { id: "missions", label: "Missions", badge: (u) => state.completions.filter(c => c.username === u.username && c.status !== 'attente' && c.client_seen === false).length },
+    { id: "recompenses", label: "À gagner", badge: (u) => state.redemptions.filter(r => r.username === u.username && r.status !== 'attente' && r.client_seen === false).length },
+    { id: "contrat", label: "Mes contrats", badge: (u) => { const c = state.contracts.find(x => x.username === u.username); return (c && !c.signed_at) ? 1 : 0; } },
+    { id: "profil", label: "Mon profil" },
+  ];
+}
+// Ordre des onglets du master, personnalisable en glissant-déposant — stocké localement
+// (par poste/navigateur, comme la session admin), jamais en base.
+function getMasterNavOrder(){
+  const defaultOrder = masterNavDef().map(x => x.id);
+  let saved = [];
+  try { saved = JSON.parse(localStorage.getItem('ov_master_nav_order') || '[]'); } catch(e){ saved = []; }
+  const valid = saved.filter(id => defaultOrder.includes(id));
+  defaultOrder.forEach(id => { if(!valid.includes(id)) valid.push(id); });
+  return valid;
+}
+function saveMasterNavOrder(order){
+  try { localStorage.setItem('ov_master_nav_order', JSON.stringify(order)); } catch(e){}
+}
 function navFor(isMaster){
-  return isMaster
-    ? [["dashboard","Tableau de bord"],["gestion","Gestion location"],["stock","Gestion de stock"],["utilisateurs","Utilisateurs"],["catalogue","Catalogue JVN"],["missions","Missions"],["recompenses","À gagner"],["contrats","Contrats"]]
-    : [["accueil","Accueil"],["catalogue","Catalogue location JVN"],["planning","Mes réservations"],["missions","Missions"],["recompenses","À gagner"],["contrat","Mes contrats"],["profil","Mon profil"]];
+  if(!isMaster) return clientNavDef();
+  const def = masterNavDef();
+  const byId = Object.fromEntries(def.map(item => [item.id, item]));
+  return getMasterNavOrder().map(id => byId[id]).filter(Boolean);
 }
-function navBadgeCount(id, u){
-  if(u.is_master){
-    if(id === 'gestion') return state.bookings.filter(b => b.status === 'demande').length;
-    if(id === 'missions') return state.completions.filter(c => c.status === 'attente').length;
-    if(id === 'contrats') return state.contracts.filter(c => c.signed_at && c.signed_seen_by_master === false).length;
-    if(id === 'recompenses') return state.redemptions.filter(r => r.status === 'attente').length;
-  } else {
-    if(id === 'missions') return state.completions.filter(c => c.username === u.username && c.status !== 'attente' && c.client_seen === false).length;
-    if(id === 'contrat'){
-      const c = state.contracts.find(x => x.username === u.username);
-      return (c && !c.signed_at) ? 1 : 0;
-    }
-    if(id === 'recompenses') return state.redemptions.filter(r => r.username === u.username && r.status !== 'attente' && r.client_seen === false).length;
+function navItemHtml(item, u, isMaster){
+  const badgeCount = item.badge ? item.badge(u) : 0;
+  const badgeHtml = badgeCount>0 ? `<span class="badge-dot">${badgeCount>99?'99+':badgeCount}</span>` : '';
+  const dragAttrs = isMaster ? ` draggable="true" data-nav-id="${item.id}" ondragstart="navDragStart(event,'${item.id}')" ondragend="navDragEnd(event)"` : '';
+  if(item.sub){
+    const isOpen = !!state.navOpenGroups[item.id];
+    const isSubActive = item.sub.some(s => s.id === state.view);
+    return `
+      <div class="nav-group" ondragover="navDragOver(event)" ondragleave="navDragLeave(event)" ondrop="navDrop(event,'${item.id}')">
+        <button type="button"${dragAttrs} class="${isSubActive?'active':''}" onclick="toggleNavGroup('${item.id}')">${iconFor(item.icon || item.id)}<span>${esc(item.label)}</span>${badgeHtml}<span class="nav-chevron ${isOpen?'open':''}">›</span></button>
+        <div class="nav-sub ${isOpen?'open':''}">
+          ${item.sub.map(s => {
+            const subBadge = s.badge ? s.badge(u) : 0;
+            const subBadgeHtml = subBadge>0 ? `<span class="badge-dot">${subBadge>99?'99+':subBadge}</span>` : '';
+            return `<button type="button" class="${state.view===s.id?'active':''}" onclick="goto('${s.id}')"><span>${esc(s.label)}</span>${subBadgeHtml}</button>`;
+          }).join('')}
+        </div>
+      </div>`;
   }
-  return 0;
-}
-function missionsNavGroupHtml(u){
-  const count = navBadgeCount('missions', u);
-  const badgeHtml = count>0 ? `<span class="badge-dot">${count>99?'99+':count}</span>` : '';
-  const isSubActive = state.view === 'missions-validation' || state.view === 'missions-creation';
-  return `
-    <div class="nav-group">
-      <button type="button" class="${isSubActive?'active':''}" onclick="toggleMissionsNav()">${iconFor('missions')}<span>Missions</span>${badgeHtml}<span class="nav-chevron ${state.missionsNavOpen?'open':''}">›</span></button>
-      <div class="nav-sub ${state.missionsNavOpen?'open':''}">
-        <button type="button" class="${state.view==='missions-validation'?'active':''}" onclick="goto('missions-validation')"><span>Validation</span>${badgeHtml}</button>
-        <button type="button" class="${state.view==='missions-creation'?'active':''}" onclick="goto('missions-creation')"><span>Création</span></button>
-      </div>
-    </div>`;
+  return `<button type="button"${dragAttrs} class="${state.view===item.id?'active':''}" onclick="goto('${item.id}')" ondragover="navDragOver(event)" ondragleave="navDragLeave(event)" ondrop="navDrop(event,'${item.id}')">${iconFor(item.icon || item.id)}<span>${esc(item.label)}</span>${badgeHtml}</button>`;
 }
 function renderSidebar(){
   const u = currentProfile();
-  const items = navFor(u.is_master).map(([id,label]) => {
-    if(u.is_master && id === 'missions') return missionsNavGroupHtml(u);
-    const badge = navBadgeCount(id, u);
-    return `<button class="${state.view===id?'active':''}" onclick="goto('${id}')">${iconFor(id)}<span>${label}</span>${badge>0?`<span class="badge-dot">${badge>99?'99+':badge}</span>`:''}</button>`;
-  }).join("");
+  const isMaster = u.is_master;
+  const items = navFor(isMaster).map(item => navItemHtml(item, u, isMaster)).join("");
   return `
   <div class="sidebar ${state.sidebarOpen?'open':''}">
     <div class="side-brand">
       <img src="${LOGO}" alt="logo">
       <div><div class="name">OWLS<span>VISION</span></div><div class="sub">OPS &amp; LOCATION</div></div>
     </div>
-    <div class="nav">${items}</div>
+    <div class="nav ${isMaster?'nav-draggable':''}">${items}</div>
     <div class="side-foot">
       <div class="side-user">
         <div class="avatar">${esc(u.username.slice(0,2).toUpperCase())}</div>
@@ -1517,7 +1639,7 @@ function renderAccueil(){
   return `
     <div class="hero-wrap">
       <div class="xp-hero">
-        <div class="xp-ring" style="--pct:${pct}"><span class="ring-owl">🦉</span></div>
+        <div class="xp-ring" style="--pct:${pct}"><span class="ring-owl">${owlIconSvg(owlTierForRankIndex(rankIndexFor(u.xp)), { size:42, elite: rankIndexFor(u.xp)===RANKS.length-1 })}</span></div>
         <div class="xp-hero-rank">${esc(rankFor(u.xp))}</div>
         <div class="xp-hero-level">NIVEAU ${levelFor(u.xp)}</div>
         ${xpProgressBarHtml(pct, pendingPct, 'xp-bar-track-lg')}
@@ -2133,22 +2255,48 @@ function renderRecompenses(){
 }
 
 /* ---------- Utilisateurs (équipe) ---------- */
-function renderUtilisateurs(){
-  const rows = state.profiles.slice().sort((a,b) => b.xp - a.xp).map(p => `
+function usersMatchesSearch(p, q){
+  if(!q) return true;
+  const hay = [p.username, p.prenom, p.nom, clientDisplayName(p)].filter(Boolean).join(" ").toLowerCase();
+  return hay.includes(q);
+}
+function usersFilteredSorted(){
+  const q = (state.usersSearch||'').trim().toLowerCase();
+  return state.profiles.slice().filter(p => usersMatchesSearch(p, q)).sort((a,b) => {
+    if(!!a.is_master !== !!b.is_master) return a.is_master ? -1 : 1;
+    return b.xp - a.xp;
+  });
+}
+function usersRowHtml(p){
+  return `
     <tr>
-      <td>${esc(p.username)}${p.is_master?' 👑':''}</td>
+      <td><div class="t-title">${esc(clientDisplayName(p))}${p.is_master?' 👑':''}</div>${p.prenom||p.nom ? `<div class="t-desc">@${esc(p.username)}</div>` : ''}</td>
       <td>${p.is_master ? '—' : `${p.xp} XP · Niv. ${levelFor(p.xp)}`}</td>
       <td>${fmtDate(p.created_at)}</td>
       <td>${fmtDateTime(p.last_login)}</td>
-      <td><div style="display:flex;gap:6px;flex-wrap:wrap;">
+      <td><div style="display:flex;gap:5px;flex-wrap:wrap;">
         ${!p.is_master ? `<button class="btn btn-ghost btn-sm" onclick="openViewProfile('${p.username}')">Fiche</button>` : ''}
-        ${!p.is_master && p.xp > 0 ? `<button class="btn btn-ghost btn-sm" onclick="resetUserToLevel1('${p.username}')">Réinitialiser niveau 1</button>` : ''}
+        ${!p.is_master && p.xp > 0 ? `<button class="btn btn-ghost btn-sm" onclick="resetUserToLevel1('${p.username}')">Niv. 1</button>` : ''}
         ${!p.is_master ? `<button class="btn btn-danger btn-sm" onclick="deleteProfile('${p.username}')">Supprimer</button>` : ''}
       </div></td>
-    </tr>`).join("");
+    </tr>`;
+}
+function refreshUsersView(){
+  const list = usersFilteredSorted();
+  const tbody = document.getElementById('users-tbody');
+  const count = document.getElementById('users-count');
+  if(!tbody) return;
+  tbody.innerHTML = list.length ? list.map(usersRowHtml).join('') : `<tr><td colspan="5"><div class="empty">Aucun compte ne correspond à cette recherche.</div></td></tr>`;
+  if(count) count.textContent = `${list.length} compte${list.length>1?'s':''}`;
+}
+function renderUtilisateurs(){
+  const list = usersFilteredSorted();
   return `
-    <div class="topbar"><div><h1>Utilisateurs</h1><div class="desc">Tous les comptes Owls Vision, leur XP et leur dernière connexion.</div></div></div>
-    <div class="panel"><table><thead><tr><th>Compte</th><th>XP</th><th>Inscrit le</th><th>Dernière connexion</th><th></th></tr></thead><tbody>${rows}</tbody></table></div>
+    <div class="topbar"><div><h1>Utilisateurs</h1><div class="desc">Tous les comptes Owls Vision, leur XP et leur dernière connexion. <span id="users-count">${list.length} compte${list.length>1?'s':''}</span></div></div></div>
+    <div class="filter-bar">
+      <input type="text" placeholder="Rechercher un compte par nom ou pseudo..." value="${esc(state.usersSearch)}" oninput="onUsersSearch(this.value)">
+    </div>
+    <div class="panel"><table class="tbl-compact"><thead><tr><th>Compte</th><th>XP</th><th>Inscrit le</th><th>Dernière connexion</th><th></th></tr></thead><tbody id="users-tbody">${list.length ? list.map(usersRowHtml).join('') : `<tr><td colspan="5"><div class="empty">Aucun compte ne correspond à cette recherche.</div></td></tr>`}</tbody></table></div>
   `;
 }
 
@@ -2183,13 +2331,24 @@ function renderContratsAdmin(){
           ${c ? `<a class="btn btn-ghost btn-sm" href="${c.pdf_path}" target="_blank" rel="noopener">Original</a>` : ''}
           ${c && c.signed_pdf_path ? `<a class="btn btn-ghost btn-sm" href="${c.signed_pdf_path}" target="_blank" rel="noopener">Signé</a>` : ''}
           <span class="btn btn-primary btn-sm file-btn">${c?'Remplacer':'Uploader'} PDF<input type="file" accept="application/pdf" onchange="handleContractUpload(event,'${usr.username}')"></span>
+          <button class="btn btn-ghost btn-sm" ${state.contractTemplate?'':'disabled title="Envoyez d\'abord un contrat type ci-dessus"'} onclick="applyContractTemplate('${usr.username}')">Contrat type</button>
           ${c && c.signed_at ? `<button class="btn btn-ghost btn-sm" onclick="masterRemoveSignature('${usr.username}')">Retirer la signature</button>` : ''}
           ${c ? `<button class="btn btn-danger btn-sm" onclick="masterDeleteContract('${usr.username}')">Supprimer</button>` : ''}
         </div>
       </div>`;
   }).join("");
   return `
-    <div class="topbar"><div><h1>Contrats</h1><div class="desc">Ajoutez un contrat PDF par client. Il pourra le consulter et le signer depuis son mobile.</div></div></div>
+    <div class="topbar"><div><h1>Contrats</h1><div class="desc">Ajoutez un contrat PDF par client, ou envoyez un contrat type réutilisable en un clic. Le client le consulte et le signe depuis son mobile.</div></div></div>
+    <div class="panel" style="margin-bottom:16px;display:flex;justify-content:space-between;align-items:center;gap:14px;flex-wrap:wrap;">
+      <div>
+        <div class="t-title">Contrat type</div>
+        <div class="t-desc">${state.contractTemplate ? `Envoyé le ${fmtDate(state.contractTemplate.uploaded_at)} — cliquez « Contrat type » sur un client pour le lui rendre disponible.` : "Aucun contrat type envoyé pour le moment. Envoyez-en un pour pouvoir l'affecter à un client d'un clic."}</div>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        ${state.contractTemplate ? `<a class="btn btn-ghost btn-sm" href="${state.contractTemplate.pdf_path}" target="_blank" rel="noopener">Voir</a>` : ''}
+        <span class="btn btn-primary btn-sm file-btn">${state.contractTemplate?'Remplacer':'Envoyer'} le contrat type<input type="file" accept="application/pdf" onchange="handleContractTemplateUpload(event)"></span>
+      </div>
+    </div>
     <div class="filter-bar" style="margin-bottom:16px;">
       <select onchange="onContratsSort(this.value)">
         <option value="client_asc" ${sortKey==='client_asc'?'selected':''}>Client (A→Z)</option>
@@ -2460,7 +2619,7 @@ function render(){
 
   const u = currentProfile();
   if(!u){ logout(); return; }
-  const allowed = navFor(u.is_master).flatMap(([id]) => (u.is_master && id === 'missions') ? ['missions-validation','missions-creation'] : [id]);
+  const allowed = navFor(u.is_master).flatMap(item => item.sub ? item.sub.map(s => s.id) : [item.id]);
   if(!allowed.includes(state.view)) state.view = allowed[0];
 
   let content = "";
@@ -2538,14 +2697,53 @@ window.handleAdminLogin = (e) => { e.preventDefault(); doAdminLogin(e.target.use
 window.logout = logout;
 window.goto = (view) => {
   state.view = view; state.sidebarOpen = false; state.profileSaved = false;
-  if(view === 'missions-validation' || view === 'missions-creation') state.missionsNavOpen = true;
+  const owningGroup = masterNavDef().find(item => item.sub && item.sub.some(s => s.id === view));
+  if(owningGroup) state.navOpenGroups[owningGroup.id] = true;
   const u = currentProfile();
   if(u && !u.is_master && view === 'missions') markMissionsSeen(u.username);
   if(u && u.is_master && view === 'contrats') markContractsSeen();
   if(u && !u.is_master && view === 'recompenses') markRedemptionsSeen(u.username);
   render();
 };
-window.toggleMissionsNav = () => { state.missionsNavOpen = !state.missionsNavOpen; render(); };
+window.toggleNavGroup = (id) => { state.navOpenGroups[id] = !state.navOpenGroups[id]; render(); };
+let draggedNavId = null;
+window.navDragStart = (e, id) => {
+  draggedNavId = id;
+  e.dataTransfer.effectAllowed = 'move';
+  try { e.dataTransfer.setData('text/plain', id); } catch(err){}
+  e.currentTarget.classList.add('dragging');
+};
+window.navDragOver = (e) => {
+  if(!draggedNavId) return;
+  e.preventDefault();
+  e.dataTransfer.dropEffect = 'move';
+  (e.currentTarget.closest('.nav-group') || e.currentTarget).classList.add('drag-over');
+};
+window.navDragLeave = (e) => {
+  (e.currentTarget.closest('.nav-group') || e.currentTarget).classList.remove('drag-over');
+};
+window.navDrop = (e, targetId) => {
+  e.preventDefault();
+  (e.currentTarget.closest('.nav-group') || e.currentTarget).classList.remove('drag-over');
+  const sourceId = draggedNavId;
+  draggedNavId = null;
+  if(!sourceId || sourceId === targetId) return;
+  reorderMasterNav(sourceId, targetId);
+};
+window.navDragEnd = (e) => {
+  e.currentTarget.classList.remove('dragging');
+  document.querySelectorAll('.nav-group.drag-over, .nav-draggable > button.drag-over').forEach(el => el.classList.remove('drag-over'));
+  draggedNavId = null;
+};
+function reorderMasterNav(sourceId, targetId){
+  let order = getMasterNavOrder();
+  if(!order.includes(sourceId) || !order.includes(targetId)) return;
+  order = order.filter(id => id !== sourceId);
+  const tgtIdx = order.indexOf(targetId);
+  order.splice(tgtIdx, 0, sourceId);
+  saveMasterNavOrder(order);
+  render();
+}
 window.toggleSidebar = () => { state.sidebarOpen = !state.sidebarOpen; render(); };
 window.deleteItem = deleteItem;
 window.deleteTask = deleteTask;
@@ -2554,6 +2752,7 @@ window.masterDeleteContract = masterDeleteContract;
 window.saveProfile = saveProfile;
 window.setBookingStatus = setBookingStatus;
 window.onGestionSearch = (v) => { state.gestionSearch = v; refreshGestionView(); };
+window.onUsersSearch = (v) => { state.usersSearch = v; refreshUsersView(); };
 window.onGestionFilter = (v) => { state.gestionFilter = v; refreshGestionView(); };
 window.onGestionSort = (field) => {
   if(state.gestionSort.field === field) state.gestionSort.dir = state.gestionSort.dir === 'asc' ? 'desc' : 'asc';
