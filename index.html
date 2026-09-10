@@ -891,6 +891,14 @@ async function deleteTask(id){
   state.completions = state.completions.filter(c => c.task_id !== id);
   render();
 }
+async function updateTask(id, fields){
+  const { data, error } = await sb.from('tasks').update(fields).eq('id', id).select().single();
+  if(error){ alert("Erreur : " + error.message); return false; }
+  const idx = state.tasks.findIndex(t => t.id === id);
+  if(idx > -1) state.tasks[idx] = data;
+  render();
+  return true;
+}
 // Une soumission "en attente" ou déjà "validée" bloque une nouvelle tentative ; une mission "refusée" peut être
 // retentée. Exception : une mission marquée "récurrente" par le master redevient disponible une fois validée
 // et l'XP créditée — seule une soumission "en attente" la bloque encore (pour éviter un double envoi).
@@ -1561,18 +1569,32 @@ function clientNavDef(){
     { id: "profil", label: "Mon profil" },
   ];
 }
-// Ordre des onglets du master, personnalisable en glissant-déposant — stocké localement
-// (par poste/navigateur, comme la session admin), jamais en base.
+// Ordre des onglets du master, personnalisable en glissant-déposant. Enregistré sur le profil
+// master en base (colonne nav_order, Lot 8) pour retrouver le même ordre à la prochaine
+// connexion, même depuis un autre poste — localStorage reste une copie locale immédiate en
+// secours (fonctionne même avant l'exécution de migration_lot8.sql, ou hors-ligne un instant).
 function getMasterNavOrder(){
   const defaultOrder = masterNavDef().map(x => x.id);
   let saved = [];
-  try { saved = JSON.parse(localStorage.getItem('ov_master_nav_order') || '[]'); } catch(e){ saved = []; }
+  const mp = currentProfile();
+  if(mp && mp.is_master && mp.nav_order){
+    try { saved = JSON.parse(mp.nav_order); } catch(e){ saved = []; }
+  }
+  if(!saved.length){
+    try { saved = JSON.parse(localStorage.getItem('ov_master_nav_order') || '[]'); } catch(e){ saved = []; }
+  }
   const valid = saved.filter(id => defaultOrder.includes(id));
   defaultOrder.forEach(id => { if(!valid.includes(id)) valid.push(id); });
   return valid;
 }
 function saveMasterNavOrder(order){
   try { localStorage.setItem('ov_master_nav_order', JSON.stringify(order)); } catch(e){}
+  const mp = currentProfile();
+  if(!mp || !mp.is_master) return;
+  mp.nav_order = JSON.stringify(order);
+  sb.from('profiles').update({ nav_order: mp.nav_order }).eq('username', mp.username).then(({ error }) => {
+    if(error) console.warn("Ordre des onglets : synchronisation serveur ignorée (migration_lot8.sql exécutée ?)", error.message);
+  });
 }
 function navFor(isMaster){
   if(!isMaster) return clientNavDef();
@@ -2064,7 +2086,7 @@ function missionManageCardHtml(t){
       ${t.description ? `<div class="card-desc">${esc(t.description)}</div>` : ''}
       ${t.requires_answer ? `<div class="card-desc" style="flex:0;">Champ demandé : ${esc(t.answer_label)}</div>` : ''}
       <div class="card-desc" style="flex:0;color:var(--text-faint);">${submissionsCount} soumission${submissionsCount>1?'s':''} au total</div>
-      <div class="card-foot"><button class="btn btn-danger btn-sm" onclick="deleteTask('${t.id}')">Supprimer</button></div>
+      <div class="card-foot"><button class="btn btn-ghost btn-sm" onclick="openEditTaskModal('${t.id}')">Modifier</button><button class="btn btn-danger btn-sm" onclick="deleteTask('${t.id}')">Supprimer</button></div>
     </div>`;
 }
 function renderMissionsCreation(){
@@ -2526,23 +2548,26 @@ function renderModal(){
       </div>
     </div></div>`;
   }
-  if(m.type === "newTask"){
-    const groupOptions = state.mission_groups.map(g => `<option value="${g.id}">${esc(g.name)}</option>`).join("");
+  if(m.type === "newTask" || m.type === "editTask"){
+    const editing = m.type === "editTask";
+    const t = editing ? state.tasks.find(x => x.id === m.taskId) : null;
+    if(editing && !t) return "";
+    const groupOptions = state.mission_groups.map(g => `<option value="${g.id}" ${editing && t.group_id===g.id?'selected':''}>${esc(g.name)}</option>`).join("");
     return `
     <div class="modal-bg" onclick="closeModalBg(event)"><div class="modal">
-      <h3>Créer une mission</h3>
-      <div class="field"><label>Titre</label><input id="tk-title" placeholder="ex. Laisser un avis Google"></div>
-      <div class="field"><label>Description</label><textarea id="tk-desc" rows="3" placeholder="Détail de la mission..."></textarea></div>
+      <h3>${editing ? 'Modifier la mission' : 'Créer une mission'}</h3>
+      <div class="field"><label>Titre</label><input id="tk-title" placeholder="ex. Laisser un avis Google" value="${editing?esc(t.title):''}"></div>
+      <div class="field"><label>Description</label><textarea id="tk-desc" rows="3" placeholder="Détail de la mission...">${editing?esc(t.description||''):''}</textarea></div>
       <div class="row">
-        <div class="field"><label>XP gagnée par le client</label><input id="tk-xp" type="number" value="15" min="1"></div>
+        <div class="field"><label>XP gagnée par le client</label><input id="tk-xp" type="number" value="${editing?t.xp_reward:15}" min="1"></div>
         <div class="field"><label>Groupe</label><select id="tk-group"><option value="">Sans groupe</option>${groupOptions}</select></div>
       </div>
-      <label class="checkbox-field"><input type="checkbox" id="tk-requires" onchange="document.getElementById('tk-answer-wrap').style.display=this.checked?'block':'none'"> Demander une réponse au client (ex. son pseudo)</label>
-      <div id="tk-answer-wrap" style="display:none;">
-        <div class="field"><label>Intitulé du champ demandé</label><input id="tk-answer-label" placeholder="ex. Votre pseudo utilisé pour l'avis Google"></div>
+      <label class="checkbox-field"><input type="checkbox" id="tk-requires" ${editing && t.requires_answer?'checked':''} onchange="document.getElementById('tk-answer-wrap').style.display=this.checked?'block':'none'"> Demander une réponse au client (ex. son pseudo)</label>
+      <div id="tk-answer-wrap" style="display:${editing && t.requires_answer?'block':'none'};">
+        <div class="field"><label>Intitulé du champ demandé</label><input id="tk-answer-label" placeholder="ex. Votre pseudo utilisé pour l'avis Google" value="${editing?esc(t.answer_label||''):''}"></div>
       </div>
-      <label class="checkbox-field"><input type="checkbox" id="tk-recurring"> Mission récurrente — redevient disponible pour le client dès qu'elle est validée et l'XP créditée</label>
-      <div class="modal-actions"><button class="btn btn-ghost" onclick="closeModal()">Annuler</button><button class="btn btn-primary" onclick="confirmNewTask()">Créer</button></div>
+      <label class="checkbox-field"><input type="checkbox" id="tk-recurring" ${editing && t.is_recurring?'checked':''}> Mission récurrente — redevient disponible pour le client dès qu'elle est validée et l'XP créditée</label>
+      <div class="modal-actions"><button class="btn btn-ghost" onclick="closeModal()">Annuler</button><button class="btn btn-primary" onclick="confirmNewTask(${editing?`'${t.id}'`:'null'})">${editing?'Enregistrer':'Créer'}</button></div>
     </div></div>`;
   }
   if(m.type === "newGroup"){
@@ -2814,17 +2839,25 @@ window.confirmNewItem = async (e, itemId) => {
     btn.textContent = oldLabel; btn.disabled = false;
   }
 };
-window.confirmNewTask = () => {
-  createTask(
-    document.getElementById("tk-title").value.trim(),
-    document.getElementById("tk-desc").value.trim(),
-    document.getElementById("tk-xp").value,
-    document.getElementById("tk-requires").checked,
-    document.getElementById("tk-answer-label")?.value.trim(),
-    document.getElementById("tk-group").value || null,
-    document.getElementById("tk-recurring").checked
-  );
+window.confirmNewTask = (taskId) => {
+  const title = document.getElementById("tk-title").value.trim();
+  const desc = document.getElementById("tk-desc").value.trim();
+  const xp = document.getElementById("tk-xp").value;
+  const requiresAnswer = document.getElementById("tk-requires").checked;
+  const answerLabel = document.getElementById("tk-answer-label")?.value.trim();
+  const groupId = document.getElementById("tk-group").value || null;
+  const isRecurring = document.getElementById("tk-recurring").checked;
+  if(taskId){
+    updateTask(taskId, {
+      title, description: desc, xp_reward: Number(xp)||10,
+      requires_answer: !!requiresAnswer, answer_label: requiresAnswer ? (answerLabel || "Votre réponse") : null,
+      group_id: groupId, is_recurring: !!isRecurring
+    }).then(ok => { if(ok) state.modal = null; render(); });
+  } else {
+    createTask(title, desc, xp, requiresAnswer, answerLabel, groupId, isRecurring);
+  }
 };
+window.openEditTaskModal = (taskId) => { state.modal = { type:"editTask", taskId }; render(); };
 window.openNewGroupModal = () => { state.modal = { type:"newGroup" }; render(); };
 window.confirmNewGroup = () => { createMissionGroup(document.getElementById("grp-name").value); };
 window.deleteMissionGroup = deleteMissionGroup;
