@@ -15,6 +15,8 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Rajdhani:wght@600;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/pdfmake@0.3.11/build/pdfmake.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/pdfmake@0.3.11/build/vfs_fonts.js"></script>
 <style>
   :root{
     --bg:#050605;
@@ -447,7 +449,6 @@ let state = {
   fatalError: null,
   session: null, // {username(=email pour les clients), isMaster}
   profiles: [], items: [], bookings: [], tasks: [], completions: [], contracts: [], mission_groups: [], rewards: [], redemptions: [],
-  contractTemplate: null,
   view: "accueil",
   authTab: "login",
   showAdminLogin: false,
@@ -497,7 +498,7 @@ function currentProfile(){ return state.profiles.find(p => p.username === state.
 
 /* ---------- Boot & data ---------- */
 async function fetchAll(){
-  const [profiles, items, bookings, tasks, completions, contracts, groups, rewards, redemptions, template] = await Promise.all([
+  const [profiles, items, bookings, tasks, completions, contracts, groups, rewards, redemptions] = await Promise.all([
     sb.from('profiles').select('*'),
     sb.from('items').select('*').order('created_at'),
     sb.from('bookings').select('*'),
@@ -507,10 +508,6 @@ async function fetchAll(){
     sb.from('mission_groups').select('*').order('created_at'),
     sb.from('rewards').select('*').order('created_at'),
     sb.from('reward_redemptions').select('*'),
-    // Table du Lot 7 (contrat type) : peut ne pas encore exister tant que la migration n'a pas
-    // été exécutée — sb renvoie {data:null, error} sans lever d'exception, donc ça ne bloque
-    // jamais le chargement du reste de l'app.
-    sb.from('contract_template').select('*').eq('id', 'default').maybeSingle(),
   ]);
   state.profiles = profiles.data || [];
   state.items = items.data || [];
@@ -521,7 +518,6 @@ async function fetchAll(){
   state.mission_groups = groups.data || [];
   state.rewards = rewards.data || [];
   state.redemptions = redemptions.data || [];
-  state.contractTemplate = template.data || null;
 }
 
 async function boot(){
@@ -820,9 +816,9 @@ async function setBookingStatus(id, status){
 }
 
 /* ---------- Items (équipe) ---------- */
-async function createItem(name, description, xpValue, qty, imageUrl, pricePerDay, pricePerWeek){
+async function createItem(name, description, xpValue, qty, imageUrl, pricePerDay, pricePerWeek, referenceValue){
   if(!name.trim()) return;
-  const { data, error } = await sb.from('items').insert({ name, description, xp_value: Number(xpValue)||10, qty: Number(qty)||1, image_url: imageUrl || null, price_per_day: (pricePerDay===''||pricePerDay==null)?null:Number(pricePerDay), price_per_week: (pricePerWeek===''||pricePerWeek==null)?null:Number(pricePerWeek) }).select().single();
+  const { data, error } = await sb.from('items').insert({ name, description, xp_value: Number(xpValue)||10, qty: Number(qty)||1, image_url: imageUrl || null, price_per_day: (pricePerDay===''||pricePerDay==null)?null:Number(pricePerDay), price_per_week: (pricePerWeek===''||pricePerWeek==null)?null:Number(pricePerWeek), reference_value: (referenceValue===''||referenceValue==null)?null:Number(referenceValue) }).select().single();
   if(error){ alert("Erreur : " + error.message); return; }
   state.items.push(data);
   state.modal = null;
@@ -1159,28 +1155,251 @@ async function masterUploadContract(username, file){
   await sb.storage.from('contracts').remove([`${username}/signed.pdf`]);
   if(await finalizeContractAssignment(username, path)) render();
 }
-// Contrat type : un PDF de référence unique, envoyé une fois, réutilisable pour tout client
-// d'un simple clic (copie du fichier dans le dossier de ce client — le reste du flux est
-// identique à un envoi sur mesure, y compris la notification "à signer" côté client).
-async function uploadContractTemplate(file){
-  const path = `_template/contrat-type.pdf`;
-  const { error: upErr } = await sb.storage.from('contracts').upload(path, file, { upsert: true, contentType: 'application/pdf' });
-  if(upErr){ alert("Erreur d'envoi du contrat type : " + upErr.message); return; }
-  const { data: pub } = sb.storage.from('contracts').getPublicUrl(path);
-  const payload = { id: 'default', pdf_path: pub.publicUrl + '?v=' + Date.now(), uploaded_at: new Date().toISOString() };
-  const { data, error } = await sb.from('contract_template').upsert(payload, { onConflict: 'id' }).select().single();
-  if(error){ alert("Erreur : " + error.message); return; }
-  state.contractTemplate = data;
-  render();
+// Contrat type — génération personnalisée par client (Lot 9) : le master ne téléverse plus un
+// PDF déjà rempli ; le contrat est reconstruit à chaque clic à partir du modèle juridique
+// ci-dessous et des informations propres au client + à sa location (aucun mélange possible
+// entre clients, chaque génération repart du texte vierge). Tout se passe dans le navigateur,
+// sans aucun serveur, via pdfmake (génération de PDF vectoriel — texte réellement sélectionnable
+// et recherchable, contrairement à un rendu HTML→image). La mise en page s'écoule normalement
+// d'article en article et le bloc de clôture ("Fait à…" + signatures) est marqué "unbreakable" :
+// il reste groupé sur une même page quelle que soit la longueur des champs variables qui le
+// précèdent (adresse, description...) — plus de risque de décalage si le contrat gagne une ou
+// deux lignes.
+//
+// ⚠️ Champs constants ci-dessous (identiques sur tous les contrats, jamais propres à un client) :
+// certains restent à confirmer par le master avant mise en production réelle (voir la valeur
+// "À CONFIRMER" — le PDF généré l'affichera telle quelle tant qu'elle n'est pas remplacée).
+const CONTRACT_OWNER = {
+  capitalSocial: "[CAPITAL SOCIAL — À CONFIRMER]",
+  villeRCS: "[VILLE DU RCS — À CONFIRMER]",
+  adresseSiege: "[ADRESSE DU SIÈGE SOCIAL — À CONFIRMER]",
+  mediateur: "[NOM, ADRESSE ET SITE DU MÉDIATEUR DE LA CONSOMMATION — À CONFIRMER]",
+  lieuSignatureDefaut: "Puget-sur-Argens",
+};
+// Document juridique généré via pdfmake (PDF vectoriel, texte réellement sélectionnable/
+// recherchable — contrairement à un rendu HTML→image). Le texte de chaque article est repris
+// mot pour mot du contrat de référence fourni par le master ; seuls les champs variables
+// ({{...}} dans l'ancienne version HTML) sont désormais des valeurs JS insérées directement.
+const J = (text, extra) => Object.assign({ text, alignment: 'justify', margin: [0, 0, 0, 8] }, extra || {});
+const ART = (n, title) => ({ text: `Article ${n} — ${title}`, bold: true, fontSize: 11.3, margin: [0, 14, 0, 6] });
+const NB = (s) => String(s == null ? '—' : s).replace(/ $/, '') + ' '; // espace insécable avant "€", "jour(s)", etc.
+
+function etatRowCells(selected){
+  const options = ['Neuf', 'Bon état', "État d'usage", 'Très usagé', 'Absent'];
+  return options.map(o => ({ text: o === selected ? 'X' : '', bold: true, alignment: 'center' }));
 }
-async function applyContractTemplate(username){
-  if(!state.contractTemplate){ alert("Aucun contrat type n'a encore été envoyé — utilisez le bouton « Envoyer le contrat type » en haut de la page."); return; }
-  if(!confirm(`Rendre le contrat type disponible pour "${username}" ? Un contrat déjà présent pour ce client (et sa signature) sera remplacé.`)) return;
+
+function buildContractDocDefinition(fields){
+  const f = fields;
+  return {
+    pageSize: 'A4',
+    pageMargins: [56, 54, 56, 54],
+    defaultStyle: { fontSize: 9.6, lineHeight: 1.22 },
+    content: [
+      { text: 'CONTRAT DE LOCATION DE MATÉRIEL DE VISION NOCTURNE', bold: true, fontSize: 14.5, alignment: 'center', margin: [0, 0, 0, 3] },
+      { text: 'Conclu entre un professionnel et un consommateur — Code civil et Code de la consommation', italics: true, fontSize: 8.6, color: '#333333', alignment: 'center', margin: [0, 0, 0, 16] },
+
+      J('Entre les soussignés :'),
+
+      { text: 'LE PROPRIÉTAIRE', bold: true, decoration: 'underline', margin: [0, 4, 0, 4] },
+      J([
+        'OWLS VISION, société par actions simplifiée unipersonnelle (SASU) au capital social de ',
+        { text: NB(f.owner_capital_social) + '€', bold: true }, ', immatriculée au Registre du Commerce et des Sociétés de ',
+        { text: f.owner_ville_rcs, bold: true }, ' sous le numéro SIREN 953 642 535 (SIRET 953 642 535 00017), dont le siège social est situé ',
+        { text: f.owner_adresse_siege, bold: true }, ", numéro de TVA intracommunautaire FR82107779795, représentée aux fins des présentes par M. Luka Zampieri, agissant en qualité de Président, dûment habilité.",
+      ]),
+      J("Établissement d'exploitation : 198 chemin des Vernèdes, 83480 Puget-sur-Argens — Tél. : 06 61 52 78 57 — Email dédié à la location : rental@owlsvision.fr"),
+      J([{ text: 'Ci-après dénommée "le Propriétaire".', italics: true }]),
+
+      { text: 'LE LOCATAIRE', bold: true, decoration: 'underline', margin: [0, 4, 0, 4] },
+      J(`${f.locataire_nom}, demeurant ${f.locataire_adresse} — Tél. : ${f.locataire_tel} — Email : ${f.locataire_email} — Titulaire de la pièce d'identité n° ${f.locataire_cni}, dont une copie est conservée par le Propriétaire dans les conditions de l'article 13 ci-après.`),
+      J([{ text: 'Ci-après dénommé "le Locataire".', italics: true }]),
+
+      J([{ text: 'Le Propriétaire et le Locataire étant ci-après collectivement désignés "les Parties" ou individuellement une "Partie".', italics: true }]),
+      J("Le Locataire agit en qualité de consommateur, pour un usage strictement personnel et non professionnel du matériel loué. Le présent contrat est en conséquence soumis, en complément du droit commun de la location, aux dispositions protectrices du Code de la consommation."),
+      J("Par les présentes, les Parties entendent définir les conditions et modalités selon lesquelles le Propriétaire donne en location au Locataire, pour une durée déterminée, le matériel lui appartenant décrit à l'article 1. Les Parties conviennent que leurs relations sont régies par les présentes dispositions, à l'exclusion de tout autre accord écrit ou oral antérieur portant sur le même objet."),
+
+      ART(1, 'Désignation du matériel loué'),
+      {
+        table: {
+          widths: ['34%', '*'],
+          body: [
+            [{ text: 'Catégorie', bold: true, fillColor: '#f4f4f2' }, f.item_categorie],
+            [{ text: 'Description', bold: true, fillColor: '#f4f4f2' }, f.item_description],
+            [{ text: 'Valeur de référence contractuelle', bold: true, fillColor: '#f4f4f2' }, `${f.item_valeur_ref} € — cette valeur sert de base au calcul de toute indemnisation due au titre des articles 5 et 6 en cas de perte totale, vol ou destruction.`],
+            [{ text: "Précautions d'utilisation", bold: true, fillColor: '#f4f4f2' }, "Ne jamais exposer les tubes à une source lumineuse intense (soleil, projecteurs) ; conserver le matériel dans son étui ou volet de protection fermé en dehors de toute utilisation nocturne."],
+            [{ text: 'Clause particulière', bold: true, fillColor: '#f4f4f2' }, 'Le matériel ne peut, sous aucun prétexte, être prêté, cédé ou confié à un tiers, y compris temporairement.'],
+          ],
+        },
+        margin: [0, 2, 0, 10],
+      },
+
+      ART(2, 'État du matériel et état des lieux'),
+      J("Le Locataire prend le matériel dans l'état où il se trouve au jour de sa remise par le Propriétaire. Le Propriétaire garantit au Locataire que le matériel loué est en parfait état de marche à cette date. Si les informations données par le Propriétaire au Locataire se révèlent ultérieurement erronées ou inexactes, le Propriétaire ne pourra se prévaloir des clauses relatives aux dommages causés par le Locataire au matériel loué, sauf à démontrer que le dommage constaté est sans lien, direct ou indirect, avec ces informations."),
+      J("Les Parties établissent conjointement, au jour de la remise, un état des lieux contradictoire signé par chacune d'elles. Un second état des lieux est établi dans les mêmes conditions lors de la restitution, conformément à l'article 11."),
+      J([{ text: 'Date de remise : ', bold: true }, f.date_remise]),
+      { text: 'Constat d\'état à la remise', bold: true, margin: [0, 0, 0, 4] },
+      {
+        table: {
+          widths: ['24%', '*', '*', '*', '*', '*'],
+          body: [
+            [
+              { text: '', fillColor: '#f4f4f2' },
+              { text: 'Neuf', bold: true, alignment: 'center', fillColor: '#f4f4f2' },
+              { text: 'Bon état', bold: true, alignment: 'center', fillColor: '#f4f4f2' },
+              { text: "État d'usage", bold: true, alignment: 'center', fillColor: '#f4f4f2' },
+              { text: 'Très usagé', bold: true, alignment: 'center', fillColor: '#f4f4f2' },
+              { text: 'Absent', bold: true, alignment: 'center', fillColor: '#f4f4f2' },
+            ],
+            [{ text: 'Aspect extérieur', bold: true }, ...etatRowCells(f.etat_aspect)],
+            [{ text: 'Fonctionnement', bold: true }, ...etatRowCells(f.etat_fonctionnement)],
+          ],
+        },
+        fontSize: 9,
+        margin: [0, 0, 0, 10],
+      },
+
+      ART(3, 'Prix de la location'),
+      J([`La présente location est consentie et acceptée moyennant la somme de `, { text: `${f.prix_location} € TTC` }, `, payable comptant le jour de la remise du matériel, dans les conditions de règlement fixées à l'article 5.3.`]),
+      J("Les frais de transport éventuellement supportés par le Locataire pour récupérer et restituer le matériel loué ne sont pas compris dans ce prix et restent à sa charge exclusive."),
+
+      ART(4, 'Durée du contrat de location'),
+      J("Le matériel décrit à l'article 1 est loué :"),
+      J(`Du ${f.date_debut} au ${f.date_fin}, soit une durée de ${f.duree_jours} jour(s), pour un montant de ${f.tarif_jour} €/jour, soit la somme totale de ${f.prix_total} € fixée à l'article 3.`),
+      J("Les lieux de remise et de restitution du matériel loué sont déterminés d'un commun accord entre les Parties."),
+      J(`Tout dépassement de la durée de location initialement prévue est facturé au tarif de ${f.tarif_depassement} €/jour et devra être réglé par le Locataire, sans préjudice de l'application de l'article 6 si le dépassement s'accompagne d'une absence de restitution.`),
+
+      ART(5, 'Garantie locative et règlement'),
+      J([
+        { text: "5.1 Attestation d'assurance habitation — garantie principale. ", bold: true },
+        "Préalablement à la remise du matériel, le Locataire s'engage à fournir au Propriétaire une attestation d'assurance multirisque habitation en cours de validité, comportant une garantie \"responsabilité civile vie privée\". Il appartient exclusivement au Locataire de vérifier, auprès de son propre assureur, que cette garantie couvre les dommages, la perte ou le vol de biens qui lui sont confiés, prêtés ou loués par un tiers, et de fournir au besoin toute précision utile sur l'étendue de cette couverture.",
+      ]),
+      J(`Les Parties conviennent que la valeur de référence contractuelle du matériel loué, fixée à l'article 1 à la somme de ${f.item_valeur_ref} €, sert de base au calcul de l'indemnité due par le Locataire, ou par son assureur au titre de la garantie ci-dessus, en cas de perte totale, vol ou destruction, dans les conditions de l'article 6.`),
+      J([
+        { text: '5.2 Faculté de garantie bancaire complémentaire. ', bold: true },
+        "Le Propriétaire se réserve le droit d'exiger du Locataire, en complément ou à défaut d'attestation d'assurance valable, une pré-autorisation (empreinte bancaire) d'un montant qu'il détermine et communique au Locataire avant la remise du matériel, notamment dans les cas suivants : absence d'attestation d'assurance habitation en cours de validité au jour de la remise, doute raisonnable sur l'étendue de la couverture présentée, ou antécédent de dégradation ou de non-restitution du matériel lors d'une location précédente. Cette pré-autorisation, lorsqu'elle est demandée, est libérée dans un délai de 5 jours ouvrés suivant la restitution du matériel en bon état, constatée par l'état des lieux de sortie prévu à l'article 11.",
+      ]),
+      J([
+        { text: '5.3 Règlement du prix de la location. ', bold: true },
+        "Le prix fixé à l'article 3 est réglé comptant le jour de la remise du matériel, par virement ou tout autre moyen de paiement accepté par le Propriétaire.",
+      ]),
+
+      ART(6, 'Responsabilité en cas de perte, de vol ou de destruction'),
+      J("Le Locataire est responsable, à compter de la remise du matériel et jusqu'à sa restitution effective entre les mains du Propriétaire, de toute perte, tout vol ou toute destruction totale ou partielle du matériel loué survenant de son fait ou du fait d'un tiers placé sous sa garde, sauf cas de force majeure au sens de l'article 1218 du Code civil et de l'article 16 du présent contrat."),
+      J(`En cas de perte totale, de vol ou de destruction rendant le matériel irréparable, le Locataire — ou, le cas échéant, l'assureur visé à l'article 5.1 au titre de la garantie responsabilité civile vie privée — est redevable envers le Propriétaire d'une indemnité égale à la valeur de référence contractuelle fixée à l'article 1, soit ${f.item_valeur_ref} €, sur présentation par le Propriétaire de la facture d'achat initiale du matériel ou, à défaut, de tout justificatif objectif de sa valeur de remplacement.`),
+      J("En cas de dommage réparable, l'indemnité due par le Locataire est limitée au coût de la réparation, sur présentation d'un devis établi par un service après-vente agréé, sans pouvoir excéder la valeur de référence contractuelle mentionnée ci-dessus."),
+      J("Le Locataire pourra en outre être tenu, le cas échéant, des frais administratifs raisonnablement exposés par le Propriétaire du fait de l'indisponibilité du matériel, sur justificatif."),
+
+      ART(7, 'Cession — Sous-location'),
+      J("Le Locataire ne peut ni céder ni sous-louer, à titre gratuit ou onéreux, le matériel objet des présentes."),
+
+      ART(8, 'Usage et destination du matériel'),
+      J("Le Locataire s'engage à utiliser le matériel loué avec prudence et diligence, de manière raisonnable, conformément à sa destination et dans le strict respect des lois et règlements en vigueur."),
+      { text: 'Restriction réglementaire — usage "mains libres" interdit.', bold: true, margin: [0, 0, 0, 6] },
+      J([
+        'Le Locataire est expressément informé que le montage d\'un dispositif de vision nocturne sur casque ou sur tout autre support permettant un usage mains libres est assimilé, en droit français, à la détention d\'un matériel de catégorie A2 au sens du Code de la sécurité intérieure et de l\'arrêté du 4 janvier 2019, dont l\'acquisition et la détention par un particulier sont soumises à autorisation préalable. ',
+        { text: "En conséquence, le Locataire s'interdit formellement de monter le matériel loué en configuration mains libres, sauf à justifier préalablement au Propriétaire d'une autorisation en cours de validité l'habilitant à détenir un matériel ainsi classé.", bold: true },
+        ' Le Locataire déclare avoir pris connaissance de cette restriction et en assumer l\'entière responsabilité, pénale comme civile, en cas de non-respect. Le Propriétaire se réserve le droit de refuser ou d\'interrompre la location en cas de doute sérieux sur le respect de cette clause.',
+      ]),
+      J("Pendant toute la durée de la location, le Locataire s'engage à entreposer le matériel dans des conditions préservant son état physique et sa sécurité, notamment contre le vol, les chocs, l'humidité et l'exposition directe à une source lumineuse intense."),
+
+      ART(9, 'Jouissance — Entretien — Garantie des vices'),
+      J("Le Propriétaire garantit au Locataire la jouissance paisible du matériel loué pendant toute la durée de la location et s'engage à prévenir tout trouble du fait de tiers."),
+      J("Le Propriétaire s'engage à entretenir le matériel et à effectuer les réparations utiles pendant toute la durée de la location, à l'exception des petites réparations d'entretien courant qui restent à la charge du Locataire."),
+      J("Conformément à l'article 1721 du Code civil, le Propriétaire est responsable envers le Locataire des vices ou défauts cachés du matériel qui en empêchent l'usage, alors même qu'il ne les aurait pas connus lors de la conclusion du contrat."),
+
+      ART(10, 'Garde et responsabilité — Dommages'),
+      J("Pendant la durée de la location et jusqu'à la restitution physique du matériel au Propriétaire, le Locataire en est le gardien au sens de l'article 1242 du Code civil et exerce sur lui un contrôle effectif et exclusif, ce qu'il reconnaît expressément."),
+      J("À ce titre, le Locataire est responsable des dommages que le matériel placé sous sa garde pourrait lui causer ou causer à des tiers, ainsi que des dommages causés au matériel loué par son fait ou le fait d'un tiers, dans les conditions et limites fixées à l'article 6."),
+
+      ART(11, 'Restitution du matériel'),
+      J("À l'issue de la durée de location, le Locataire s'engage à restituer le matériel au Propriétaire, aux lieu, date et heure convenus, en bon état de fonctionnement, exception faite de l'usure résultant d'une utilisation normale et adéquate."),
+      J("Lors de la restitution, les Parties procèdent conjointement à un nouvel état des lieux, en deux exemplaires originaux contresignés. À défaut de restitution du matériel à la date convenue, pour quelque cause que ce soit — y compris en cas de vol signalé par le Locataire —, le Propriétaire peut mettre en œuvre les garanties prévues à l'article 5, le vol devant être justifié par le dépôt d'une plainte dont copie est transmise au Propriétaire."),
+      J("En cas de dommage constaté au matériel, les Parties s'efforcent de trouver un arrangement amiable pour les dégradations mineures. À défaut d'accord amiable, et conformément aux articles 5 et 6, le Propriétaire met en œuvre l'indemnisation due, sur présentation des justificatifs prévus à l'article 6, dans un délai de 5 jours ouvrés suivant la restitution."),
+
+      ART(12, 'Déclarations du Locataire'),
+      J("Le Locataire déclare disposer de toutes les informations nécessaires à une utilisation adéquate et raisonnable du matériel loué."),
+      J("Le Locataire déclare avoir la capacité légale et juridique d'utiliser le matériel loué, ainsi que, le cas échéant, toute autorisation ou habilitation requise, notamment au regard de la restriction fixée à l'article 8."),
+
+      ART(13, 'Protection des données personnelles'),
+      J("Les données personnelles communiquées par le Locataire dans le cadre du présent contrat (identité, coordonnées, numéro de pièce d'identité, attestation d'assurance) sont collectées et traitées par le Propriétaire, responsable de traitement, aux seules fins de conclusion, d'exécution et de suivi du présent contrat de location, ainsi que de prévention des impayés et des litiges. Cette collecte repose sur l'exécution du contrat et l'intérêt légitime du Propriétaire à vérifier l'identité du Locataire et à se prémunir contre le risque d'impayé."),
+      J("Ces données sont conservées pendant la durée de la location, augmentée des délais de prescription légale applicables, puis supprimées ou archivées conformément à la réglementation en vigueur."),
+      J("Conformément au Règlement (UE) 2016/679 (\"RGPD\") et à la loi n° 78-17 du 6 janvier 1978 modifiée, le Locataire dispose d'un droit d'accès, de rectification, d'effacement, de limitation et d'opposition sur ses données, qu'il peut exercer en écrivant à support@owlsvision.fr ou par courrier à l'adresse du siège social du Propriétaire. Il dispose également du droit d'introduire une réclamation auprès de la Commission Nationale de l'Informatique et des Libertés (CNIL)."),
+
+      ART(14, 'Médiateur de la consommation'),
+      J([
+        "Conformément aux articles L.611-1 et suivants du Code de la consommation, en cas de litige non résolu amiablement dans les conditions de l'article 18, le Locataire, en sa qualité de consommateur, peut recourir gratuitement au service du médiateur de la consommation suivant : ",
+        { text: f.owner_mediateur, bold: true }, '.',
+      ]),
+
+      ART(15, 'Absence de droit de rétractation'),
+      J("Lorsque le présent contrat est signé en la présence physique des Parties, au moment de la remise du matériel dans les locaux du Propriétaire, aucun droit de rétractation n'est applicable, le contrat n'étant pas conclu à distance."),
+      J("Lorsque le contrat est conclu à distance (notamment par voie électronique) préalablement à la remise physique du matériel, le Locataire reconnaît que la location porte sur une prestation dont la période d'exécution est déterminée par les Parties à l'article 4, de sorte que, conformément à l'article L.221-28 4° du Code de la consommation, aucun droit de rétractation ne lui est applicable."),
+
+      ART(16, 'Force majeure'),
+      J("Aucune des Parties ne peut être tenue responsable envers l'autre de l'inexécution ou du retard dans l'exécution de l'une quelconque de ses obligations au titre du présent contrat lorsque cette inexécution ou ce retard résulte d'un cas de force majeure au sens de l'article 1218 du Code civil."),
+
+      ART(17, "Nullité partielle — Intégralité de l'accord"),
+      J("Si l'une des clauses du présent contrat était déclarée nulle, illicite ou inapplicable par une juridiction compétente, les autres clauses conserveraient leur plein effet, les Parties s'efforçant de remplacer la clause invalidée par une clause valide d'effet économique équivalent."),
+      J("Le présent contrat exprime l'intégralité de l'accord des Parties sur son objet et remplace tout accord antérieur, écrit ou oral, portant sur le même objet."),
+
+      ART(18, 'Droit applicable — Juridictions compétentes'),
+      J('Le présent contrat est soumis au droit français.'),
+      J("En cas de différend né de la conclusion, de l'exécution, de l'interprétation ou du terme du présent contrat, les Parties s'efforcent de le régler amiablement dans un délai de quinze (15) jours à compter de la notification du litige par l'une des Parties à l'autre — le cas échéant en recourant au médiateur de la consommation visé à l'article 14. À défaut de résolution amiable, la Partie la plus diligente saisit la juridiction française compétente."),
+
+      {
+        unbreakable: true,
+        stack: [
+          J([`Fait à `, { text: f.lieu_signature, bold: true }, `, le `, { text: f.date_signature, bold: true }, `, en deux (2) exemplaires originaux dont un pour chaque Partie, chaque page ayant été paraphée par les Parties.`], { margin: [0, 14, 0, 12] }),
+          {
+            columns: [
+              {
+                width: '50%',
+                text: [
+                  { text: 'Le Propriétaire\n', bold: true, margin: [0, 0, 0, 26] },
+                  { text: 'OWLS VISION — M. Luka Zampieri, Président\n', italics: true },
+                  { text: '(signature précédée de la mention "Lu et approuvé")', italics: true, fontSize: 8.3, color: '#333333' },
+                ],
+              },
+              {
+                width: '50%',
+                text: [
+                  { text: 'Le Locataire\n', bold: true, margin: [0, 0, 0, 26] },
+                  { text: `${f.locataire_nom}\n`, italics: true },
+                  { text: '(signature précédée de la mention "Lu et approuvé")', italics: true, fontSize: 8.3, color: '#333333' },
+                ],
+              },
+            ],
+            margin: [0, 10, 0, 0],
+          },
+        ],
+      },
+    ],
+  };
+}
+// Réservation la plus pertinente pour rédiger le contrat d'un client : la plus récente en
+// cours (louée) ou tout juste acceptée ; à défaut, sa réservation la plus récente quelle que
+// soit son statut. Le master peut toujours changer de réservation ou ajuster les champs dans
+// la fenêtre de génération avant de valider.
+function latestRelevantBookingFor(username){
+  const mine = state.bookings.filter(b => b.username === username);
+  if(!mine.length) return null;
+  const priority = { loue: 3, accepte: 2, demande: 1, retourne: 0, refuse: 0 };
+  return mine.slice().sort((a,b) => {
+    const pd = (priority[b.status]||0) - (priority[a.status]||0);
+    if(pd !== 0) return pd;
+    return (b.created_at||'').localeCompare(a.created_at||'');
+  })[0];
+}
+async function generateClientContract(username, fields){
+  const dd = buildContractDocDefinition(fields);
+  const blob = await window.pdfMake.createPdf(dd).getBlob();
   const path = `${username}/original.pdf`;
-  const { error: cpErr } = await sb.storage.from('contracts').copy('_template/contrat-type.pdf', path);
-  if(cpErr){ alert("Erreur : " + cpErr.message); return; }
+  const { error: upErr } = await sb.storage.from('contracts').upload(path, blob, { upsert: true, contentType: 'application/pdf' });
+  if(upErr) throw upErr;
   await sb.storage.from('contracts').remove([`${username}/signed.pdf`]);
-  if(await finalizeContractAssignment(username, path)) render();
+  const ok = await finalizeContractAssignment(username, path);
+  return ok;
 }
 async function masterDeleteContract(username){
   if(!confirm(`Supprimer le contrat de "${username}" (original + version signée) ?`)) return;
@@ -1398,13 +1617,47 @@ window.handleContractUpload = (e, username) => {
   if(file.type !== 'application/pdf'){ alert("Merci de sélectionner un fichier PDF."); return; }
   masterUploadContract(username, file);
 };
-window.handleContractTemplateUpload = (e) => {
-  const file = e.target.files[0];
-  if(!file) return;
-  if(file.type !== 'application/pdf'){ alert("Merci de sélectionner un fichier PDF."); return; }
-  uploadContractTemplate(file);
+window.openGenerateContractModal = (username) => { state.modal = { type:"generateContract", username }; render(); };
+window.onGenerateContractBookingChange = (username, bookingId) => { state.modal = { type:"generateContract", username, bookingId }; render(); };
+window.confirmGenerateContract = async (e, username) => {
+  const errEl = document.getElementById('gc-error');
+  const p = state.profiles.find(x => x.username === username);
+  const fields = {
+    owner_capital_social: CONTRACT_OWNER.capitalSocial,
+    owner_ville_rcs: CONTRACT_OWNER.villeRCS,
+    owner_adresse_siege: CONTRACT_OWNER.adresseSiege,
+    owner_mediateur: CONTRACT_OWNER.mediateur,
+    locataire_nom: clientDisplayName(p) || username,
+    locataire_adresse: p.adresse || '—',
+    locataire_tel: p.telephone || '—',
+    locataire_email: username,
+    locataire_cni: p.numero_cni || '—',
+    item_categorie: document.getElementById('gc-categorie').value.trim() || '—',
+    item_description: document.getElementById('gc-description').value.trim() || '—',
+    item_valeur_ref: fmtDecimalFr(document.getElementById('gc-valeur-ref').value),
+    date_remise: fmtDate(document.getElementById('gc-date-remise').value),
+    etat_aspect: document.getElementById('gc-etat-aspect').value,
+    etat_fonctionnement: document.getElementById('gc-etat-fonctionnement').value,
+    prix_location: fmtDecimalFr(document.getElementById('gc-prix').value),
+    prix_total: fmtDecimalFr(document.getElementById('gc-prix').value),
+    date_debut: fmtDate(document.getElementById('gc-date-debut').value),
+    date_fin: fmtDate(document.getElementById('gc-date-fin').value),
+    duree_jours: document.getElementById('gc-duree').value || '—',
+    tarif_jour: (() => { const p2 = Number(document.getElementById('gc-prix').value)||0; const d = Number(document.getElementById('gc-duree').value)||1; return fmtDecimalFr((p2/d).toFixed(2)); })(),
+    tarif_depassement: fmtDecimalFr(document.getElementById('gc-tarif-depassement').value),
+    lieu_signature: document.getElementById('gc-lieu').value.trim() || CONTRACT_OWNER.lieuSignatureDefaut,
+    date_signature: fmtDate(document.getElementById('gc-date-signature').value),
+  };
+  const btn = e.target; const oldLabel = btn.textContent; btn.textContent = "Génération en cours..."; btn.disabled = true;
+  try{
+    const ok = await generateClientContract(username, fields);
+    if(ok){ state.modal = null; render(); }
+    else { btn.textContent = oldLabel; btn.disabled = false; }
+  }catch(err){
+    errEl.innerHTML = `<div class="msg msg-error">Erreur lors de la génération : ${esc(err.message||String(err))}</div>`;
+    btn.textContent = oldLabel; btn.disabled = false;
+  }
 };
-window.applyContractTemplate = applyContractTemplate;
 
 /* ---------- Icons ---------- */
 function iconFor(name){
@@ -1802,6 +2055,12 @@ function estimatedBookingPrice(b){
   return null;
 }
 function fmtPrice(v){ return v == null ? "—" : `${v.toFixed(2)} €`; }
+// Format décimal français ("200,50") pour insertion dans le texte du contrat — sans le symbole €,
+// déjà présent dans le gabarit autour de chaque token.
+function fmtDecimalFr(v){
+  if(v === '' || v == null || isNaN(Number(v))) return '—';
+  return Number(v).toFixed(2).replace('.', ',');
+}
 function gestionRowHtml(b){
   const item = state.items.find(i => i.id === b.item_id);
   const p = state.profiles.find(x => x.username === b.username);
@@ -2352,25 +2611,17 @@ function renderContratsAdmin(){
         <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
           ${c ? `<a class="btn btn-ghost btn-sm" href="${c.pdf_path}" target="_blank" rel="noopener">Original</a>` : ''}
           ${c && c.signed_pdf_path ? `<a class="btn btn-ghost btn-sm" href="${c.signed_pdf_path}" target="_blank" rel="noopener">Signé</a>` : ''}
-          <span class="btn btn-primary btn-sm file-btn">${c?'Remplacer':'Uploader'} PDF<input type="file" accept="application/pdf" onchange="handleContractUpload(event,'${usr.username}')"></span>
-          <button class="btn btn-ghost btn-sm" ${state.contractTemplate?'':'disabled title="Envoyez d\'abord un contrat type ci-dessus"'} onclick="applyContractTemplate('${usr.username}')">Contrat type</button>
+          <button class="btn btn-primary btn-sm" onclick="openGenerateContractModal('${usr.username}')">${c?'Régénérer':'Générer'} le contrat</button>
+          <span class="btn btn-ghost btn-sm file-btn">Uploader un PDF sur mesure<input type="file" accept="application/pdf" onchange="handleContractUpload(event,'${usr.username}')"></span>
+          ${c ? `<a class="btn btn-ghost btn-sm" href="${c.pdf_path}" target="_blank" rel="noopener">Original</a>` : ''}
+          ${c && c.signed_pdf_path ? `<a class="btn btn-ghost btn-sm" href="${c.signed_pdf_path}" target="_blank" rel="noopener">Signé</a>` : ''}
           ${c && c.signed_at ? `<button class="btn btn-ghost btn-sm" onclick="masterRemoveSignature('${usr.username}')">Retirer la signature</button>` : ''}
           ${c ? `<button class="btn btn-danger btn-sm" onclick="masterDeleteContract('${usr.username}')">Supprimer</button>` : ''}
         </div>
       </div>`;
   }).join("");
   return `
-    <div class="topbar"><div><h1>Contrats</h1><div class="desc">Ajoutez un contrat PDF par client, ou envoyez un contrat type réutilisable en un clic. Le client le consulte et le signe depuis son mobile.</div></div></div>
-    <div class="panel" style="margin-bottom:16px;display:flex;justify-content:space-between;align-items:center;gap:14px;flex-wrap:wrap;">
-      <div>
-        <div class="t-title">Contrat type</div>
-        <div class="t-desc">${state.contractTemplate ? `Envoyé le ${fmtDate(state.contractTemplate.uploaded_at)} — cliquez « Contrat type » sur un client pour le lui rendre disponible.` : "Aucun contrat type envoyé pour le moment. Envoyez-en un pour pouvoir l'affecter à un client d'un clic."}</div>
-      </div>
-      <div style="display:flex;gap:8px;flex-wrap:wrap;">
-        ${state.contractTemplate ? `<a class="btn btn-ghost btn-sm" href="${state.contractTemplate.pdf_path}" target="_blank" rel="noopener">Voir</a>` : ''}
-        <span class="btn btn-primary btn-sm file-btn">${state.contractTemplate?'Remplacer':'Envoyer'} le contrat type<input type="file" accept="application/pdf" onchange="handleContractTemplateUpload(event)"></span>
-      </div>
-    </div>
+    <div class="topbar"><div><h1>Contrats</h1><div class="desc">Générez le contrat de location personnalisé de chaque client en un clic (fiche client + réservation), ou uploadez un PDF sur mesure si besoin. Le client le consulte et le signe depuis son mobile.</div></div></div>
     <div class="filter-bar" style="margin-bottom:16px;">
       <select onchange="onContratsSort(this.value)">
         <option value="client_asc" ${sortKey==='client_asc'?'selected':''}>Client (A→Z)</option>
@@ -2503,6 +2754,59 @@ function renderModal(){
       <div class="modal-actions"><button class="btn btn-primary" style="width:100%;" onclick="closeModal(); goto('planning');">Fermer</button></div>
     </div></div>`;
   }
+  if(m.type === "generateContract"){
+    const p = state.profiles.find(x => x.username === m.username);
+    if(!p) return "";
+    const clientBookings = state.bookings.filter(b => b.username === m.username).slice().sort((a,b) => (b.created_at||'').localeCompare(a.created_at||''));
+    const chosenBookingId = m.bookingId !== undefined ? m.bookingId : (latestRelevantBookingFor(m.username)?.id || null);
+    const booking = clientBookings.find(b => b.id === chosenBookingId) || null;
+    const item = booking ? state.items.find(i => i.id === booking.item_id) : null;
+    const missing = ['nom','prenom','adresse','telephone','numero_cni'].filter(f => !p[f]);
+    const bookingOptions = clientBookings.map(b => {
+      const it = state.items.find(i => i.id === b.item_id);
+      return `<option value="${b.id}" ${b.id===chosenBookingId?'selected':''}>${esc(it?it.name:'Matériel supprimé')} — ${fmtDate(b.start_date)} → ${fmtDate(b.end_date)} (${b.status})</option>`;
+    }).join('');
+    const days = booking ? bookingDurationDays(booking) : 1;
+    const estPrice = booking ? estimatedBookingPrice(booking) : null;
+    return `
+    <div class="modal-bg" onclick="closeModalBg(event)"><div class="modal" style="max-width:560px;">
+      <h3>Générer le contrat — ${esc(clientDisplayName(p))}</h3>
+      ${missing.length ? `<div class="msg msg-error">Fiche client incomplète (${missing.join(', ')}) — ces informations apparaîtront vides dans le contrat. Complétez-les dans sa fiche avant de générer si possible.</div>` : ''}
+      ${!clientBookings.length ? `<div class="msg msg-error">Aucune réservation trouvée pour ce client — les champs matériel/prix/dates resteront vides, à compléter à la main ci-dessous n'est pas possible pour le matériel : créez d'abord une réservation.</div>` : ''}
+      <div class="field"><label>Réservation utilisée pour le contrat</label><select id="gc-booking" onchange="onGenerateContractBookingChange('${m.username}', this.value)">${clientBookings.length ? bookingOptions : '<option>—</option>'}</select></div>
+      <div class="row">
+        <div class="field"><label>Catégorie (matériel)</label><input id="gc-categorie" value="${esc(item?item.name:'')}"></div>
+        <div class="field"><label>Valeur de référence (€)</label><input id="gc-valeur-ref" type="number" step="0.01" value="${item&&item.reference_value!=null?item.reference_value:''}"></div>
+      </div>
+      <div class="field"><label>Description du matériel</label><textarea id="gc-description" rows="2">${esc(item?item.description||'':'')}</textarea></div>
+      <div class="row">
+        <div class="field"><label>Date de remise</label><input id="gc-date-remise" type="date" value="${booking?booking.start_date:''}"></div>
+        <div class="field"><label>Prix de la location (€ TTC)</label><input id="gc-prix" type="number" step="0.01" value="${estPrice!=null?estPrice.toFixed(2):''}"></div>
+      </div>
+      <div class="row">
+        <div class="field"><label>Date de début</label><input id="gc-date-debut" type="date" value="${booking?booking.start_date:''}"></div>
+        <div class="field"><label>Date de fin</label><input id="gc-date-fin" type="date" value="${booking?booking.end_date:''}"></div>
+      </div>
+      <div class="row">
+        <div class="field"><label>Durée (jours)</label><input id="gc-duree" type="number" min="1" value="${days}"></div>
+        <div class="field"><label>Tarif de dépassement (€/jour)</label><input id="gc-tarif-depassement" type="number" step="0.01" value="${item&&item.price_per_day!=null?item.price_per_day:''}"></div>
+      </div>
+      <div class="row">
+        <div class="field"><label>État — aspect extérieur</label><select id="gc-etat-aspect"><option>Neuf</option><option selected>Bon état</option><option>État d'usage</option><option>Très usagé</option><option>Absent</option></select></div>
+        <div class="field"><label>État — fonctionnement</label><select id="gc-etat-fonctionnement"><option>Neuf</option><option selected>Bon état</option><option>État d'usage</option><option>Très usagé</option><option>Absent</option></select></div>
+      </div>
+      <div class="row">
+        <div class="field"><label>Lieu de signature</label><input id="gc-lieu" value="${esc(CONTRACT_OWNER.lieuSignatureDefaut)}"></div>
+        <div class="field"><label>Date de signature</label><input id="gc-date-signature" type="date" value="${todayStr()}"></div>
+      </div>
+      <div style="font-size:11.5px;color:var(--text-faint);margin:-2px 0 10px;">Client : ${esc(clientDisplayName(p))}, ${esc(p.adresse||'adresse manquante')} — ${esc(p.telephone||'tél. manquant')} — ${esc(p.username)} — CNI n° ${esc(p.numero_cni||'manquant')}.</div>
+      <div id="gc-error"></div>
+      <div class="modal-actions">
+        <button class="btn btn-ghost" onclick="closeModal()">Annuler</button>
+        <button class="btn btn-primary" onclick="confirmGenerateContract(event,'${m.username}')">Générer le PDF</button>
+      </div>
+    </div></div>`;
+  }
   if(m.type === "newItem" || m.type === "editItem"){
     const editing = m.type === "editItem";
     const it = editing ? state.items.find(i => i.id === m.itemId) : null;
@@ -2520,6 +2824,8 @@ function renderModal(){
         <div class="field"><label>Prix € / jour</label><input id="it-price-day" type="number" step="0.01" min="0" placeholder="ex. 25" value="${editing&&it.price_per_day!=null?it.price_per_day:''}"></div>
         <div class="field"><label>Prix € / semaine</label><input id="it-price-week" type="number" step="0.01" min="0" placeholder="ex. 120" value="${editing&&it.price_per_week!=null?it.price_per_week:''}"></div>
       </div>
+      <div class="field"><label>Valeur de référence (remplacement en cas de perte/vol/casse)</label><input id="it-refval" type="number" step="0.01" min="0" placeholder="ex. 3490" value="${editing&&it.reference_value!=null?it.reference_value:''}"></div>
+      <div style="font-size:11.5px;color:var(--text-faint);margin:-4px 0 10px;">Utilisée dans le contrat de location (article 1 et 6) pour fixer le montant dû en cas de perte totale, vol ou destruction.</div>
       <div class="field"><label>Photo ${editing?'(laisser vide pour garder la photo actuelle)':'(optionnel)'}</label><input id="it-photo" type="file" accept="image/*"></div>
       ${editing && it.image_url ? `<img src="${it.image_url}" style="width:100%;height:110px;object-fit:cover;border-radius:var(--r-sm);margin:-4px 0 6px;">` : ''}
       <div id="it-error"></div>
@@ -2814,6 +3120,7 @@ window.confirmNewItem = async (e, itemId) => {
   const qty = document.getElementById("it-qty").value;
   const priceDay = document.getElementById("it-price-day").value;
   const priceWeek = document.getElementById("it-price-week").value;
+  const refVal = document.getElementById("it-refval").value;
   const file = document.getElementById("it-photo").files[0];
   const btn = e.target; const oldLabel = btn.textContent; btn.textContent = itemId ? "Enregistrement..." : "Ajout..."; btn.disabled = true;
   try{
@@ -2826,13 +3133,13 @@ window.confirmNewItem = async (e, itemId) => {
       imageUrl = pub.publicUrl;
     }
     if(itemId){
-      const fields = { name, description: desc, xp_value: Number(xp)||10, qty: Number(qty)||0, price_per_day: priceDay===''?null:Number(priceDay), price_per_week: priceWeek===''?null:Number(priceWeek) };
+      const fields = { name, description: desc, xp_value: Number(xp)||10, qty: Number(qty)||0, price_per_day: priceDay===''?null:Number(priceDay), price_per_week: priceWeek===''?null:Number(priceWeek), reference_value: refVal===''?null:Number(refVal) };
       if(imageUrl) fields.image_url = imageUrl;
       const ok = await updateItem(itemId, fields);
       if(ok) state.modal = null;
       render();
     } else {
-      await createItem(name, desc, xp, qty, imageUrl, priceDay, priceWeek);
+      await createItem(name, desc, xp, qty, imageUrl, priceDay, priceWeek, refVal);
     }
   }catch(err){
     document.getElementById('it-error').innerHTML = `<div class="msg msg-error">Erreur photo : ${esc(err.message||String(err))}</div>`;
