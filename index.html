@@ -161,10 +161,11 @@
   .topbar h1{font-family:var(--font-disp);font-size:30px;font-weight:700;letter-spacing:0.005em;}
   .topbar .desc{color:var(--text-dim);font-size:14.5px;margin-top:6px;max-width:480px;line-height:1.5;}
 
-  .xp-card{background: var(--surface);border:1px solid var(--border);border-radius: var(--r-md);padding:18px 20px;min-width:270px;backdrop-filter: blur(20px);-webkit-backdrop-filter: blur(20px);}
+  .xp-card{background: var(--surface);border:1px solid var(--border);border-radius: var(--r-md);padding:18px 20px;min-width:270px;backdrop-filter: blur(20px);-webkit-backdrop-filter: blur(20px);box-shadow:0 0 28px -14px var(--tier-soft, transparent);}
   .xp-card .xp-top{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px;}
-  .xp-card .xp-rank{font-family:var(--font-disp);font-size:15px;font-weight:700;color:var(--accent);letter-spacing:0.01em;}
+  .xp-card .xp-rank{font-family:var(--font-disp);font-size:15px;font-weight:700;color:var(--tier, var(--accent));letter-spacing:0.01em;}
   .xp-card .xp-num{font-size:12px;color:var(--text-faint);font-weight:500;}
+  .xp-card .xp-bar-fill{background:linear-gradient(90deg, var(--tier-soft, var(--accent-2)), var(--tier, var(--accent)));}
   .xp-bar-track{height:10px;background:rgba(255,255,255,0.06);border-radius:var(--r-pill);overflow:hidden;position:relative;}
   .xp-bar-pending{position:absolute;top:0;left:0;height:100%;border-radius:var(--r-pill);background:rgba(255,255,255,0.28);transition:width .8s var(--ease);z-index:0;}
   .xp-bar-fill{height:100%;border-radius:var(--r-pill);background:linear-gradient(90deg, var(--accent-2), var(--accent));transition:width .8s var(--ease);position:relative;z-index:1;overflow:hidden;}
@@ -231,6 +232,7 @@
   .hamburger{display:none;}
   .mobile-topbar{display:none;}
   .mobile-topbar img{width:26px;height:26px;border-radius:8px;}
+  .bottom-nav{display:none;}
 
   /* ---------- Filter bar (Gestion location) ---------- */
   .filter-bar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:16px;}
@@ -266,47 +268,72 @@
   .badge-dot{display:inline-flex;align-items:center;justify-content:center;min-width:18px;height:18px;padding:0 5px;border-radius:999px;background:var(--danger);color:#fff;font-size:10.5px;font-weight:700;margin-left:auto;}
   .nav button{position:relative;}
 
-  /* ---------- Hero XP (accueil) ---------- */
+  /* ---------- Hero XP (accueil) — HUD "jeu vidéo" : la couleur (--tier/--tier-soft) suit le
+     palier du rang (vert -> bleu -> violet -> or), posée en inline-style par tierStyleAttr().
+     Volontairement statique (glow via box-shadow/gradient, pas d'animation en boucle) : ce bloc
+     est reconstruit à chaque render() (y compris sur les mises à jour realtime d'autres clients),
+     donc toute animation d'entrée ici se rejouerait en boucle perçue — voir la note Lot 5 ci-dessus. */
   .hero-wrap{display:flex;justify-content:center;margin-bottom:6px;}
   .xp-hero{
-    width:100%;max-width:460px;text-align:center;padding:32px 30px;border-radius:var(--r-lg);
-    background: var(--surface);
+    width:100%;max-width:460px;text-align:center;padding:34px 30px;border-radius:var(--r-lg);
+    position:relative;overflow:hidden;
+    background: radial-gradient(220px 160px at 50% -10%, var(--tier-soft, var(--accent-soft)), transparent 70%), var(--surface);
     border:1px solid var(--border);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);
+    box-shadow: var(--shadow-2), 0 0 60px -28px var(--tier, var(--accent));
+  }
+  .xp-hero::before{
+    content:"";position:absolute;inset:0;pointer-events:none;opacity:.5;
+    background-image:
+      linear-gradient(var(--border-soft) 1px, transparent 1px),
+      linear-gradient(90deg, var(--border-soft) 1px, transparent 1px);
+    background-size:26px 26px;
+    mask-image:radial-gradient(260px 180px at 50% 0%, rgba(0,0,0,0.5), transparent 75%);
   }
   .xp-ring{
-    width:110px;height:110px;border-radius:50%;margin:0 auto 14px;position:relative;
-    background: conic-gradient(var(--accent) calc(var(--pct,0)*1%), rgba(255,255,255,0.07) 0);
+    width:128px;height:128px;border-radius:50%;margin:0 auto 16px;position:relative;z-index:1;
+    background: conic-gradient(var(--tier, var(--accent)) calc(var(--pct,0)*1%), rgba(255,255,255,0.07) 0);
     display:flex;align-items:center;justify-content:center;
+    box-shadow:0 0 0 1px var(--border), 0 0 34px -4px var(--tier, var(--accent));
   }
-  .xp-ring::before{content:"";position:absolute;inset:10px;border-radius:50%;background:#0c0e0c;}
-  .ring-owl{position:relative;color:var(--accent);display:flex;}
-  .ring-owl svg{width:42px;height:42px;}
+  .xp-ring::before{content:"";position:absolute;inset:6px;border-radius:50%;border:1px dashed var(--tier-soft, rgba(255,255,255,0.14));}
+  .xp-ring::after{content:"";position:absolute;inset:13px;border-radius:50%;background:#0c0e0c;}
+  .ring-owl{position:relative;z-index:1;color:var(--tier, var(--accent));display:flex;filter:drop-shadow(0 0 8px var(--tier-soft, transparent));}
+  .ring-owl svg{width:46px;height:46px;}
   .rank-step .rank-icon{color:var(--text-faint);margin:0 auto 5px;display:flex;justify-content:center;}
   .rank-step.done .rank-icon{color:var(--text-dim);}
-  .rank-step.current .rank-icon{color:var(--accent);}
-  .xp-hero-rank{font-family:var(--font-disp);font-size:25px;font-weight:700;letter-spacing:0.01em;}
-  .xp-hero-level{font-size:13px;color:var(--text-dim);font-weight:700;margin:4px 0 18px;}
-  .xp-bar-track-lg{height:14px;}
-  .xp-hero-num{font-size:12.5px;color:var(--text-faint);margin-top:12px;font-weight:500;}
-  .ranks-roadmap{display:flex;gap:6px;overflow-x:auto;margin-top:20px;padding:2px;}
-  .rank-step{flex:1;min-width:80px;text-align:center;padding:9px 4px;border-radius:var(--r-sm);background:rgba(255,255,255,0.03);border:1px solid var(--border-soft);}
-  .rank-step.done{background:rgba(255,255,255,0.05);}
-  .rank-step.current{border-color:var(--accent);}
+  .rank-step.current .rank-icon{color:var(--tier, var(--accent));}
+  .xp-hero-rank{position:relative;z-index:1;font-family:var(--font-disp);font-size:26px;font-weight:700;letter-spacing:0.02em;text-transform:uppercase;color:var(--tier, var(--accent));text-shadow:0 0 24px var(--tier-soft, transparent);}
+  .xp-hero-level{position:relative;z-index:1;display:inline-flex;align-items:center;gap:6px;font-family:var(--font-disp);font-size:12px;color:var(--text);font-weight:700;letter-spacing:0.08em;margin:8px 0 20px;padding:5px 14px;border-radius:var(--r-pill);background:rgba(255,255,255,0.06);border:1px solid var(--tier-soft, var(--border));}
+  .xp-bar-track-lg{height:14px;position:relative;z-index:1;}
+  .xp-hero-num{position:relative;z-index:1;font-size:12.5px;color:var(--text-faint);margin-top:12px;font-weight:500;}
+  .ranks-roadmap{position:relative;z-index:1;display:flex;gap:6px;overflow-x:auto;margin-top:20px;padding:2px;}
+  .rank-step{flex:1;min-width:80px;text-align:center;padding:9px 4px;border-radius:var(--r-sm);background:rgba(255,255,255,0.03);border:1px solid var(--border-soft);border-bottom:2px solid var(--border-soft);}
+  .rank-step.done{background:rgba(255,255,255,0.05);border-bottom-color:var(--tier, var(--accent));}
+  .rank-step.current{border-color:var(--tier, var(--accent));border-bottom-color:var(--tier, var(--accent));box-shadow:0 0 18px -6px var(--tier, var(--accent));}
   .rank-step .rank-name{font-family:var(--font-disp);font-size:12.5px;font-weight:700;white-space:nowrap;color:var(--text-dim);letter-spacing:0.01em;}
-  .rank-step.current .rank-name{color:var(--accent);}
+  .rank-step.current .rank-name{color:var(--tier, var(--accent));}
   .rank-step.locked .rank-name{color:var(--text-faint);}
   .rank-step .rank-xp{font-size:10px;color:var(--text-faint);margin-top:2px;}
 
+  /* Le toast de level-up est créé via document.createElement, hors du cycle de render() : lui seul
+     (ainsi que showErrorToast) peut porter une animation d'entrée sans risque de rejeu en boucle. */
   .levelup-toast{
-    position:fixed;left:50%;bottom:28px;transform:translate(-50%,20px);opacity:0;display:flex;align-items:center;gap:12px;
-    background: rgba(14,16,14,0.94);border:1px solid var(--accent-soft-2);border-radius: var(--r-pill);padding:12px 24px 12px 16px;
-    box-shadow: var(--shadow-glow);transition: transform .35s var(--ease), opacity .35s var(--ease);z-index:100;backdrop-filter:blur(16px);
+    position:fixed;left:50%;bottom:28px;transform:translate(-50%,20px);opacity:0;display:flex;align-items:center;gap:14px;
+    background: rgba(14,16,14,0.94);border:1px solid var(--tier-soft, var(--accent-soft-2));border-radius: var(--r-pill);padding:13px 26px 13px 14px;
+    box-shadow: var(--shadow-2), 0 0 34px -6px var(--tier, var(--accent));transition: transform .35s var(--ease), opacity .35s var(--ease);z-index:100;backdrop-filter:blur(16px);
   }
   .levelup-toast.show{transform:translate(-50%,0);opacity:1;}
-  .levelup-badge{font-size:24px;}
-  .levelup-title{font-weight:800;color:var(--accent);font-size:14.5px;}
+  .levelup-badge{width:46px;height:46px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;
+    font-size:22px;background:var(--tier-soft, var(--accent-soft));color:var(--tier, var(--accent));position:relative;}
+  .levelup-badge svg{width:27px;height:27px;}
+  .levelup-toast.show .levelup-badge{animation:levelupPop .5s var(--ease);}
+  .levelup-toast.show .levelup-badge::after{content:"";position:absolute;inset:0;border-radius:50%;animation:levelupBurst .8s ease-out forwards;}
+  @keyframes levelupPop{0%{transform:scale(.4) rotate(-10deg);}60%{transform:scale(1.15) rotate(4deg);}100%{transform:scale(1) rotate(0);}}
+  @keyframes levelupBurst{0%{box-shadow:0 0 0 0 var(--tier-soft, var(--accent-soft));}100%{box-shadow:0 0 0 16px rgba(0,0,0,0);}}
+  .levelup-title{font-weight:800;color:var(--tier, var(--accent));font-size:15px;letter-spacing:0.01em;}
   .levelup-sub{font-size:12px;color:var(--text-dim);}
-  .error-toast{border-color:#8a3a3a;box-shadow:0 10px 40px rgba(180,50,50,0.25);max-width:min(420px,88vw);}
+  .error-toast{border-color:#8a3a3a !important;box-shadow:0 10px 40px rgba(180,50,50,0.25) !important;max-width:min(420px,88vw);}
+  .error-toast .levelup-badge{background:var(--danger-soft) !important;color:#FF8A75 !important;}
   .error-toast .levelup-title{color:#FF8A75;}
 
   /* ---------- Fullscreen signature modal ---------- */
@@ -372,12 +399,37 @@
        l'inset, pour garantir le dégagement même quand l'inset lui-même n'est pas fiable. */
     .sidebar{position:fixed;left:16px;top:calc(32px + env(safe-area-inset-top));bottom:calc(16px + env(safe-area-inset-bottom));height:auto;z-index:40;transform:translateX(-120%);transition:transform .28s var(--ease);}
     .sidebar.open{transform:translateX(0);}
-    .main{padding:calc(32px + env(safe-area-inset-top)) 16px calc(50px + env(safe-area-inset-bottom));}
+    .main{padding:calc(32px + env(safe-area-inset-top)) 16px calc(100px + env(safe-area-inset-bottom));}
     .mobile-topbar{display:flex;align-items:center;gap:12px;margin-bottom:20px;}
     .hamburger{display:flex;width:38px;height:38px;border:1px solid var(--border);border-radius: var(--r-sm);background:var(--surface);align-items:center;justify-content:center;flex-shrink:0;}
     .backdrop{position:fixed;inset:0;background:rgba(0,0,0,0.55);z-index:39;}
     .topbar{flex-direction:column;}
     .xp-card{width:100%;min-width:0;}
+
+    /* ---------- Bottom nav (mobile) ---------- */
+    .bottom-nav{
+      display:flex;position:fixed;left:10px;right:10px;bottom:calc(10px + env(safe-area-inset-bottom));
+      z-index:41;background:rgba(9,11,8,0.86);border:1px solid var(--border);border-radius:var(--r-pill);
+      padding:5px;gap:2px;align-items:center;justify-content:space-around;
+      backdrop-filter:blur(22px);-webkit-backdrop-filter:blur(22px);
+      box-shadow: var(--shadow-2), 0 0 30px -10px var(--accent-soft-2);
+    }
+    .bottom-nav button{
+      flex:0 1 auto;min-width:0;display:flex;align-items:center;justify-content:center;gap:0;
+      background:none;border:none;color:var(--text-faint);padding:10px 9px;border-radius:var(--r-pill);
+      font-size:11px;font-weight:700;letter-spacing:0.005em;position:relative;white-space:nowrap;overflow:hidden;
+      transition:background .18s var(--ease), color .18s var(--ease), gap .18s var(--ease);
+    }
+    .bottom-nav button svg{width:19px;height:19px;flex-shrink:0;}
+    .bottom-nav button .bn-label{max-width:0;opacity:0;overflow:hidden;text-overflow:ellipsis;transition:max-width .2s var(--ease), opacity .15s var(--ease);}
+    .bottom-nav button.active{flex:1 1 auto;gap:6px;background:var(--accent);color:var(--accent-ink);box-shadow:var(--shadow-glow);}
+    .bottom-nav button.active .bn-label{max-width:150px;opacity:1;}
+    .bottom-nav .bn-badge{position:absolute;top:2px;right:18%;min-width:15px;height:15px;padding:0 4px;border-radius:99px;background:var(--danger);color:#fff;font-size:9.5px;font-weight:700;display:flex;align-items:center;justify-content:center;box-shadow:0 0 0 2px rgba(9,11,8,0.86);}
+    .bottom-nav button.active .bn-badge{box-shadow:0 0 0 2px var(--accent);}
+
+    /* La bottom-nav occupe désormais le bas de l'écran : les toasts (level-up/erreur) doivent
+       flotter au-dessus d'elle plutôt que par-dessus. */
+    .levelup-toast{bottom:calc(74px + env(safe-area-inset-bottom));}
   }
 </style>
 </head>
@@ -427,6 +479,21 @@ function owlEyesSvg(tier){
   if(tier === 2) return '<circle cx="8.7" cy="12" r="1.7"/><circle cx="15.3" cy="12" r="3"/><path d="M11.6 12h1.2"/>';
   if(tier === 3) return '<circle cx="8.7" cy="12" r="2.6"/><circle cx="15.3" cy="12" r="2.6"/><path d="M11.3 12h1.4"/>';
   return '<circle cx="8.2" cy="10.4" r="2.05"/><circle cx="15.8" cy="10.4" r="2.05"/><circle cx="8.2" cy="14.7" r="2.05"/><circle cx="15.8" cy="14.7" r="2.05"/>';
+}
+// Palette "HUD" associée au palier de rang (Lot 10 — refonte visuelle mode XP) : vert (palier 1,
+// couleur de marque par défaut) -> bleu -> violet -> or à mesure que le client progresse. Posée en
+// variables CSS inline (--tier/--tier-soft) sur les conteneurs XP ; tout le CSS qui l'utilise a un
+// fallback var(--accent)/var(--accent-soft), donc un appel sans tier (ex. contextes non-XP) reste vert.
+function tierPalette(tier){
+  if(tier === 2) return { color:'var(--blue)', soft:'var(--blue-soft)' };
+  if(tier === 3) return { color:'var(--violet)', soft:'var(--violet-soft)' };
+  if(tier === 4) return { color:'var(--amber)', soft:'var(--amber-soft)' };
+  return { color:'var(--accent)', soft:'var(--accent-soft)' };
+}
+function tierStyleAttr(u){
+  if(!u || u.is_master) return '';
+  const pal = tierPalette(owlTierForRankIndex(rankIndexFor(u.xp)));
+  return ` style="--tier:${pal.color};--tier-soft:${pal.soft};"`;
 }
 function owlIconSvg(tier, opts){
   opts = opts || {};
@@ -725,12 +792,18 @@ function logout(){
 
 /* ---------- Level up feedback ---------- */
 function checkLevelUp(oldXp, newXp){
-  if(levelFor(newXp) > levelFor(oldXp)) showLevelUpToast(levelFor(newXp), rankFor(newXp));
+  if(levelFor(newXp) > levelFor(oldXp)) showLevelUpToast(levelFor(newXp), rankFor(newXp), owlTierForRankIndex(rankIndexFor(newXp)));
 }
-function showLevelUpToast(level, rank){
+// Créé via document.createElement, hors du cycle de render() -> seul endroit où une animation
+// d'entrée (pop + anneau de burst, toutes deux à durée finie) ne se rejoue pas à chaque mise à
+// jour realtime : voir la note dans le CSS "Hero XP" plus haut.
+function showLevelUpToast(level, rank, tier){
+  const pal = tierPalette(tier || 1);
   const el = document.createElement('div');
   el.className = 'levelup-toast';
-  el.innerHTML = `<div class="levelup-badge">🦉</div><div><div class="levelup-title">Niveau ${level} !</div><div class="levelup-sub">${esc(rank)}</div></div>`;
+  el.style.setProperty('--tier', pal.color);
+  el.style.setProperty('--tier-soft', pal.soft);
+  el.innerHTML = `<div class="levelup-badge">${owlIconSvg(tier || 1, { size:27, elite: tier===4 })}</div><div><div class="levelup-title">Niveau ${level} !</div><div class="levelup-sub">${esc(rank)}</div></div>`;
   document.body.appendChild(el);
   requestAnimationFrame(() => el.classList.add('show'));
   setTimeout(() => { el.classList.remove('show'); setTimeout(() => el.remove(), 400); }, 2600);
@@ -1676,6 +1749,7 @@ function iconFor(name){
     missions: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l2 2 4-4"/><circle cx="12" cy="12" r="9"/></svg>',
     utilisateurs: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="9" cy="8" r="3.2"/><path d="M2.5 20c0-3.5 2.9-6 6.5-6s6.5 2.5 6.5 6"/><circle cx="17.5" cy="9" r="2.3"/><path d="M15.8 14.2c2.7.4 4.7 2.3 4.7 5.3"/></svg>',
     contrat: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H7a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/><path d="M9 13h6M9 17h6"/></svg>',
+    contrats: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H7a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/><path d="M9 13h6M9 17h6"/></svg>',
     profil: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>',
     dashboard: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21a9 9 0 1 1 9-9"/><path d="M12 12l4.2-4.2"/><path d="M12 7v-1"/></svg>',
     gestion: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 3h6v4H9z"/><rect x="4" y="7" width="16" height="14" rx="2"/><path d="M8 13h8M8 17h5"/></svg>',
@@ -1719,7 +1793,7 @@ function xpBarHtml(u){
   const pct = Math.round((inLevel / XP_STEP) * 100);
   const pendingPct = Math.min(100, Math.round(((inLevel + pendingXp(u.username)) / XP_STEP) * 100));
   return `
-    <div class="xp-card">
+    <div class="xp-card"${tierStyleAttr(u)}>
       <div class="xp-top"><span class="xp-rank">Niv. ${lvl} — ${esc(rank)}</span><span class="xp-num">${inLevel} / ${XP_STEP} XP</span></div>
       ${xpProgressBarHtml(pct, pendingPct)}
     </div>`;
@@ -1822,12 +1896,12 @@ function masterNavDef(){
 function clientNavDef(){
   return [
     { id: "accueil", label: "Accueil" },
-    { id: "catalogue", label: "Catalogue location JVN" },
-    { id: "planning", label: "Mes réservations" },
+    { id: "catalogue", label: "Catalogue location JVN", shortLabel: "Catalogue" },
+    { id: "planning", label: "Mes réservations", shortLabel: "Réservations" },
     { id: "missions", label: "Missions", badge: (u) => state.completions.filter(c => c.username === u.username && c.status !== 'attente' && c.client_seen === false).length },
     { id: "recompenses", label: "À gagner", badge: (u) => state.redemptions.filter(r => r.username === u.username && r.status !== 'attente' && r.client_seen === false).length },
-    { id: "contrat", label: "Mes contrats", badge: (u) => { const c = state.contracts.find(x => x.username === u.username); return (c && !c.signed_at) ? 1 : 0; } },
-    { id: "profil", label: "Mon profil" },
+    { id: "contrat", label: "Mes contrats", shortLabel: "Contrat", badge: (u) => { const c = state.contracts.find(x => x.username === u.username); return (c && !c.signed_at) ? 1 : 0; } },
+    { id: "profil", label: "Mon profil", shortLabel: "Profil" },
   ];
 }
 // Ordre des onglets du master, personnalisable en glissant-déposant. Enregistré sur le profil
@@ -1909,6 +1983,23 @@ function renderSidebar(){
   ${state.sidebarOpen ? `<div class="backdrop" onclick="toggleSidebar()"></div>` : ''}`;
 }
 
+// Barre de navigation mobile (icônes en bas d'écran, client + master) : reprend exactement les
+// mêmes entrées/badges que la sidebar (navFor), donc toujours synchronisée avec elle. Un onglet
+// "groupe" (Gestion, Missions côté master) pointe vers son premier sous-onglet au tap ; les autres
+// sous-onglets restent accessibles via le menu ☰ complet, qui reste disponible tel quel.
+function renderBottomNav(){
+  const u = currentProfile();
+  const isMaster = u.is_master;
+  const items = navFor(isMaster).map(item => {
+    const targetId = item.sub ? item.sub[0].id : item.id;
+    const active = item.sub ? item.sub.some(s => s.id === state.view) : state.view === item.id;
+    const badgeCount = item.badge ? item.badge(u) : 0;
+    const badgeHtml = badgeCount>0 ? `<span class="bn-badge">${badgeCount>99?'99+':badgeCount}</span>` : '';
+    return `<button type="button" class="${active?'active':''}" onclick="goto('${targetId}')">${iconFor(item.icon || item.id)}<span class="bn-label">${esc(item.shortLabel || item.label)}</span>${badgeHtml}</button>`;
+  }).join('');
+  return `<div class="bottom-nav">${items}</div>`;
+}
+
 /* ---------- Accueil (client) ---------- */
 function renderAccueil(){
   const u = currentProfile();
@@ -1921,10 +2012,10 @@ function renderAccueil(){
   const pendingPct = Math.min(100, Math.round(((inLevel + pendingXp(u.username)) / XP_STEP) * 100));
   return `
     <div class="hero-wrap">
-      <div class="xp-hero">
-        <div class="xp-ring" style="--pct:${pct}"><span class="ring-owl">${owlIconSvg(owlTierForRankIndex(rankIndexFor(u.xp)), { size:42, elite: rankIndexFor(u.xp)===RANKS.length-1 })}</span></div>
+      <div class="xp-hero"${tierStyleAttr(u)}>
+        <div class="xp-ring" style="--pct:${pct}"><span class="ring-owl">${owlIconSvg(owlTierForRankIndex(rankIndexFor(u.xp)), { size:46, elite: rankIndexFor(u.xp)===RANKS.length-1 })}</span></div>
         <div class="xp-hero-rank">${esc(rankFor(u.xp))}</div>
-        <div class="xp-hero-level">NIVEAU ${levelFor(u.xp)}</div>
+        <div class="xp-hero-level">🎮 NIVEAU ${levelFor(u.xp)}</div>
         ${xpProgressBarHtml(pct, pendingPct, 'xp-bar-track-lg')}
         <div class="xp-hero-num">${xpInLevel(u.xp)} / ${XP_STEP} XP dans ce niveau · <span id="xp-total-num" data-target="${u.xp}">${u.xp}</span> XP au total</div>
         ${ranksRoadmapHtml(u.xp)}
@@ -2989,6 +3080,7 @@ function render(){
         ${content}
       </div>
     </div>
+    ${renderBottomNav()}
     ${renderModal()}
   `;
   animateXpTotal();
