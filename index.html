@@ -365,6 +365,24 @@
   .admin-link-wrap{text-align:center;margin-top:20px;}
   .admin-link-wrap button{background:none;border:none;color:var(--text-faint);font-size:11.5px;text-decoration:underline;padding:4px;}
 
+  /* ---------- Accès équipe discret (trident + code) ---------- */
+  .gate-secret-trigger{
+    position:fixed;right:18px;bottom:calc(18px + env(safe-area-inset-bottom));width:46px;height:46px;border-radius:50%;
+    background:rgba(8,12,8,0.72);border:1px solid var(--accent-soft-2);color:var(--accent);
+    display:flex;align-items:center;justify-content:center;box-shadow:0 0 18px -5px var(--accent);
+    opacity:0.6;transition:opacity .2s var(--ease), transform .15s var(--ease);z-index:30;
+  }
+  .gate-secret-trigger:hover, .gate-secret-trigger:active{opacity:1;transform:scale(1.06);}
+  .code-pad-modal{max-width:320px;text-align:center;}
+  .code-pad-modal.shake{animation:codeShake .4s ease;}
+  @keyframes codeShake{0%,100%{transform:translateX(0);}20%{transform:translateX(-9px);}40%{transform:translateX(9px);}60%{transform:translateX(-6px);}80%{transform:translateX(6px);}}
+  .code-dots{display:flex;justify-content:center;gap:13px;margin:18px 0 16px;}
+  .code-dot{width:14px;height:14px;border-radius:50%;border:1.5px solid var(--border);transition:background .12s var(--ease), border-color .12s var(--ease);}
+  .code-dot.filled{background:var(--accent);border-color:var(--accent);box-shadow:0 0 8px -1px var(--accent);}
+  .code-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:11px;margin-bottom:16px;}
+  .code-grid button{aspect-ratio:1;border-radius:50%;background:rgba(255,255,255,0.05);border:1px solid var(--border-soft);color:var(--text);font-size:19px;font-weight:700;font-family:var(--font-disp);transition:background .12s var(--ease), transform .08s var(--ease);}
+  .code-grid button:active{background:var(--accent-soft);color:var(--accent);transform:scale(0.93);}
+
   /* ---------- Direction "Phosphore" — finition & motion (Lot 5, corrigé) ----------
      Retour d'expérience : les couches ambiantes en boucle (grain + trame verte animée en
      permanence) donnaient une impression de "vert partout" changeant sans arrêt et cassaient
@@ -407,25 +425,31 @@
     .xp-card{width:100%;min-width:0;}
 
     /* ---------- Bottom nav (mobile) ---------- */
+    /* Chaque bouton a une largeur FIXE (flex:1 1 0, identique active ou non) : rien ne redimensionne
+       au tap, seules la couleur et le fond du "pill" actif transitionnent (des propriétés qui ne
+       redéclenchent jamais de layout) — c'est ce qui rend le changement d'onglet instantané et
+       fluide au doigt, là où l'ancienne version (largeur en flex-grow) donnait une impression de
+       saccade/glissement lors du recalcul de layout à chaque frame. */
     .bottom-nav{
       display:flex;position:fixed;left:10px;right:10px;bottom:calc(10px + env(safe-area-inset-bottom));
-      z-index:41;background:rgba(9,11,8,0.86);border:1px solid var(--border);border-radius:var(--r-pill);
-      padding:5px;gap:2px;align-items:center;justify-content:space-around;
+      z-index:41;background:rgba(9,11,8,0.9);border:1px solid var(--border);border-radius:var(--r-lg);
+      padding:6px 4px;gap:1px;align-items:stretch;justify-content:space-around;
       backdrop-filter:blur(22px);-webkit-backdrop-filter:blur(22px);
       box-shadow: var(--shadow-2), 0 0 30px -10px var(--accent-soft-2);
+      touch-action:manipulation;
     }
     .bottom-nav button{
-      flex:0 1 auto;min-width:0;display:flex;align-items:center;justify-content:center;gap:0;
-      background:none;border:none;color:var(--text-faint);padding:10px 9px;border-radius:var(--r-pill);
-      font-size:11px;font-weight:700;letter-spacing:0.005em;position:relative;white-space:nowrap;overflow:hidden;
-      transition:background .18s var(--ease), color .18s var(--ease), gap .18s var(--ease);
+      flex:1 1 0;min-width:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;
+      background:none;border:none;color:var(--text-faint);padding:7px 2px;border-radius:var(--r-sm);
+      font-size:9.5px;font-weight:700;letter-spacing:0.002em;position:relative;white-space:nowrap;
+      -webkit-tap-highlight-color:transparent;
+      transition:background .15s var(--ease), color .15s var(--ease);
     }
     .bottom-nav button svg{width:19px;height:19px;flex-shrink:0;}
-    .bottom-nav button .bn-label{max-width:0;opacity:0;overflow:hidden;text-overflow:ellipsis;transition:max-width .2s var(--ease), opacity .15s var(--ease);}
-    .bottom-nav button.active{flex:1 1 auto;gap:6px;background:var(--accent);color:var(--accent-ink);box-shadow:var(--shadow-glow);}
-    .bottom-nav button.active .bn-label{max-width:150px;opacity:1;}
-    .bottom-nav .bn-badge{position:absolute;top:2px;right:18%;min-width:15px;height:15px;padding:0 4px;border-radius:99px;background:var(--danger);color:#fff;font-size:9.5px;font-weight:700;display:flex;align-items:center;justify-content:center;box-shadow:0 0 0 2px rgba(9,11,8,0.86);}
-    .bottom-nav button.active .bn-badge{box-shadow:0 0 0 2px var(--accent);}
+    .bottom-nav button .bn-label{max-width:100%;overflow:hidden;text-overflow:ellipsis;}
+    .bottom-nav button.active{background:var(--accent-soft);color:var(--accent);}
+    .bottom-nav button:active{background:rgba(255,255,255,0.06);}
+    .bottom-nav .bn-badge{position:absolute;top:2px;right:14%;min-width:14px;height:14px;padding:0 3px;border-radius:99px;background:var(--danger);color:#fff;font-size:9px;font-weight:700;display:flex;align-items:center;justify-content:center;box-shadow:0 0 0 2px rgba(9,11,8,0.9);}
 
     /* La bottom-nav occupe désormais le bas de l'écran : les toasts (level-up/erreur) doivent
        flotter au-dessus d'elle plutôt que par-dessus. */
@@ -519,6 +543,9 @@ let state = {
   view: "accueil",
   authTab: "login",
   showAdminLogin: false,
+  showCodePad: false,
+  codePadValue: "",
+  codePadError: false,
   authError: "",
   authNotice: "",
   sidebarOpen: false,
@@ -813,7 +840,7 @@ function showLevelUpToast(level, rank, tier){
 function showErrorToast(message){
   const el = document.createElement('div');
   el.className = 'levelup-toast error-toast';
-  el.innerHTML = `<div class="levelup-badge">⚠️</div><div><div class="levelup-title">Erreur</div><div class="levelup-sub">${esc(message)}</div></div>`;
+  el.innerHTML = `<div class="levelup-badge">${tacticalIconSvg('warning',{size:22})}</div><div><div class="levelup-title">Erreur</div><div class="levelup-sub">${esc(message)}</div></div>`;
   document.body.appendChild(el);
   requestAnimationFrame(() => el.classList.add('show'));
   setTimeout(() => { el.classList.remove('show'); setTimeout(() => el.remove(), 400); }, 5000);
@@ -1574,7 +1601,7 @@ async function openMemberDoc(kind, username){
   window.open(data.signedUrl, '_blank', 'noopener');
 }
 
-let sigCtx = null, sigDrawing = false, sigHasInk = false;
+let sigCtx = null, sigDrawing = false, sigHasInk = false, sigAspect = 220 / 380;
 function openSignaturePad(){
   const contract = state.contracts.find(c => c.username === state.session.username);
   if(!contract) return;
@@ -1590,7 +1617,7 @@ function openSignaturePad(){
       <p style="color:var(--text-dim);font-size:13.5px;line-height:1.6;margin-bottom:16px;">
         Ouvrez d'abord le contrat pour le lire attentivement, puis signez ci-dessous avec le doigt ou la souris.
       </p>
-      <a class="btn btn-ghost" style="margin-bottom:20px;width:100%;" href="${contract.pdf_path}" target="_blank" rel="noopener">📄 Ouvrir le contrat (PDF)</a>
+      <a class="btn btn-ghost" style="margin-bottom:20px;width:100%;" href="${contract.pdf_path}" target="_blank" rel="noopener">${tacticalIconSvg('doc',{size:16})} Ouvrir le contrat (PDF)</a>
       <div class="section-title">Votre signature</div>
       <div class="sig-pad-wrap"><canvas id="sig-canvas"></canvas></div>
       <button class="btn btn-ghost btn-sm" onclick="clearSignature()">Effacer la signature</button>
@@ -1611,6 +1638,13 @@ function initSignaturePad(){
   const rect = canvas.getBoundingClientRect();
   canvas.width = rect.width * ratio;
   canvas.height = rect.height * ratio;
+  // Mémorise le rapport hauteur/largeur RÉEL du pad tel qu'affiché (indépendant de
+  // devicePixelRatio) : c'est lui, et non les dimensions en pixels du PNG capturé, qui doit
+  // déterminer la taille de la signature une fois collée dans le PDF (voir submitSignature) —
+  // sinon un mobile en haute densité de pixels produit un PNG "physiquement" bien plus grand
+  // qu'un desktop pour une signature visuellement identique, et le repère fixe (.scale(0.35))
+  // gonflait démesurément l'image insérée, recouvrant le texte du contrat.
+  sigAspect = rect.height / rect.width;
   sigCtx = canvas.getContext('2d');
   sigCtx.scale(ratio, ratio);
   sigCtx.fillStyle = '#ffffff';
@@ -1658,8 +1692,12 @@ async function submitSignature(){
     const pages = pdfDoc.getPages();
     const lastPage = pages[pages.length - 1];
     const { width } = lastPage.getSize();
-    const dims = pngImage.scale(0.35);
-    lastPage.drawImage(pngImage, { x: width - dims.width - 50, y: 60, width: dims.width, height: dims.height });
+    // Taille FIXE en points PDF, dérivée du rapport hauteur/largeur réel du pad (sigAspect) et
+    // non des pixels du PNG capturé (qui varient avec devicePixelRatio) : la signature garde
+    // toujours la même taille sur la page, qu'elle ait été signée sur mobile ou sur desktop.
+    const sigW = 150;
+    const sigH = sigW * sigAspect;
+    lastPage.drawImage(pngImage, { x: width - sigW - 50, y: 60, width: sigW, height: sigH });
     const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
     const signDate = new Date();
     const dateStr = signDate.toLocaleDateString('fr-FR');
@@ -1741,6 +1779,34 @@ window.confirmGenerateContract = async (e, username) => {
 };
 
 /* ---------- Icons ---------- */
+// Petit set d'icônes ligne (même langage graphique que iconFor : trait 1.8, coins ronds) qui
+// remplace les émoticônes de plateforme (rendu incohérent d'un appareil à l'autre, ton trop
+// "jouet") par des pictos sobres, dans un registre tactique cohérent avec l'univers vision
+// nocturne / airsoft d'Owls Vision.
+function tacticalIconSvg(name, opts){
+  opts = opts || {};
+  const size = opts.size || 20;
+  const paths = {
+    warning: '<path d="M12 3.4 2.4 20h19.2L12 3.4Z"/><path d="M12 9.6v5"/><path d="M12 17.4h.01"/>',
+    eye: '<path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/>',
+    'eye-off': '<path d="M3 3l18 18"/><path d="M10.6 5.2A10.6 10.6 0 0 1 12 5c6.4 0 10 7 10 7a17.7 17.7 0 0 1-3.4 4.3M6.5 6.6C3.7 8.5 2 12 2 12s1.4 2.7 4 4.6"/><path d="M9.9 9.9a3 3 0 0 0 4.2 4.2"/>',
+    'rank-star': '<path d="M12 2.3l2.7 6.6 7.1.5-5.5 4.6 1.9 6.9L12 17l-6.2 3.9 1.9-6.9L2.2 9.4l7.1-.5Z" fill="currentColor" stroke="none"/>',
+    'rank-chevron': '<path d="M4 14.5l8-6 8 6"/><path d="M4 20l8-6 8 6"/>',
+    reticle: '<circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="2.1" fill="currentColor" stroke="none"/><path d="M12 1.8v4M12 18.2v4M1.8 12h4M18.2 12h4"/>',
+    scope: '<path d="M3 16.5 10 6l4 3-7 10.5Z"/><circle cx="17.3" cy="7.3" r="3"/><path d="M9 10l2 1.4"/>',
+    'check-circle': '<circle cx="12" cy="12" r="9"/><path d="M8 12.4l2.6 2.6L16 9.4"/>',
+    'x-circle': '<circle cx="12" cy="12" r="9"/><path d="M9 9l6 6M15 9l-6 6"/>',
+    clock: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.4 2"/>',
+    medal: '<path d="M7 3l2.6 6.2M17 3l-2.6 6.2"/><circle cx="12" cy="14.3" r="5.7"/><path d="M12 11.3l1.1 2.2 2.4.35-1.75 1.7.4 2.4L12 16.8l-2.15 1.15.4-2.4-1.75-1.7 2.4-.35Z" fill="currentColor" stroke="none"/>',
+    crate: '<path d="M3 8 12 4l9 4-9 4-9-4Z"/><path d="M3 8v8l9 4 9-4V8"/><path d="M12 12v8"/>',
+    package: '<rect x="3.5" y="7.5" width="17" height="12.5" rx="1.3"/><path d="M3.5 11.5h17M12 7.5v12.5M8 7.5l1.8-3.5h4.4l1.8 3.5"/>',
+    'id-badge': '<rect x="4" y="4" width="16" height="16" rx="2.4"/><circle cx="12" cy="9.8" r="2.3"/><path d="M7.5 17c.8-2.2 2.4-3.3 4.5-3.3s3.7 1.1 4.5 3.3"/>',
+    'signature-pen': '<path d="M3 21c3-1 4.5-1 7-1s5 1.5 8 0"/><path d="M9 15 18 6a2 2 0 0 1 2.8 2.8L11.8 18l-3.6.8Z"/>',
+    doc: '<path d="M14 2H7a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/><path d="M9 13h6M9 17h6"/>',
+    trident: '<path d="M7 2v6"/><path d="M12 2v6"/><path d="M17 2v6"/><path d="M6 8h12"/><path d="M12 8v14"/><path d="M9 22h6"/>',
+  };
+  return `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;${opts.style||''}">${paths[name] || ''}</svg>`;
+}
 function iconFor(name){
   const icons = {
     accueil: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-7 9 7"/><path d="M5 10v9a1 1 0 0 0 1 1h4v-6h4v6h4a1 1 0 0 0 1-1v-9"/></svg>',
@@ -1806,7 +1872,7 @@ function passwordFieldHtml(id, name, label, opts){
       <label>${esc(label)}</label>
       <div class="pwd-wrap">
         <input id="${id}" name="${name}" type="password" required autocomplete="${opts.autocomplete||'current-password'}" ${opts.minlength?`minlength="${opts.minlength}"`:''}>
-        <button type="button" class="pwd-eye" onclick="togglePasswordVisibility('${id}')" aria-label="Afficher le mot de passe">👁</button>
+        <button type="button" class="pwd-eye" onclick="togglePasswordVisibility('${id}')" aria-label="Afficher le mot de passe">${tacticalIconSvg('eye',{size:17})}</button>
       </div>
     </div>`;
 }
@@ -1862,10 +1928,54 @@ function renderGate(){
         </form>
         <div style="font-size:11.5px;color:var(--text-faint);margin-top:10px;text-align:center;">Un email de confirmation vous sera envoyé pour activer votre compte.</div>
       `}
-      <div class="admin-link-wrap"><button onclick="toggleAdminLogin()">Accès équipe</button></div>
+    </div>
+    <button type="button" class="gate-secret-trigger" onclick="openCodePad()" aria-label="Accès équipe" title="Accès équipe">${tacticalIconSvg('trident',{size:22})}</button>
+    ${state.showCodePad ? renderCodePad() : ''}
+  </div>`;
+}
+// Accès équipe volontairement retiré de la vue (plus de lien texte "Accès équipe") : un trident
+// discret en bas à droite ouvre un pavé à 9 chiffres, qui ne débloque le VRAI formulaire de
+// connexion équipe (mot de passe) qu'une fois le code entré. Attention : c'est de l'obscurité,
+// pas de la sécurité — ce code est un simple filtre anti-curieux côté client, visible par
+// quiconque lirait le code source de la page. Voir la note sur la sécurité du compte équipe
+// livrée à part.
+function renderCodePad(){
+  const dots = [0,1,2,3].map(i => `<span class="code-dot ${i < state.codePadValue.length ? 'filled':''}"></span>`).join('');
+  return `
+  <div class="modal-bg" onclick="closeCodePadBg(event)">
+    <div class="modal code-pad-modal ${state.codePadError?'shake':''}">
+      <div style="display:flex;justify-content:center;color:var(--accent);margin-bottom:6px;">${tacticalIconSvg('trident',{size:32})}</div>
+      <h3>Accès sécurisé</h3>
+      <div class="code-dots">${dots}</div>
+      ${state.codePadError ? `<div class="msg msg-error">Code incorrect</div>` : ''}
+      <div class="code-grid">
+        ${[1,2,3,4,5,6,7,8,9].map(n => `<button type="button" onclick="codePadPress(${n})">${n}</button>`).join('')}
+      </div>
+      <div class="modal-actions">
+        <button class="btn btn-ghost" onclick="codePadClear()">Effacer</button>
+        <button class="btn btn-ghost" onclick="closeCodePad()">Annuler</button>
+      </div>
     </div>
   </div>`;
 }
+window.openCodePad = () => { state.showCodePad = true; state.codePadValue = ""; state.codePadError = false; render(); };
+window.closeCodePad = () => { state.showCodePad = false; state.codePadValue = ""; state.codePadError = false; render(); };
+window.closeCodePadBg = (e) => { if(e.target.classList.contains('modal-bg')) window.closeCodePad(); };
+window.codePadClear = () => { state.codePadValue = ""; state.codePadError = false; render(); };
+window.codePadPress = (d) => {
+  if(state.codePadValue.length >= 4) return;
+  state.codePadValue += String(d);
+  if(state.codePadValue.length < 4){ render(); return; }
+  if(state.codePadValue === "1418"){
+    state.showCodePad = false; state.codePadValue = ""; state.codePadError = false;
+    state.showAdminLogin = true; state.authError = "";
+    render();
+  } else {
+    state.codePadError = true;
+    render();
+    setTimeout(() => { state.codePadValue = ""; state.codePadError = false; render(); }, 550);
+  }
+};
 
 /* ---------- Sidebar / nav ---------- */
 // Structure de nav data-driven : chaque entrée master peut porter un "badge" (compteur de
@@ -1874,7 +1984,7 @@ function renderGate(){
 // ne sont JAMAIS des vues elles-mêmes, seulement des repères de rangement dans le menu.
 function masterNavDef(){
   return [
-    { id: "dashboard", label: "Tableau de bord" },
+    { id: "dashboard", label: "Tableau de bord", shortLabel: "Tableau" },
     { id: "gestion-group", label: "Gestion", icon: "gestion",
       badge: () => state.bookings.filter(b => b.status === 'demande').length,
       sub: [
@@ -1882,7 +1992,7 @@ function masterNavDef(){
         { id: "stock", label: "Stock" },
         { id: "catalogue", label: "Catalogue" },
       ] },
-    { id: "utilisateurs", label: "Utilisateurs" },
+    { id: "utilisateurs", label: "Utilisateurs", shortLabel: "Clients" },
     { id: "missions-group", label: "Missions", icon: "missions",
       badge: () => state.completions.filter(c => c.status === 'attente').length,
       sub: [
@@ -1897,7 +2007,7 @@ function clientNavDef(){
   return [
     { id: "accueil", label: "Accueil" },
     { id: "catalogue", label: "Catalogue location JVN", shortLabel: "Catalogue" },
-    { id: "planning", label: "Mes réservations", shortLabel: "Réservations" },
+    { id: "planning", label: "Mes réservations", shortLabel: "Réservé" },
     { id: "missions", label: "Missions", badge: (u) => state.completions.filter(c => c.username === u.username && c.status !== 'attente' && c.client_seen === false).length },
     { id: "recompenses", label: "À gagner", badge: (u) => state.redemptions.filter(r => r.username === u.username && r.status !== 'attente' && r.client_seen === false).length },
     { id: "contrat", label: "Mes contrats", shortLabel: "Contrat", badge: (u) => { const c = state.contracts.find(x => x.username === u.username); return (c && !c.signed_at) ? 1 : 0; } },
@@ -1973,7 +2083,7 @@ function renderSidebar(){
       <div class="side-user">
         <div class="avatar">${esc(u.username.slice(0,2).toUpperCase())}</div>
         <div>
-          <div class="u-name">${esc(u.username)}${u.is_master?' 👑':''}</div>
+          <div class="u-name">${esc(u.username)}${u.is_master?` <span style="display:inline-flex;vertical-align:-2px;color:var(--amber);">${tacticalIconSvg('rank-star',{size:13})}</span>`:''}</div>
           <div class="u-rank">${u.is_master ? 'Équipe Owls Vision' : esc(rankFor(u.xp))}</div>
         </div>
       </div>
@@ -2015,7 +2125,7 @@ function renderAccueil(){
       <div class="xp-hero"${tierStyleAttr(u)}>
         <div class="xp-ring" style="--pct:${pct}"><span class="ring-owl">${owlIconSvg(owlTierForRankIndex(rankIndexFor(u.xp)), { size:46, elite: rankIndexFor(u.xp)===RANKS.length-1 })}</span></div>
         <div class="xp-hero-rank">${esc(rankFor(u.xp))}</div>
-        <div class="xp-hero-level">🎮 NIVEAU ${levelFor(u.xp)}</div>
+        <div class="xp-hero-level">${tacticalIconSvg('rank-chevron',{size:13})} NIVEAU ${levelFor(u.xp)}</div>
         ${xpProgressBarHtml(pct, pendingPct, 'xp-bar-track-lg')}
         <div class="xp-hero-num">${xpInLevel(u.xp)} / ${XP_STEP} XP dans ce niveau · <span id="xp-total-num" data-target="${u.xp}">${u.xp}</span> XP au total</div>
         ${ranksRoadmapHtml(u.xp)}
@@ -2023,7 +2133,7 @@ function renderAccueil(){
     </div>
     <div class="mission-spotlight">
       <div class="mission-spotlight-head">
-        <h2>🎯 Missions${pending.length ? ` — ${pending.length} en attente` : ''}</h2>
+        <h2 style="color:var(--accent);">${tacticalIconSvg('reticle',{size:20})} <span style="color:var(--text);">Missions${pending.length ? ` — ${pending.length} en attente` : ''}</span></h2>
         <button class="btn btn-primary btn-sm" onclick="goto('missions')">Voir tout</button>
       </div>
       ${pending.length ? `
@@ -2063,7 +2173,7 @@ function renderCatalogue(){
     const dispo = item.qty - activeBookingsCount(item.id, todayStr(), todayStr());
     return `
       <div class="card">
-        ${item.image_url ? `<img class="card-photo" src="${item.image_url}" alt="${esc(item.name)}">` : `<div class="card-photo-ph">🔭</div>`}
+        ${item.image_url ? `<img class="card-photo" src="${item.image_url}" alt="${esc(item.name)}">` : `<div class="card-photo-ph">${tacticalIconSvg('scope',{size:30})}</div>`}
         <span class="tag">+${item.xp_value} XP à la location</span>
         <h3>${esc(item.name)}</h3>
         <div class="card-desc">${esc(item.description || '')}</div>
@@ -2240,7 +2350,7 @@ function renderGestionStock(){
     return `
       <div class="list-row">
         <div style="display:flex;align-items:center;gap:14px;">
-          ${item.image_url ? `<img src="${item.image_url}" style="width:52px;height:52px;object-fit:cover;border-radius:12px;">` : `<div style="width:52px;height:52px;border-radius:12px;background:rgba(255,255,255,0.05);display:flex;align-items:center;justify-content:center;font-size:22px;">🔭</div>`}
+          ${item.image_url ? `<img src="${item.image_url}" style="width:52px;height:52px;object-fit:cover;border-radius:12px;">` : `<div style="width:52px;height:52px;border-radius:12px;background:rgba(255,255,255,0.05);display:flex;align-items:center;justify-content:center;color:var(--text-faint);">${tacticalIconSvg('scope',{size:24})}</div>`}
           <div>
             <div class="t-title">${esc(item.name)}</div>
             <div class="t-desc">${dispo} disponible${dispo>1?'s':''} aujourd'hui · ${enCours} en cours de location</div>
@@ -2335,7 +2445,13 @@ function missionCardHtml(t, isMaster, u){
   const status = mine ? mine.status : null;
   const canRedo = t.is_recurring && status === 'validee';
   const submissions = isMaster ? state.completions.filter(c => c.task_id === t.id).sort((a,b)=>(b.completed_at||'').localeCompare(a.completed_at||'')) : [];
-  const icon = status === 'validee' ? '✅' : status === 'attente' ? '⏳' : status === 'refusee' ? '❌' : '🎯';
+  const iconByStatus = {
+    validee: { name: 'check-circle', color: 'var(--accent)', bg: 'var(--accent-soft)' },
+    attente: { name: 'clock', color: 'var(--amber)', bg: 'var(--amber-soft)' },
+    refusee: { name: 'x-circle', color: '#FFB3A6', bg: 'var(--danger-soft)' },
+  };
+  const iconInfo = iconByStatus[status] || { name: 'reticle', color: 'var(--accent)', bg: 'var(--accent-soft)' };
+  const icon = tacticalIconSvg(iconInfo.name, { size: 21 });
   let clientStatusLine = '';
   if(status === 'validee') clientStatusLine = `<div class="card-desc" style="color:var(--accent);flex:0;">Mission accomplie ✓${canRedo ? ' · mission récurrente, refaisable dès maintenant' : ''}</div>`;
   else if(status === 'attente') clientStatusLine = `<div class="card-desc" style="color:var(--amber);flex:0;">En attente de validation par l'équipe.</div>`;
@@ -2348,7 +2464,7 @@ function missionCardHtml(t, isMaster, u){
   return `
     <div class="card mission-card ${status==='validee' && !canRedo?'done':''}">
       <div class="mission-head">
-        <div class="mission-icon">${icon}</div>
+        <div class="mission-icon" style="color:${iconInfo.color};background:${iconInfo.bg};">${icon}</div>
         <div style="flex:1;min-width:0;">
           <h3 style="font-size:16.5px;">${esc(t.title)}${t.is_recurring ? ' <span class="tag" style="margin-left:4px;">Récurrente</span>' : ''}</h3>
           <span class="task-xp">+${t.xp_reward} XP</span>
@@ -2435,7 +2551,7 @@ function missionManageCardHtml(t){
   return `
     <div class="card">
       <div class="mission-head">
-        <div class="mission-icon">🎯</div>
+        <div class="mission-icon">${tacticalIconSvg('reticle',{size:21})}</div>
         <div style="flex:1;min-width:0;">
           <h3 style="font-size:16.5px;">${esc(t.title)}${t.is_recurring ? ' <span class="tag" style="margin-left:4px;">Récurrente</span>' : ''}</h3>
           <span class="task-xp">+${t.xp_reward} XP</span>
@@ -2576,18 +2692,18 @@ function rewardCardHtml(r, isMaster, u){
       clientBlock = `<div class="card-foot"><span class="status-pill pending">Demande en attente</span></div>`;
     } else if(myRedemption.status === 'validee' && !myRedemption.shipping_address){
       clientBlock = `
-        <div class="card-desc" style="color:var(--accent);flex:0;">🎉 Récompense validée ! Merci de confirmer votre adresse d'envoi postal.</div>
+        <div class="card-desc" style="color:var(--accent);flex:0;display:flex;align-items:center;gap:6px;">${tacticalIconSvg('medal',{size:15})} Récompense validée ! Merci de confirmer votre adresse d'envoi postal.</div>
         <div class="card-foot" style="flex-direction:column;align-items:stretch;gap:8px;">
           <textarea id="ship-addr-${r.id}" rows="2" placeholder="Nom, adresse, code postal, ville..." style="width:100%;background:rgba(255,255,255,0.055);border:1px solid var(--border-soft);color:var(--text);padding:10px 12px;border-radius:var(--r-sm);font-size:13.5px;">${esc(u.adresse||'')}</textarea>
           <button class="btn btn-primary btn-sm" style="width:100%;" onclick="window.confirmRedemptionAddressUi('${myRedemption.id}','${r.id}')">Confirmer l'adresse</button>
         </div>`;
     } else if(myRedemption.status === 'validee' && myRedemption.shipping_address){
-      clientBlock = `<div class="card-desc" style="color:var(--accent);flex:0;">📦 En cours de préparation — envoi à : ${esc(myRedemption.shipping_address)}</div>`;
+      clientBlock = `<div class="card-desc" style="color:var(--accent);flex:0;display:flex;align-items:center;gap:6px;">${tacticalIconSvg('package',{size:15})} En cours de préparation — envoi à : ${esc(myRedemption.shipping_address)}</div>`;
     }
   }
   return `
     <div class="card">
-      ${r.image_url ? `<img class="card-photo" src="${r.image_url}" alt="${esc(r.name)}">` : `<div class="card-photo-ph">🎁</div>`}
+      ${r.image_url ? `<img class="card-photo" src="${r.image_url}" alt="${esc(r.name)}">` : `<div class="card-photo-ph">${tacticalIconSvg('crate',{size:30})}</div>`}
       <span class="tag">${r.xp_cost} XP</span>
       <h3>${esc(r.name)}</h3>
       ${r.description ? `<div class="card-desc">${esc(r.description)}</div>` : ''}
@@ -2650,7 +2766,7 @@ function usersFilteredSorted(){
 function usersRowHtml(p){
   return `
     <tr>
-      <td><div class="t-title">${esc(clientDisplayName(p))}${p.is_master?' 👑':''}</div>${p.prenom||p.nom ? `<div class="t-desc">@${esc(p.username)}</div>` : ''}</td>
+      <td><div class="t-title">${esc(clientDisplayName(p))}${p.is_master?` <span style="display:inline-flex;vertical-align:-2px;color:var(--amber);">${tacticalIconSvg('rank-star',{size:13})}</span>`:''}</div>${p.prenom||p.nom ? `<div class="t-desc">@${esc(p.username)}</div>` : ''}</td>
       <td>${p.is_master ? '—' : `${p.xp} XP · Niv. ${levelFor(p.xp)}`}</td>
       <td>${fmtDate(p.created_at)}</td>
       <td>${fmtDateTime(p.last_login)}</td>
@@ -2744,9 +2860,9 @@ function renderContratClient(){
       ${!c ? `<div class="empty">Aucun contrat ne vous a encore été transmis.</div>` : `
         <div style="display:flex;flex-direction:column;gap:14px;align-items:flex-start;">
           ${c.signed_at ? `<span class="status-pill ok">Signé le ${fmtDate(c.signed_at)}</span>` : `<span class="status-pill pending">En attente de votre signature</span>`}
-          <a class="btn btn-ghost" style="width:100%;" href="${c.pdf_path}" target="_blank" rel="noopener">📄 Ouvrir le contrat (PDF)</a>
+          <a class="btn btn-ghost" style="width:100%;" href="${c.pdf_path}" target="_blank" rel="noopener">${tacticalIconSvg('doc',{size:16})} Ouvrir le contrat (PDF)</a>
           ${c.signed_pdf_path ? `<a class="btn btn-ghost" style="width:100%;" href="${c.signed_pdf_path}" target="_blank" rel="noopener">⬇️ Télécharger mon contrat signé</a>` : ''}
-          ${!c.signed_at ? `<button class="btn btn-primary" style="width:100%;" onclick="openSignaturePad()">✒️ Signer mon contrat</button>` : ''}
+          ${!c.signed_at ? `<button class="btn btn-primary" style="width:100%;" onclick="openSignaturePad()">${tacticalIconSvg('signature-pen',{size:16})} Signer mon contrat</button>` : ''}
         </div>
       `}
     </div>
@@ -2759,7 +2875,7 @@ function renderProfilClient(){
   const complete = isProfileComplete(u);
   return `
     <div class="topbar"><div><h1>Mon profil</h1><div class="desc">Ces informations nous permettent de préparer votre contrat de location. Elles sont obligatoires pour pouvoir réserver (le numéro de CNI est facultatif).</div></div>${xpBarHtml(u)}</div>
-    ${state.profileNotice ? `<div class="profile-warning">⚠️ ${esc(state.profileNotice)}</div>` : (!complete ? `<div class="profile-warning">⚠️ Fiche incomplète : tant que les champs obligatoires (nom, prénom, date de naissance, téléphone, adresse) ne sont pas remplis, vous ne pouvez pas faire de demande de location.</div>` : '')}
+    ${state.profileNotice ? `<div class="profile-warning" style="display:flex;align-items:flex-start;gap:8px;">${tacticalIconSvg('warning',{size:16,style:'margin-top:2px;'})}<span>${esc(state.profileNotice)}</span></div>` : (!complete ? `<div class="profile-warning" style="display:flex;align-items:flex-start;gap:8px;">${tacticalIconSvg('warning',{size:16,style:'margin-top:2px;'})}<span>Fiche incomplète : tant que les champs obligatoires (nom, prénom, date de naissance, téléphone, adresse) ne sont pas remplis, vous ne pouvez pas faire de demande de location.</span></div>` : '')}
     <div class="panel">
       ${state.profileSaved ? `<div class="msg msg-ok">Profil enregistré.</div>` : ''}
       ${state.profileError ? `<div class="msg msg-error">${esc(state.profileError)}</div>` : ''}
@@ -2788,25 +2904,25 @@ function renderProfilClient(){
 function clientHistoryEntries(username){
   const entries = [];
   const p = state.profiles.find(x => x.username === username);
-  if(p && p.created_at) entries.push({ date: p.created_at, icon: '👤', label: 'Compte créé' });
-  if(p && p.id_doc_uploaded_at) entries.push({ date: p.id_doc_uploaded_at, icon: '📄', label: "Pièce d'identité envoyée" });
-  if(p && p.address_doc_uploaded_at) entries.push({ date: p.address_doc_uploaded_at, icon: '📄', label: 'Justificatif de domicile envoyé' });
+  if(p && p.created_at) entries.push({ date: p.created_at, icon: tacticalIconSvg('id-badge',{size:15}), label: 'Compte créé' });
+  if(p && p.id_doc_uploaded_at) entries.push({ date: p.id_doc_uploaded_at, icon: tacticalIconSvg('doc',{size:15}), label: "Pièce d'identité envoyée" });
+  if(p && p.address_doc_uploaded_at) entries.push({ date: p.address_doc_uploaded_at, icon: tacticalIconSvg('doc',{size:15}), label: 'Justificatif de domicile envoyé' });
   state.bookings.filter(b => b.username === username).forEach(b => {
     const item = state.items.find(i => i.id === b.item_id);
-    entries.push({ date: b.start_date, icon: '📦', label: `Réservation ${esc(item ? item.name : 'matériel supprimé')} — ${fmtDate(b.start_date)} → ${fmtDate(b.end_date)} · ${STATUS_LABELS[b.status] || b.status}` });
+    entries.push({ date: b.start_date, icon: tacticalIconSvg('package',{size:15}), label: `Réservation ${esc(item ? item.name : 'matériel supprimé')} — ${fmtDate(b.start_date)} → ${fmtDate(b.end_date)} · ${STATUS_LABELS[b.status] || b.status}` });
   });
   state.completions.filter(c => c.username === username).forEach(c => {
     const task = state.tasks.find(t => t.id === c.task_id);
     const statusLabel = c.status === 'validee' ? 'validée' : c.status === 'refusee' ? 'refusée' : 'en attente';
-    entries.push({ date: c.completed_at, icon: '🎯', label: `Mission "${esc(task ? task.title : 'supprimée')}" ${statusLabel}${task ? ` (+${task.xp_reward} XP)` : ''}${c.answer ? ` — réponse : ${esc(c.answer)}` : ''}` });
+    entries.push({ date: c.completed_at, icon: tacticalIconSvg('reticle',{size:15}), label: `Mission "${esc(task ? task.title : 'supprimée')}" ${statusLabel}${task ? ` (+${task.xp_reward} XP)` : ''}${c.answer ? ` — réponse : ${esc(c.answer)}` : ''}` });
   });
   state.redemptions.filter(r => r.username === username).forEach(r => {
     const reward = state.rewards.find(x => x.id === r.reward_id);
     const statusLabel = r.status === 'validee' ? 'validée' : r.status === 'refusee' ? 'refusée' : 'demandée';
-    entries.push({ date: r.resolved_at || r.requested_at, icon: '🎁', label: `Récompense "${esc(reward ? reward.name : 'supprimée')}" ${statusLabel}` });
+    entries.push({ date: r.resolved_at || r.requested_at, icon: tacticalIconSvg('crate',{size:15}), label: `Récompense "${esc(reward ? reward.name : 'supprimée')}" ${statusLabel}` });
   });
   const contract = state.contracts.find(c => c.username === username);
-  if(contract && contract.signed_at) entries.push({ date: contract.signed_at, icon: '✍️', label: 'Contrat signé' });
+  if(contract && contract.signed_at) entries.push({ date: contract.signed_at, icon: tacticalIconSvg('signature-pen',{size:15}), label: 'Contrat signé' });
   return entries.filter(e => e.date).sort((a, b) => b.date.localeCompare(a.date));
 }
 function clientHistoryHtml(username){
@@ -2847,7 +2963,7 @@ function renderModal(){
   if(m.type === "bookConfirm"){
     return `
     <div class="modal-bg"><div class="modal" style="text-align:center;">
-      <div style="font-size:40px;margin-bottom:8px;">✅</div>
+      <div style="display:flex;justify-content:center;color:var(--accent);margin-bottom:8px;">${tacticalIconSvg('check-circle',{size:42})}</div>
       <h3>Demande envoyée !</h3>
       <p style="font-size:14px;color:var(--text-dim);line-height:1.6;">Votre demande de location pour <strong>${esc(m.itemName)}</strong> a bien été enregistrée.<br><br>Notre équipe va confirmer la location et ses modalités lors d'un appel dans les 24h.</p>
       <div class="modal-actions"><button class="btn btn-primary" style="width:100%;" onclick="closeModal(); goto('planning');">Fermer</button></div>
@@ -3115,7 +3231,7 @@ window.togglePasswordVisibility = (id) => {
   if(!input) return;
   const showing = input.type === 'text';
   input.type = showing ? 'password' : 'text';
-  if(btn) btn.textContent = showing ? '👁' : '🙈';
+  if(btn) btn.innerHTML = tacticalIconSvg(showing ? 'eye' : 'eye-off', { size: 17 });
 };
 window.toggleAdminLogin = () => { state.showAdminLogin = !state.showAdminLogin; state.authError = ""; render(); };
 window.handleClientLogin = (e) => { e.preventDefault(); doClientLogin(e.target.email.value, e.target.password.value); return false; };
