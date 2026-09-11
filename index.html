@@ -210,6 +210,10 @@
   /* .btn-primary est width:100% par défaut (pensé pour les boutons pleine largeur des modales) ;
      dans ces deux barres flex, ça faisait exploser les boutons sur toute la largeur de la ligne. */
   .mission-spotlight-head .btn, .mission-spotlight-row .btn{width:auto;flex-shrink:0;}
+  /* Même correctif, généralisé : toute rangée d'actions (gestion, missions, récompenses, contrats)
+     qui mélange un .btn-primary avec d'autres boutons dans une ligne flex — sans ça le bouton primaire
+     s'étire sur 100% et fait sauter les autres boutons à la ligne de façon incohérente selon la largeur. */
+  .btn-row .btn{width:auto;flex-shrink:0;}
   .mission-card{position:relative;}
   .mission-card.done{opacity:.62;}
   .mission-head{display:flex;align-items:flex-start;gap:12px;}
@@ -622,32 +626,25 @@ async function boot(){
     return;
   }
   try{
-    await fetchAll();
+    // Sécurité (lot 10) : on ne charge plus AUCUNE donnée (profils, réservations, contrats...)
+    // tant qu'une session Supabase Auth n'est pas confirmée. Avant ce lot, fetchAll() tournait
+    // ici pour absolument tout visiteur avant même la moindre vérification — combiné à des
+    // politiques RLS ouvertes à quiconque détenait la clé publique, ça exposait la table
+    // profiles (mots de passe, pièces d'identité, adresses...) à n'importe qui. La base
+    // applique désormais elle-même ces restrictions (RLS), mais autant ne pas faire l'appel
+    // réseau du tout tant que personne n'est identifié : avant connexion, seul l'écran de
+    // connexion est affiché, il n'a besoin d'aucune donnée.
+    const { data: { session } } = await sb.auth.getSession();
+    if(session?.user?.email){
+      await fetchAll();
+      const prof = await ensureClientProfile(session.user.email.toLowerCase());
+      state.session = { username: prof.username, isMaster: !!prof.is_master };
+    }
   }catch(e){
     state.loading = false;
     state.fatalError = "Impossible de contacter Supabase. Vérifie ton URL/clé et que le script SQL a bien été exécuté. (" + e.message + ")";
     render();
     return;
-  }
-
-  // Session administrateur (stockée localement, hors Supabase Auth)
-  const savedAdmin = localStorage.getItem('ov_admin_session');
-  if(savedAdmin){
-    try{
-      const parsed = JSON.parse(savedAdmin);
-      const stillExists = state.profiles.find(p => p.username === parsed.username && p.is_master);
-      if(stillExists){ state.session = { username: stillExists.username, isMaster:true }; }
-      else localStorage.removeItem('ov_admin_session');
-    }catch(e){ localStorage.removeItem('ov_admin_session'); }
-  }
-
-  // Session client (Supabase Auth)
-  if(!state.session){
-    const { data: { session } } = await sb.auth.getSession();
-    if(session?.user?.email){
-      await ensureClientProfile(session.user.email);
-      state.session = { username: session.user.email, isMaster:false };
-    }
   }
 
   state.loading = false;
@@ -660,12 +657,16 @@ async function boot(){
 sb.auth.onAuthStateChange((event, session) => {
   if(!bootDone) return;
   if(event === 'SIGNED_IN' && session?.user?.email && (!state.session || state.session.isMaster === false)){
-    ensureClientProfile(session.user.email).then(() => {
-      state.session = { username: session.user.email, isMaster:false };
+    (async () => {
+      await fetchAll();
+      const prof = await ensureClientProfile(session.user.email.toLowerCase());
+      state.session = { username: prof.username, isMaster: !!prof.is_master };
       render();
-    });
+    })();
   }
-  if(event === 'SIGNED_OUT' && state.session && !state.session.isMaster){
+  if(event === 'SIGNED_OUT' && state.session){
+    // Le compte équipe utilise désormais aussi Supabase Auth (lot 10) : une déconnexion doit
+    // fermer la session quel que soit le rôle, plus seulement côté client comme avant.
     state.session = null; state.view = "accueil"; render();
   }
 });
@@ -722,10 +723,11 @@ async function doClientLogin(email, password){
       : "Email ou mot de passe incorrect.";
     render(); return;
   }
-  await ensureClientProfile(email);
-  state.session = { username: email, isMaster:false };
+  await fetchAll();
+  const prof = await ensureClientProfile(email);
+  state.session = { username: prof.username, isMaster: !!prof.is_master };
   state.authError = ""; state.authNotice = ""; state.profileNotice = ""; state.docError = "";
-  state.view = "accueil";
+  state.view = state.session.isMaster ? "dashboard" : "accueil";
   render();
 }
 
@@ -748,9 +750,10 @@ async function doClientRegister(email, password, password2){
   }
   state.authError = "";
   if(data.session){
-    await ensureClientProfile(email);
-    state.session = { username: email, isMaster:false };
-    state.view = "accueil";
+    await fetchAll();
+    const prof = await ensureClientProfile(email);
+    state.session = { username: prof.username, isMaster: !!prof.is_master };
+    state.view = state.session.isMaster ? "dashboard" : "accueil";
     render();
     return;
   }
@@ -793,15 +796,33 @@ async function resendConfirmationEmail(email){
   render();
 }
 
-/* ---------- Auth : équipe (identifiant/mot de passe local) ---------- */
-async function doAdminLogin(username, password){
-  const match = state.profiles.find(p => p.is_master && p.username.toLowerCase() === username.trim().toLowerCase() && p.password === password);
-  if(!match){ state.authError = "Identifiants incorrects."; render(); return; }
+/* ---------- Auth : équipe ---------- */
+// Historique (lot 10 — CORRECTIF DE SÉCURITÉ CRITIQUE) : cette fonction comparait auparavant un
+// mot de passe tapé en clair à la colonne profiles.password, elle-même chargée pour TOUT le monde
+// dès l'ouverture du site via fetchAll() (nécessaire pour que cette comparaison soit possible avant
+// même d'être connecté). Résultat concret : n'importe quel visiteur, sans se connecter, recevait le
+// mot de passe équipe en clair et les données personnelles de tous les clients via la clé publique
+// Supabase. Le compte équipe passe désormais par une vraie authentification Supabase Auth, comme les
+// clients — la distinction équipe/client se fait uniquement via le champ is_master de la fiche, lu
+// depuis la base APRÈS authentification, jamais comparé côté navigateur. Voir migration_lot10_securite.sql.
+async function doAdminLogin(email, password){
+  email = email.trim().toLowerCase();
+  const { data, error } = await sb.auth.signInWithPassword({ email, password });
+  if(error){ state.authError = "Identifiants incorrects."; render(); return; }
+  await fetchAll();
+  const prof = await ensureClientProfile(email);
+  if(!prof.is_master){
+    // Compte valide mais sans droits équipe : on ne laisse pas une session client s'ouvrir
+    // depuis ce formulaire pour éviter toute confusion sur l'espace dans lequel on se trouve.
+    await sb.auth.signOut();
+    state.authError = "Ce compte n'a pas les droits équipe.";
+    render(); return;
+  }
   const now = new Date().toISOString();
-  await sb.from('profiles').update({ last_login: now }).eq('username', match.username);
-  match.last_login = now;
-  state.session = { username: match.username, isMaster:true };
-  localStorage.setItem('ov_admin_session', JSON.stringify(state.session));
+  await sb.from('profiles').update({ last_login: now }).eq('username', prof.username);
+  prof.last_login = now;
+  state.session = { username: prof.username, isMaster:true };
+  state.showAdminLogin = false;
   state.authError = ""; state.profileNotice = ""; state.docError = "";
   state.view = "dashboard";
   render();
@@ -809,12 +830,9 @@ async function doAdminLogin(username, password){
 
 function logout(){
   state.profileNotice = ""; state.docError = ""; state.gestionSearch = ""; state.gestionFilter = "all"; state.validationSearch = ""; state.usersSearch = "";
-  if(state.session?.isMaster){
-    localStorage.removeItem('ov_admin_session');
-    state.session = null; state.view = "accueil"; render();
-  } else {
-    sb.auth.signOut().finally(() => { state.session = null; state.view = "accueil"; render(); });
-  }
+  // Le compte équipe utilise désormais Supabase Auth comme les clients (lot 10) : une seule
+  // façon de se déconnecter, quel que soit le rôle.
+  sb.auth.signOut().finally(() => { state.session = null; state.view = "accueil"; render(); });
 }
 
 /* ---------- Level up feedback ---------- */
@@ -885,10 +903,19 @@ async function submitBooking(itemId, start, end){
   if(activeBookingsCount(itemId, start, end) >= item.qty){
     state.bookingError = `Aucun exemplaire disponible sur cette période (${item.qty} en stock).`; render(); return;
   }
-  const { data, error } = await sb.from('bookings').insert({ item_id: itemId, username: state.session.username, start_date: start, end_date: end, status: 'demande' }).select().single();
+  // Sécurité (lot 10) : la réservation ET le crédit d'XP associé passent par une fonction serveur
+  // dédiée (RPC) plutôt que par un insert + une mise à jour du XP faites directement depuis le
+  // navigateur. Avant ce lot, un client malveillant pouvait — en contournant l'interface et en
+  // appelant l'API directement — s'attribuer n'importe quel montant de XP, rien côté serveur ne
+  // vérifiant que la valeur correspondait bien au matériel réservé. La fonction
+  // book_item_and_grant_xp() (voir migration_lot10_securite.sql) revalide tout côté serveur et
+  // calcule elle-même le XP à partir de la fiche matériel — impossible à falsifier depuis le client.
+  const oldXp = u.xp;
+  const { data, error } = await sb.rpc('book_item_and_grant_xp', { p_item_id: itemId, p_start: start, p_end: end });
   if(error){ state.bookingError = "Erreur : " + error.message; render(); return; }
-  state.bookings.push(data);
-  await grantXp(state.session.username, item.xp_value);
+  state.bookings.push(data.booking);
+  u.xp = data.new_xp;
+  checkLevelUp(oldXp, data.new_xp);
   state.bookingError = "";
   state.modal = { type: "bookConfirm", itemName: item.name };
   render();
@@ -1239,8 +1266,12 @@ async function saveProfile(){
 // envoi sur mesure (masterUploadContract) ou d'une copie du contrat type (applyContractTemplate).
 // Réinitialise la signature : un nouveau contrat doit toujours être re-signé.
 async function finalizeContractAssignment(username, path){
-  const { data: pub } = sb.storage.from('contracts').getPublicUrl(path);
-  const payload = { username, pdf_path: pub.publicUrl + '?v=' + Date.now(), uploaded_at: new Date().toISOString(), signed_pdf_path: null, signed_at: null, signed_seen_by_master: true };
+  // Sécurité (lot 10) : on stocke le CHEMIN de stockage brut, pas une URL publique — le bucket
+  // "contracts" contient des documents contractuels nominatifs (identité, adresse, valeur du
+  // matériel) et n'est plus accessible sans authentification. Chaque affichage régénère une URL
+  // signée à durée limitée au moment du clic (voir openContractFile) plutôt que d'en figer une
+  // dans la base, qui aurait autrement fonctionné indéfiniment pour quiconque l'obtiendrait.
+  const payload = { username, pdf_path: path, uploaded_at: new Date().toISOString(), signed_pdf_path: null, signed_at: null, signed_seen_by_master: true };
   const { data, error } = await sb.from('contracts').upsert(payload, { onConflict: 'username' }).select().single();
   if(error){ alert("Erreur : " + error.message); return false; }
   const idx = state.contracts.findIndex(c => c.username === username);
@@ -1617,7 +1648,7 @@ function openSignaturePad(){
       <p style="color:var(--text-dim);font-size:13.5px;line-height:1.6;margin-bottom:16px;">
         Ouvrez d'abord le contrat pour le lire attentivement, puis signez ci-dessous avec le doigt ou la souris.
       </p>
-      <a class="btn btn-ghost" style="margin-bottom:20px;width:100%;" href="${contract.pdf_path}" target="_blank" rel="noopener">${tacticalIconSvg('doc',{size:16})} Ouvrir le contrat (PDF)</a>
+      <button type="button" class="btn btn-ghost" style="margin-bottom:20px;width:100%;" onclick="openContractFile('${esc(state.session.username)}','original')">${tacticalIconSvg('doc',{size:16})} Ouvrir le contrat (PDF)</button>
       <div class="section-title">Votre signature</div>
       <div class="sig-pad-wrap"><canvas id="sig-canvas"></canvas></div>
       <button class="btn btn-ghost btn-sm" onclick="clearSignature()">Effacer la signature</button>
@@ -1684,8 +1715,12 @@ async function submitSignature(){
     const canvas = document.getElementById('sig-canvas');
     const dataUrl = canvas.toDataURL('image/png');
     const contract = state.contracts.find(c => c.username === state.session.username);
-    const resp = await fetch(contract.pdf_path);
-    const bytes = await resp.arrayBuffer();
+    // Sécurité (lot 10) : le bucket "contracts" n'est plus public — un fetch() direct sur une URL
+    // ne fonctionnerait plus. .download() passe par le client Supabase authentifié (le client ne
+    // peut télécharger que son propre contrat, cf. migration_lot10_securite.sql).
+    const { data: origBlob, error: dlErr } = await sb.storage.from('contracts').download(contract.pdf_path);
+    if(dlErr) throw dlErr;
+    const bytes = await origBlob.arrayBuffer();
     const { PDFDocument, StandardFonts, rgb } = PDFLib;
     const pdfDoc = await PDFDocument.load(bytes);
     const pngImage = await pdfDoc.embedPng(dataUrl);
@@ -1708,8 +1743,8 @@ async function submitSignature(){
     const signedPath = `${state.session.username}/signed.pdf`;
     const { error: upErr } = await sb.storage.from('contracts').upload(signedPath, blob, { upsert: true, contentType: 'application/pdf' });
     if(upErr) throw upErr;
-    const { data: pub } = sb.storage.from('contracts').getPublicUrl(signedPath);
-    const { data, error } = await sb.from('contracts').update({ signed_pdf_path: pub.publicUrl + '?v=' + Date.now(), signed_at: new Date().toISOString(), signed_seen_by_master: false }).eq('username', state.session.username).select().single();
+    // Chemin brut stocké (pas d'URL publique) — voir le commentaire de finalizeContractAssignment.
+    const { data, error } = await sb.from('contracts').update({ signed_pdf_path: signedPath, signed_at: new Date().toISOString(), signed_seen_by_master: false }).eq('username', state.session.username).select().single();
     if(error) throw error;
     const idx = state.contracts.findIndex(c => c.username === state.session.username);
     state.contracts[idx] = data;
@@ -1730,6 +1765,18 @@ window.handleMemberDocUpload = (e, kind, username) => {
 };
 window.deleteMemberDoc = deleteMemberDoc;
 window.openMemberDoc = openMemberDoc;
+// Sécurité (lot 10) : le bucket "contracts" n'est plus public (voir finalizeContractAssignment) —
+// ouvrir un contrat (original ou signé) passe désormais toujours par une URL signée à durée
+// limitée générée à la demande, exactement comme openMemberDoc ci-dessus pour les pièces d'identité.
+async function openContractFile(username, which){
+  const c = state.contracts.find(x => x.username === username);
+  const path = which === 'signed' ? c?.signed_pdf_path : c?.pdf_path;
+  if(!path) return;
+  const { data, error } = await sb.storage.from('contracts').createSignedUrl(path, 600);
+  if(error){ alert("Erreur : " + error.message); return; }
+  window.open(data.signedUrl, '_blank', 'noopener');
+}
+window.openContractFile = openContractFile;
 window.handleContractUpload = (e, username) => {
   const file = e.target.files[0];
   if(!file) return;
@@ -1804,6 +1851,7 @@ function tacticalIconSvg(name, opts){
     'signature-pen': '<path d="M3 21c3-1 4.5-1 7-1s5 1.5 8 0"/><path d="M9 15 18 6a2 2 0 0 1 2.8 2.8L11.8 18l-3.6.8Z"/>',
     doc: '<path d="M14 2H7a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/><path d="M9 13h6M9 17h6"/>',
     trident: '<path d="M7 2v6"/><path d="M12 2v6"/><path d="M17 2v6"/><path d="M6 8h12"/><path d="M12 8v14"/><path d="M9 22h6"/>',
+    download: '<path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M4 20h16"/>',
   };
   return `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;${opts.style||''}">${paths[name] || ''}</svg>`;
 }
@@ -1889,7 +1937,7 @@ function renderGate(){
         </div>
         ${state.authError ? `<div class="msg msg-error">${esc(state.authError)}</div>` : ''}
         <form onsubmit="return handleAdminLogin(event)">
-          <div class="field"><label>Identifiant</label><input name="username" required autocomplete="username"></div>
+          <div class="field"><label>Email</label><input name="email" type="email" required autocomplete="username"></div>
           ${passwordFieldHtml('admin-pwd', 'password', 'Mot de passe')}
           <button class="btn btn-primary" type="submit">Se connecter</button>
         </form>
@@ -2292,7 +2340,7 @@ function gestionRowHtml(b){
       <td>${fmtDate(b.end_date)}</td>
       <td>${fmtPrice(price)}</td>
       <td>${statusPillHtml(b.status)}</td>
-      <td><div style="display:flex;gap:6px;flex-wrap:wrap;">${actions.join('')}</div></td>
+      <td><div class="btn-row" style="display:flex;gap:6px;flex-wrap:wrap;">${actions.join('')}</div></td>
     </tr>`;
 }
 function gestionTheadHtml(){
@@ -2478,7 +2526,7 @@ function missionCardHtml(t, isMaster, u){
           <div style="display:flex;justify-content:space-between;"><span>${esc(s.username)}${t.requires_answer ? ' — ' + esc(s.answer||'') : ''}</span><span>${fmtDate(s.completed_at)}</span></div>
           <div style="display:flex;justify-content:space-between;align-items:center;">
             ${statusPillHtml(s.status === 'attente' ? 'demande' : s.status === 'validee' ? 'accepte' : 'refuse')}
-            ${s.status === 'attente' ? `<div style="display:flex;gap:6px;"><button class="btn btn-primary btn-sm" onclick="validateCompletion('${s.id}')">Valider</button><button class="btn btn-ghost btn-sm" onclick="rejectCompletion('${s.id}')">Refuser</button></div>` : ''}
+            ${s.status === 'attente' ? `<div class="btn-row" style="display:flex;gap:6px;"><button class="btn btn-primary btn-sm" onclick="validateCompletion('${s.id}')">Valider</button><button class="btn btn-ghost btn-sm" onclick="rejectCompletion('${s.id}')">Refuser</button></div>` : ''}
           </div>
         </div>`).join("")}</div>` : ''}
       ${clientAction}
@@ -2627,7 +2675,7 @@ function validationRowHtml(c){
         <span class="task-xp">+${task ? task.xp_reward : '?'} XP</span>
       </div>
       ${task && task.requires_answer ? `<div class="card-desc" style="flex:0;"><strong>${esc(task.answer_label||'Réponse')}</strong> : ${esc(c.answer||'—')}</div>` : ''}
-      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+      <div class="btn-row" style="display:flex;gap:8px;flex-wrap:wrap;">
         <button class="btn btn-primary btn-sm" onclick="validateCompletion('${c.id}')">Valider</button>
         <button class="btn btn-ghost btn-sm" onclick="rejectCompletion('${c.id}')">Refuser</button>
         ${task && task.requires_answer ? `<button class="btn btn-ghost btn-sm" onclick="openEditValidationModal('${c.id}')">Modifier</button>` : ''}
@@ -2713,7 +2761,7 @@ function rewardCardHtml(r, isMaster, u){
           <div style="display:flex;justify-content:space-between;"><span>${esc(rd.username)}</span><span>${fmtDate(rd.requested_at)}</span></div>
           <div style="display:flex;justify-content:space-between;align-items:center;">
             ${statusPillHtml(rd.status === 'attente' ? 'demande' : rd.status === 'validee' ? 'accepte' : 'refuse')}
-            ${rd.status === 'attente' ? `<div style="display:flex;gap:6px;"><button class="btn btn-primary btn-sm" onclick="validateRedemption('${rd.id}')">Valider</button><button class="btn btn-ghost btn-sm" onclick="rejectRedemption('${rd.id}')">Refuser</button></div>` : ''}
+            ${rd.status === 'attente' ? `<div class="btn-row" style="display:flex;gap:6px;"><button class="btn btn-primary btn-sm" onclick="validateRedemption('${rd.id}')">Valider</button><button class="btn btn-ghost btn-sm" onclick="rejectRedemption('${rd.id}')">Refuser</button></div>` : ''}
           </div>
           ${rd.status === 'validee' ? `<div style="font-size:12px;color:var(--text-dim);">${rd.shipping_address ? `Adresse : ${esc(rd.shipping_address)}` : "En attente de l'adresse du client"}</div>` : ''}
         </div>`).join("")}</div>` : ''}
@@ -2823,13 +2871,11 @@ function renderContratsAdmin(){
     return `
       <div class="list-row">
         <div><div class="t-title">${esc(usr.username)}</div><div class="t-desc">${pill}</div></div>
-        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
-          ${c ? `<a class="btn btn-ghost btn-sm" href="${c.pdf_path}" target="_blank" rel="noopener">Original</a>` : ''}
-          ${c && c.signed_pdf_path ? `<a class="btn btn-ghost btn-sm" href="${c.signed_pdf_path}" target="_blank" rel="noopener">Signé</a>` : ''}
+        <div class="btn-row" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+          ${c ? `<button type="button" class="btn btn-ghost btn-sm" onclick="openContractFile('${usr.username}','original')">Original</button>` : ''}
+          ${c && c.signed_pdf_path ? `<button type="button" class="btn btn-ghost btn-sm" onclick="openContractFile('${usr.username}','signed')">Signé</button>` : ''}
           <button class="btn btn-primary btn-sm" onclick="openGenerateContractModal('${usr.username}')">${c?'Régénérer':'Générer'} le contrat</button>
           <span class="btn btn-ghost btn-sm file-btn">Uploader un PDF sur mesure<input type="file" accept="application/pdf" onchange="handleContractUpload(event,'${usr.username}')"></span>
-          ${c ? `<a class="btn btn-ghost btn-sm" href="${c.pdf_path}" target="_blank" rel="noopener">Original</a>` : ''}
-          ${c && c.signed_pdf_path ? `<a class="btn btn-ghost btn-sm" href="${c.signed_pdf_path}" target="_blank" rel="noopener">Signé</a>` : ''}
           ${c && c.signed_at ? `<button class="btn btn-ghost btn-sm" onclick="masterRemoveSignature('${usr.username}')">Retirer la signature</button>` : ''}
           ${c ? `<button class="btn btn-danger btn-sm" onclick="masterDeleteContract('${usr.username}')">Supprimer</button>` : ''}
         </div>
@@ -2860,8 +2906,8 @@ function renderContratClient(){
       ${!c ? `<div class="empty">Aucun contrat ne vous a encore été transmis.</div>` : `
         <div style="display:flex;flex-direction:column;gap:14px;align-items:flex-start;">
           ${c.signed_at ? `<span class="status-pill ok">Signé le ${fmtDate(c.signed_at)}</span>` : `<span class="status-pill pending">En attente de votre signature</span>`}
-          <a class="btn btn-ghost" style="width:100%;" href="${c.pdf_path}" target="_blank" rel="noopener">${tacticalIconSvg('doc',{size:16})} Ouvrir le contrat (PDF)</a>
-          ${c.signed_pdf_path ? `<a class="btn btn-ghost" style="width:100%;" href="${c.signed_pdf_path}" target="_blank" rel="noopener">⬇️ Télécharger mon contrat signé</a>` : ''}
+          <button type="button" class="btn btn-ghost" style="width:100%;" onclick="openContractFile('${esc(u.username)}','original')">${tacticalIconSvg('doc',{size:16})} Ouvrir le contrat (PDF)</button>
+          ${c.signed_pdf_path ? `<button type="button" class="btn btn-ghost" style="width:100%;" onclick="openContractFile('${esc(u.username)}','signed')">${tacticalIconSvg('download',{size:16})} Télécharger mon contrat signé</button>` : ''}
           ${!c.signed_at ? `<button class="btn btn-primary" style="width:100%;" onclick="openSignaturePad()">${tacticalIconSvg('signature-pen',{size:16})} Signer mon contrat</button>` : ''}
         </div>
       `}
@@ -3196,7 +3242,7 @@ function render(){
         ${content}
       </div>
     </div>
-    ${renderBottomNav()}
+    ${state.sidebarOpen ? '' : renderBottomNav()}
     ${renderModal()}
   `;
   animateXpTotal();
@@ -3240,7 +3286,7 @@ window.handleResendConfirmation = () => {
   const field = document.getElementById('login-email');
   resendConfirmationEmail(field ? field.value : "");
 };
-window.handleAdminLogin = (e) => { e.preventDefault(); doAdminLogin(e.target.username.value, e.target.password.value); return false; };
+window.handleAdminLogin = (e) => { e.preventDefault(); doAdminLogin(e.target.email.value, e.target.password.value); return false; };
 window.logout = logout;
 window.goto = (view) => {
   state.view = view; state.sidebarOpen = false; state.profileSaved = false;
