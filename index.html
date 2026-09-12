@@ -595,21 +595,23 @@ function rankFor(xp){ let r = RANKS[0]; for(const c of RANKS){ if(xp >= c.min) r
 function rankIndexFor(xp){ let i = 0; for(let k=0;k<RANKS.length;k++){ if(xp >= RANKS[k].min) i = k; } return i; }
 function levelFor(xp){ return Math.floor(xp / XP_STEP) + 1; }
 function xpInLevel(xp){ return xp % XP_STEP; }
-// Logo du grade : un hibou qui s'équipe progressivement en optique de vision nocturne.
-// Palier 1 = hibou nu (Novice, Explorateur) — palier 2 = + monoculaire (Confirmé) —
-// palier 3 = + binoculaire (Spécialiste) — palier 4 = + quadtube (Vétéran, Navy Seal).
-function owlTierForRankIndex(idx){
+// Logo du grade : insigne façon armée qui se garnit à mesure que le client progresse.
+// 0 chevron (Novice) -> 1 (Explorateur) -> 2 (Confirmé) -> 3 (Spécialiste, galon complet) ->
+// 3 + étoile (Vétéran) -> 3 + étoile + laurier (Navy Seal, grade ultime).
+function rankColorTier(idx){
   if(idx <= 1) return 1;
   if(idx === 2) return 2;
   if(idx === 3) return 3;
   return 4;
 }
-function owlEyesSvg(tier){
-  if(tier === 1) return '<circle cx="8.7" cy="12" r="1.7"/><circle cx="15.3" cy="12" r="1.7"/>';
-  if(tier === 2) return '<circle cx="8.7" cy="12" r="1.7"/><circle cx="15.3" cy="12" r="3"/><path d="M11.6 12h1.2"/>';
-  if(tier === 3) return '<circle cx="8.7" cy="12" r="2.6"/><circle cx="15.3" cy="12" r="2.6"/><path d="M11.3 12h1.4"/>';
-  return '<circle cx="8.2" cy="10.4" r="2.05"/><circle cx="15.8" cy="10.4" r="2.05"/><circle cx="8.2" cy="14.7" r="2.05"/><circle cx="15.8" cy="14.7" r="2.05"/>';
-}
+const RANK_CHEVRONS = [
+  'M8.00 16.60 L12 14.60 L16.00 16.60',
+  'M8.00 13.60 L12 11.60 L16.00 13.60',
+  'M8.00 10.60 L12 8.60 L16.00 10.60',
+];
+const RANK_STAR = 'M12.0 4.1 L12.47 5.35 L13.81 5.41 L12.76 6.25 L13.12 7.54 L12.0 6.8 L10.88 7.54 L11.24 6.25 L10.19 5.41 L11.53 5.35 Z';
+const RANK_WREATH_LEFT = 'M7.91 9.95 L5.99 10.26 L6.13 12.20 L4.54 13.31 L5.50 15.00 L4.54 16.69 L6.13 17.80 L5.99 19.74 L7.91 20.05 L8.76 19.00 L8.10 18.37 L7.57 17.62 L7.17 16.80 L6.93 15.91 L6.85 15.00 L6.93 14.09 L7.17 13.20 L7.57 12.38 L8.10 11.63 L8.76 11.00 Z';
+const RANK_WREATH_RIGHT = 'M16.09 9.95 L18.01 10.26 L17.87 12.20 L19.46 13.31 L18.50 15.00 L19.46 16.69 L17.87 17.80 L18.01 19.74 L16.09 20.05 L15.24 19.00 L15.90 18.37 L16.43 17.62 L16.83 16.80 L17.07 15.91 L17.15 15.00 L17.07 14.09 L16.83 13.20 L16.43 12.38 L15.90 11.63 L15.24 11.00 Z';
 // Palette "HUD" associée au palier de rang (Lot 10 — refonte visuelle mode XP) : vert (palier 1,
 // couleur de marque par défaut) -> bleu -> violet -> or à mesure que le client progresse. Posée en
 // variables CSS inline (--tier/--tier-soft) sur les conteneurs XP ; tout le CSS qui l'utilise a un
@@ -622,19 +624,22 @@ function tierPalette(tier){
 }
 function tierStyleAttr(u){
   if(!u || u.is_master) return '';
-  const pal = tierPalette(owlTierForRankIndex(rankIndexFor(u.xp)));
+  const pal = tierPalette(rankColorTier(rankIndexFor(u.xp)));
   return ` style="--tier:${pal.color};--tier-soft:${pal.soft};"`;
 }
-function owlIconSvg(tier, opts){
+function rankIconSvg(rankIndex, opts){
   opts = opts || {};
   const size = opts.size || 22;
-  return `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
-    <path d="M6.6 3.6 4.2 7.6M17.4 3.6 19.8 7.6"/>
-    <path d="M12 3.3c-4.6 0-7.5 3.4-7.5 8.1 0 4.5 2.9 8.1 7.5 8.1s7.5-3.6 7.5-8.1c0-4.7-2.9-8.1-7.5-8.1Z"/>
-    ${owlEyesSvg(tier)}
-    <path d="M12 14.6 10.8 17.1h2.4L12 14.6Z"/>
-    ${opts.elite ? '<path d="M12 1.4l.6 1.3 1.4.2-1 1 .2 1.4-1.2-.7-1.2.7.2-1.4-1-1 1.4-.2Z" fill="currentColor" stroke="none"/>' : ''}
-  </svg>`;
+  const nChevrons = [0,1,2,3,3,3][rankIndex] || 0;
+  let inner = '';
+  if(rankIndex === 0){
+    inner += '<circle cx="12" cy="13.4" r="2.15" fill="none" stroke-width="1.5"/>';
+  } else {
+    for(let k=0;k<nChevrons;k++) inner += `<path d="${RANK_CHEVRONS[k]}"/>`;
+  }
+  if(rankIndex >= 4) inner += `<path d="${RANK_STAR}" fill="currentColor" stroke="none"/>`;
+  if(rankIndex === 5) inner += `<path d="${RANK_WREATH_LEFT}" fill="currentColor" stroke="none"/><path d="${RANK_WREATH_RIGHT}" fill="currentColor" stroke="none"/>`;
+  return `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">${inner}</svg>`;
 }
 const todayStr = () => new Date().toISOString().slice(0,10);
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -939,18 +944,18 @@ function logout(){
 
 /* ---------- Level up feedback ---------- */
 function checkLevelUp(oldXp, newXp){
-  if(levelFor(newXp) > levelFor(oldXp)) showLevelUpToast(levelFor(newXp), rankFor(newXp), owlTierForRankIndex(rankIndexFor(newXp)));
+  if(levelFor(newXp) > levelFor(oldXp)) showLevelUpToast(levelFor(newXp), rankFor(newXp), rankColorTier(rankIndexFor(newXp)), rankIndexFor(newXp));
 }
 // Créé via document.createElement, hors du cycle de render() -> seul endroit où une animation
 // d'entrée (pop + anneau de burst, toutes deux à durée finie) ne se rejoue pas à chaque mise à
 // jour realtime : voir la note dans le CSS "Hero XP" plus haut.
-function showLevelUpToast(level, rank, tier){
+function showLevelUpToast(level, rank, tier, rankIndex){
   const pal = tierPalette(tier || 1);
   const el = document.createElement('div');
   el.className = 'levelup-toast';
   el.style.setProperty('--tier', pal.color);
   el.style.setProperty('--tier-soft', pal.soft);
-  el.innerHTML = `<div class="levelup-badge">${owlIconSvg(tier || 1, { size:27, elite: tier===4 })}</div><div><div class="levelup-title">Niveau ${level} !</div><div class="levelup-sub">${esc(rank)}</div></div>`;
+  el.innerHTML = `<div class="levelup-badge">${rankIconSvg(rankIndex || 0, { size:27 })}</div><div><div class="levelup-title">Niveau ${level} !</div><div class="levelup-sub">${esc(rank)}</div></div>`;
   document.body.appendChild(el);
   requestAnimationFrame(() => el.classList.add('show'));
   setTimeout(() => { el.classList.remove('show'); setTimeout(() => el.remove(), 400); }, 2600);
@@ -1998,7 +2003,7 @@ function ranksRoadmapHtml(xp){
     <div class="ranks-roadmap">
       ${RANKS.map((r, i) => `
         <div class="rank-step ${i<curIdx?'done':i===curIdx?'current':'locked'}">
-          <div class="rank-icon">${owlIconSvg(owlTierForRankIndex(i), { size:22, elite: i===RANKS.length-1 })}</div>
+          <div class="rank-icon">${rankIconSvg(i, { size:22 })}</div>
           <div class="rank-name">${i<curIdx?'✓ ':''}${esc(r.name)}</div>
           <div class="rank-xp">${r.min} XP</div>
         </div>`).join('')}
@@ -2274,7 +2279,7 @@ function renderAccueil(){
   return `
     <div class="hero-wrap">
       <div class="xp-hero"${tierStyleAttr(u)}>
-        <div class="xp-ring" style="--pct:${pct}"><span class="ring-owl">${owlIconSvg(owlTierForRankIndex(rankIndexFor(u.xp)), { size:46, elite: rankIndexFor(u.xp)===RANKS.length-1 })}</span></div>
+        <div class="xp-ring" style="--pct:${pct}"><span class="ring-owl">${rankIconSvg(rankIndexFor(u.xp), { size:46 })}</span></div>
         <div class="xp-hero-rank">${esc(rankFor(u.xp))}</div>
         <div class="xp-hero-level">${tacticalIconSvg('rank-chevron',{size:13})} NIVEAU ${levelFor(u.xp)}</div>
         ${xpProgressBarHtml(pct, pendingPct, 'xp-bar-track-lg')}
