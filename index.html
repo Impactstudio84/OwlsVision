@@ -1255,6 +1255,12 @@ function markContractsSeen(){
   toMark.forEach(c => c.signed_seen_by_master = true);
   sb.from('contracts').update({ signed_seen_by_master: true }).not('signed_at','is',null).eq('signed_seen_by_master', false).then(()=>{});
 }
+function markOwnerContractsSeen(){
+  const toMark = state.owner_contracts.filter(c => c.signed_at && c.signed_seen_by_master === false);
+  if(!toMark.length) return;
+  toMark.forEach(c => c.signed_seen_by_master = true);
+  sb.from('owner_contracts').update({ signed_seen_by_master: true }).not('signed_at','is',null).eq('signed_seen_by_master', false).then(()=>{});
+}
 function markRedemptionsSeen(username){
   const toMark = state.redemptions.filter(r => r.username === username && r.status !== 'attente' && r.client_seen === false);
   if(!toMark.length) return;
@@ -1712,7 +1718,7 @@ function buildContractDocDefinition(fields){
 }
 // Contrat Propriétaire — mandat de gestion entre OwlsVision et un Propriétaire tiers qui met du
 // matériel en location via la Plateforme. Système entièrement séparé du Contrat de Location
-// (voir la note en tête de renderContratProprietaireClient) : jamais de dépendance croisée avec
+// (voir la note en tête de renderContratClient) : jamais de dépendance croisée avec
 // buildContractDocDefinition/generateClientContract.
 function buildOwnerContractDocDefinition(fields){
   const f = fields;
@@ -1900,6 +1906,170 @@ async function generateOwnerContract(username, fields){
   if(idx > -1) state.owner_contracts[idx] = data; else state.owner_contracts.push(data);
   return true;
 }
+
+/* ---------- Documents plateforme générés (CGU + Annexe vétusté) ----------
+   Générés directement en PDF (pdfMake, même filigrane que les contrats) à partir du texte
+   juridique fourni par le master et des valeurs déjà centralisées dans CONTRACT_OWNER — plus
+   besoin d'uploader un fichier, et plus aucun champ {{PLACEHOLDER}} non résolu : ces deux
+   documents ne dépendent d'aucune donnée client, tout est déjà connu au moment de la génération. */
+function cguDocDefinitionShell(contentBody){
+  return {
+    pageSize: 'A4',
+    pageMargins: [56, 54, 56, 54],
+    defaultStyle: { fontSize: 9.6, lineHeight: 1.22 },
+    images: { watermarkLogo: CONTRACT_WATERMARK_LOGO },
+    background: function(currentPage, pageSize){
+      const w = 360;
+      return { image: 'watermarkLogo', width: w, absolutePosition: { x: (pageSize.width - w) / 2, y: (pageSize.height - w) / 2 } };
+    },
+    content: contentBody,
+  };
+}
+function buildCGUDocDefinition(){
+  const dateGeneration = fmtDate(todayStr());
+  return cguDocDefinitionShell([
+    { text: 'CONDITIONS GÉNÉRALES D\'UTILISATION', bold: true, fontSize: 14.5, alignment: 'center', margin: [0, 0, 0, 3] },
+    { text: 'Plateforme de mise en relation OwlsVision — Propriétaires et Locataires de matériel de vision nocturne', italics: true, fontSize: 8.6, color: '#333333', alignment: 'center', margin: [0, 0, 0, 16] },
+
+    { text: 'Préambule', bold: true, decoration: 'underline', margin: [0, 4, 0, 4] },
+    J([
+      `La société OWLSVISION, société par actions simplifiée unipersonnelle au capital social de `, { text: NB(CONTRACT_OWNER.capitalSocial) + '€', bold: true },
+      `, immatriculée au Registre du Commerce et des Sociétés de `, { text: CONTRACT_OWNER.villeRCS, bold: true },
+      ` sous le numéro SIREN ${CONTRACT_OWNER.siren} (SIRET ${CONTRACT_OWNER.siret}), dont le siège social est situé `, { text: CONTRACT_OWNER.adresseSiege, bold: true },
+      `, numéro de TVA intracommunautaire ${CONTRACT_OWNER.numeroTVA} (ci-après "la Plateforme" ou "OwlsVision"), exploite un service de mise en relation, via le site ${CONTRACT_OWNER.urlSite} et les outils associés, entre des personnes disposant de matériel de vision nocturne qu'elles souhaitent proposer à la location (les "Propriétaires") et des personnes souhaitant louer ce matériel (les "Locataires").`,
+    ]),
+    J('Les présentes Conditions Générales d\'Utilisation et de Mise en Relation (les "CGU") régissent l\'utilisation de la Plateforme par tout utilisateur, Propriétaire ou Locataire. Elles complètent, sans s\'y substituer, le Contrat Propriétaire signé par tout Propriétaire tiers mettant du matériel en location, et le Contrat de Location conclu à chaque réservation.'),
+    J('Le rôle de "Propriétaire" peut être tenu soit par OwlsVision elle-même pour le matériel qui lui appartient en propre (auquel cas OwlsVision contracte alors en son nom et pour son compte), soit par un tiers ayant mis son matériel en location via la Plateforme et représenté par OwlsVision en qualité de mandataire dans les conditions du Contrat Propriétaire. Le Contrat de Location précise, dans chaque cas, en quelle qualité OwlsVision intervient.'),
+
+    ART(1, 'Objet et rôle de la Plateforme'),
+    J([{ text: '1.1 ', bold: true }, 'La Plateforme a pour objet de faciliter la mise en relation entre Propriétaires et Locataires en vue de la conclusion de contrats de location de matériel de vision nocturne, ainsi que la gestion des réservations, des paiements et de la logistique associée, pour le compte du Propriétaire, dans les conditions définies au Contrat Propriétaire.']),
+    J([{ text: '1.2 ', bold: true }, 'La Plateforme n\'est ni propriétaire, ni locataire, ni partie au contrat de location conclu entre un Propriétaire et un Locataire (le "Contrat de Location"). Elle agit en qualité d\'intermédiaire technique et de mandataire du Propriétaire pour la gestion des réservations et des encaissements, dans les limites définies au Contrat Propriétaire.']),
+    J([{ text: '1.3 ', bold: true }, 'La Plateforme ne garantit ni la disponibilité d\'une demande de location pour un matériel donné, ni un niveau de revenu, ni la conclusion d\'un nombre minimal de locations. La mise en location d\'un matériel n\'est en aucun cas présentée comme un placement, un investissement ou un produit d\'épargne.']),
+
+    ART(2, 'Accès à la Plateforme, inscription'),
+    J([{ text: '2.1 ', bold: true }, 'L\'accès aux fonctionnalités de mise en location est réservé aux personnes majeures, inscrites, ayant accepté les présentes CGU.']),
+    J([{ text: '2.2 ', bold: true }, 'L\'inscription en tant que Propriétaire donne lieu à la signature du Contrat Propriétaire, document distinct des présentes CGU, qui régit la rémunération et les obligations spécifiques du Propriétaire.']),
+    J([{ text: '2.3 ', bold: true }, 'Tout utilisateur garantit l\'exactitude des informations fournies lors de son inscription (identité, coordonnées, coordonnées bancaires) et s\'engage à les tenir à jour.']),
+
+    ART(3, 'Mise en location : fonctionnement libre-service'),
+    J([{ text: '3.1 ', bold: true }, 'Tout Propriétaire inscrit peut, à tout moment et de sa seule initiative, activer la mise en location de tout ou partie de son matériel via son espace personnel, sans sollicitation individualisée de la part d\'OwlsVision.']),
+    J([{ text: '3.2 ', bold: true }, 'OwlsVision ne procède à aucune démarche visant à recruter un client déjà acquéreur d\'un matériel dans un objectif de rendement locatif ; la fonctionnalité de mise en location est présentée de manière uniforme à l\'ensemble des Propriétaires, dans les mêmes conditions financières, indépendamment des circonstances de l\'achat du matériel.']),
+    J([{ text: '3.3 ', bold: true }, 'Chaque annonce de matériel mis en location précise, a minima, la désignation du matériel, son état, ses accessoires, le montant du dépôt de garantie applicable et les conditions tarifaires de location.']),
+
+    ART(4, 'Réservation et paiement'),
+    J([
+      { text: '4.1 ', bold: true },
+      `Les paiements effectués par les Locataires transitent par un prestataire de services de paiement agréé, ${CONTRACT_OWNER.prestatairePaiement} (le "PSP"), qui assure l'encaissement, la séquestration le cas échéant, et le reversement des sommes dues au Propriétaire, déduction faite de la commission de la Plateforme définie au Contrat Propriétaire. OwlsVision ne conserve à aucun moment les fonds des Locataires ou des Propriétaires sur son compte bancaire d'exploitation.`,
+    ]),
+    J([{ text: '4.2 ', bold: true }, 'Un dépôt de garantie, dont le montant est précisé sur chaque annonce, est prélevé ou pré-autorisé auprès du Locataire avant la remise du matériel, selon les modalités du Contrat de Location.']),
+
+    ART(5, 'Assurance et garanties'),
+    J([{ text: '5.1 ', bold: true }, 'Tout Locataire doit, préalablement à toute réservation, produire une attestation d\'assurance responsabilité civile (assurance habitation ou équivalent) en cours de validité, couvrant les dommages, la perte ou le vol de biens mobiliers empruntés ou loués à des tiers.']),
+    J([{ text: '5.2 ', bold: true }, 'OwlsVision vérifie la production de cette attestation mais n\'en contrôle ni la validité juridique, ni l\'étendue exacte des garanties souscrites par l\'assureur du Locataire, et n\'est en rien garante de la prise en charge effective d\'un sinistre par cet assureur.']),
+    J([{ text: '5.3 ', bold: true }, 'La Plateforme n\'est ni assureur, ni garante du matériel loué. La couverture du matériel contre la perte, le vol ou la casse relève, selon les modalités précisées au Contrat Propriétaire et au Contrat de Location, de l\'assurance du Locataire responsable, complétée le cas échéant par le dépôt de garantie et par toute assurance propre que le Propriétaire choisit de souscrire sur son matériel.']),
+    J([{ text: '5.4 ', bold: true }, 'En cas de sinistre, OwlsVision, agissant comme mandataire du Propriétaire dans les conditions du Contrat Propriétaire, peut engager les démarches de recouvrement à l\'encontre du Locataire responsable et de son assureur, sans que cette faculté n\'emporte à la charge d\'OwlsVision une obligation d\'indemnisation du Propriétaire au-delà des sommes effectivement recouvrées et du dépôt de garantie mobilisé.']),
+
+    ART(6, 'Obligations des utilisateurs'),
+    J([{ text: '6.1 ', bold: true }, 'Le Propriétaire garantit être propriétaire du matériel mis en location, ou dûment habilité à le proposer à la location, et que ce matériel est conforme à la réglementation applicable.']),
+    J([{ text: '6.2 ', bold: true }, 'Le Locataire s\'engage à utiliser le matériel conformément à sa destination, à le restituer dans l\'état où il l\'a reçu (usure normale exceptée), et à signaler sans délai tout dommage, perte ou vol survenu pendant la période de location.']),
+
+    ART(7, 'Responsabilité de la Plateforme'),
+    J([{ text: '7.1 ', bold: true }, 'La responsabilité d\'OwlsVision, en sa qualité d\'intermédiaire technique et de mandataire limité aux missions définies à l\'article 4 des présentes, ne saurait être engagée au titre de l\'exécution du Contrat de Location lui-même, des dommages causés au matériel, ou du défaut de paiement d\'un Locataire, sous réserve des fautes qui lui seraient personnellement imputables dans l\'exécution de son mandat.']),
+    J([{ text: '7.2 ', bold: true }, 'OwlsVision met en œuvre des moyens raisonnables pour vérifier l\'identité des utilisateurs et la production des documents requis (pièce d\'identité, attestation d\'assurance), sans garantir leur authenticité.']),
+
+    ART(8, 'Fiscalité et obligations déclaratives (DAC7)'),
+    J([{ text: '8.1 ', bold: true }, 'Chaque utilisateur est seul responsable de la déclaration et du paiement des impôts, taxes et cotisations sociales afférents aux revenus perçus via la Plateforme.']),
+    J([{ text: '8.2 ', bold: true }, 'Conformément à l\'article 242 bis du Code général des impôts et à la directive européenne 2021/514 dite "DAC7", OwlsVision, en qualité d\'opérateur de plateforme, transmet annuellement à l\'administration fiscale les informations relatives aux revenus perçus par les Propriétaires par son intermédiaire, ainsi qu\'un récapitulatif annuel à chaque Propriétaire.']),
+
+    ART(9, 'Suspension et résiliation de l\'accès'),
+    J([{ text: '9.1 ', bold: true }, 'OwlsVision peut suspendre ou résilier l\'accès d\'un utilisateur à la Plateforme en cas de manquement aux présentes CGU, de fraude avérée ou suspectée, ou de comportement mettant en danger la sécurité des autres utilisateurs ou du matériel.']),
+    J([{ text: '9.2 ', bold: true }, 'Tout utilisateur peut demander la clôture de son compte à tout moment, sous réserve du règlement des sommes dues et de la restitution du matériel en cours de location.']),
+
+    ART(10, 'Médiation de la consommation'),
+    J([
+      'Conformément aux articles L.616-1 et suivants du Code de la consommation, en cas de litige non résolu à l\'amiable avec la Plateforme, tout Locataire ou Propriétaire agissant en qualité de consommateur peut recourir gratuitement au service de médiation suivant : ',
+      { text: `${CONTRACT_OWNER.mediateurNom}, ${CONTRACT_OWNER.mediateurAdresse}, ${CONTRACT_OWNER.mediateurSite}`, bold: true }, '.',
+    ]),
+
+    ART(11, 'Données personnelles'),
+    J([
+      `Les données à caractère personnel collectées sont traitées conformément à la politique de confidentialité de la Plateforme, disponible à l'adresse `, { text: CONTRACT_OWNER.urlPolitiqueConfidentialite, bold: true },
+      `, dans le respect du Règlement (UE) 2016/679 (RGPD) et de la loi n° 78-17 du 6 janvier 1978 modifiée.`,
+    ]),
+
+    ART(12, 'Droit applicable et litiges'),
+    J([{ text: '12.1 ', bold: true }, 'Les présentes CGU sont soumises au droit français.']),
+    J([{ text: '12.2 ', bold: true }, 'Pour tout utilisateur agissant en qualité de consommateur, les règles de compétence juridictionnelle prévues par le Code de la consommation et le Code de procédure civile s\'appliquent, sans préjudice de la faculté de recourir à la médiation prévue à l\'article 10.']),
+
+    { text: [`Document établi à `, { text: CONTRACT_OWNER.lieuSignatureDefaut, bold: true }, `, le `, { text: dateGeneration, bold: true }, `.`], margin: [0, 14, 0, 0] },
+  ]);
+}
+function buildAnnexeVetusteDocDefinition(){
+  const dateGeneration = fmtDate(todayStr());
+  return cguDocDefinitionShell([
+    { text: 'ANNEXE — GRILLE D\'USURE ET DE VÉTUSTÉ', bold: true, fontSize: 14.5, alignment: 'center', margin: [0, 0, 0, 3] },
+    { text: 'Matériel de vision nocturne analogique infrarouge', italics: true, fontSize: 8.6, color: '#333333', alignment: 'center', margin: [0, 0, 0, 4] },
+    { text: 'Complément aux articles 7 du Contrat Propriétaire et du Contrat de Location — matériel de vision nocturne analogique infrarouge.', italics: true, fontSize: 8.6, color: '#333333', alignment: 'center', margin: [0, 0, 0, 16] },
+
+    { text: '1. Avertissement méthodologique', bold: true, decoration: 'underline', margin: [0, 4, 0, 4] },
+    J("Les taux ci-dessous sont fondés sur la durée de vie fonctionnelle du tube intensificateur exprimée en heures d'utilisation (donnée constructeur : 10 000 heures) rapportée à une utilisation locative estimée à environ 40 locations par an. Cette méthode ne tient pas compte du vieillissement calendaire de la photocathode, qui réduit la sensibilité du tube avec le temps, y compris en l'absence d'utilisation. Il est recommandé de faire valider ces taux — et en particulier le plancher de valeur résiduelle fixé au point 3 — par des données constructeur actualisées ou par des cotes de revente réelles du matériel d'occasion, avant application définitive et avant toute généralisation à grande échelle du dispositif."),
+
+    { text: '2. Grille d\'usure naturelle', bold: true, decoration: 'underline', margin: [0, 10, 0, 4] },
+    J("Les usures listées ci-dessous constituent l'usure normale du Matériel : elles ne donnent lieu à aucune retenue sur le dépôt de garantie ni à aucune somme due par le Locataire au titre de l'article 7 du Contrat de Location. Tout dommage excédant cette usure normale (choc, casse, voie d'eau, tube endommagé par exposition prolongée à une source lumineuse intense, pièce arrachée ou manquante) demeure traité comme un dommage indemnisable."),
+    {
+      table: {
+        widths: ['22%', '38%', '20%', '10%'],
+        body: [
+          [
+            { text: 'Composant', bold: true, fillColor: '#f4f4f2' },
+            { text: 'Usure naturelle constatée', bold: true, fillColor: '#f4f4f2' },
+            { text: 'Impact', bold: true, fillColor: '#f4f4f2' },
+            { text: '% / an', bold: true, alignment: 'center', fillColor: '#f4f4f2' },
+          ],
+          ['Tube intensificateur', 'Apparition progressive de « peppers » (points noirs), vieillissement normal', "Confort d'image ; fonction préservée", { text: '3 %', alignment: 'center' }],
+          ['Tube intensificateur', 'Spots et marques liés aux expositions lumineuses inhérentes à l\'usage', "Confort d'image ; fonction préservée", { text: '2 %', alignment: 'center' }],
+          ['Optiques (objectif, oculaire)', 'Micro-rayures, usure légère des traitements de surface', 'Cosmétique', { text: '1 %', alignment: 'center' }],
+          ['Housing / châssis', 'Rayures, frottements, marques de manipulation et de transport', 'Cosmétique', { text: '2 %', alignment: 'center' }],
+          ['Commandes (boutons, molettes, compartiment pile)', "Jeu et patine d'utilisation", 'Cosmétique', { text: '1 %', alignment: 'center' }],
+          ["Pièces d'usure (œilletons, caoutchoucs, bouchons, sangles)", 'Usure et remplacement périodique', "Remplacées au titre de l'entretien courant", { text: '0 %', alignment: 'center' }],
+          ['Valeur de marché', "Décote commerciale du matériel d'occasion", 'Valeur de revente', { text: '1 %', alignment: 'center' }],
+        ],
+      },
+      fontSize: 8.6,
+      margin: [0, 6, 0, 10],
+    },
+    J([{ text: 'TOTAL — taux de vétusté contractuel : 10 % par année écoulée, toute année commencée étant comptée au prorata des mois écoulés.', bold: true }]),
+
+    { text: '3. Application', bold: true, decoration: 'underline', margin: [0, 10, 0, 4] },
+    J([
+      `Le taux de vétusté visé à l'article 7 du Contrat de Location est fixé à 10 % par année écoulée depuis la date d'acquisition mentionnée au Contrat Propriétaire, toute année commencée étant comptée au prorata des mois écoulés. La valeur résiduelle retenue pour le calcul d'une éventuelle indemnisation ne peut être inférieure à `,
+      { text: `${CONTRACT_OWNER.plancherValeurResiduelle} %`, bold: true },
+      ` de la valeur d'acquisition (à valider — cf. avertissement au point 1).`,
+    ]),
+
+    { text: [`Document établi à `, { text: CONTRACT_OWNER.lieuSignatureDefaut, bold: true }, `, le `, { text: dateGeneration, bold: true }, `.`], margin: [0, 14, 0, 0] },
+  ]);
+}
+async function generatePlatformDoc(kind){
+  const dd = kind === 'cgu' ? buildCGUDocDefinition() : buildAnnexeVetusteDocDefinition();
+  const blob = await window.pdfMake.createPdf(dd).getBlob();
+  const storagePath = `${kind}.pdf`;
+  const { error: upErr } = await sb.storage.from('platform-docs').upload(storagePath, blob, { upsert: true, contentType: 'application/pdf' });
+  if(upErr){ alert("Erreur : " + upErr.message); return; }
+  const pathCol = kind + '_path', dateCol = kind + '_uploaded_at';
+  const payload = { id: 'main', [pathCol]: storagePath, [dateCol]: new Date().toISOString() };
+  const { data, error } = await sb.from('platform_docs').upsert(payload, { onConflict: 'id' }).select().single();
+  if(error){ alert("Erreur : " + error.message); return; }
+  state.platform_docs = data;
+  render();
+}
+window.generatePlatformDoc = generatePlatformDoc;
+window.generatePlatformDocConfirm = async (kind) => {
+  const btn = event.target; const oldLabel = btn.textContent; btn.textContent = "Génération..."; btn.disabled = true;
+  try{ await generatePlatformDoc(kind); }
+  finally { btn.textContent = oldLabel; btn.disabled = false; }
+};
+
 // Réservation la plus pertinente pour rédiger le contrat d'un client : la plus récente en
 // cours (louée) ou tout juste acceptée ; à défaut, sa réservation la plus récente quelle que
 // soit son statut. Le master peut toujours changer de réservation ou ajuster les champs dans
@@ -2194,7 +2364,7 @@ async function submitSignature(){
 /* ---------- Signature électronique — Contrat Propriétaire ----------
    Même mécanisme, même calibrage (pad, taille fixe dérivée de sigAspect, horodatage) que la
    signature du Contrat de Location ci-dessus, mais ciblant la table/le bucket séparés
-   owner_contracts / owner-contracts (voir la note en tête de renderContratProprietaireClient). */
+   owner_contracts / owner-contracts (voir la note en tête de renderContratClient). */
 async function openOwnerContractFile(username, which){
   const oc = state.owner_contracts.find(x => x.username === username);
   const path = which === 'signed' ? oc?.signed_pdf_path : oc?.pdf_path;
@@ -2255,12 +2425,15 @@ async function submitOwnerSignature(){
     const { width } = lastPage.getSize();
     const sigW = 150;
     const sigH = sigW * sigAspect;
-    lastPage.drawImage(pngImage, { x: width - sigW - 50, y: 60, width: sigW, height: sigH });
+    // Positionnée un peu plus haut que sur le Contrat de Location (y:60) : le bloc de signature
+    // du Contrat Propriétaire est plus court (pas de tableau "lu et approuvé"), la signature
+    // paraissait trop basse sur la page.
+    lastPage.drawImage(pngImage, { x: width - sigW - 50, y: 110, width: sigW, height: sigH });
     const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
     const signDate = new Date();
     const dateStr = signDate.toLocaleDateString('fr-FR');
     const timeStr = signDate.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
-    lastPage.drawText(`Signe electroniquement par ${state.session.username} le ${dateStr} a ${timeStr}`, { x: 50, y: 40, size: 9, font, color: rgb(0,0,0) });
+    lastPage.drawText(`Signe electroniquement par ${state.session.username} le ${dateStr} a ${timeStr}`, { x: 50, y: 90, size: 9, font, color: rgb(0,0,0) });
     const signedBytes = await pdfDoc.save();
     const blob = new Blob([signedBytes], { type: 'application/pdf' });
     const signedPath = `${state.session.username}/signed.pdf`;
@@ -2314,7 +2487,10 @@ window.handleContractUpload = (e, username) => {
    écriture réservée au master (RLS, migration_lot12_proprietaires.sql). */
 async function uploadPlatformDoc(kind, file){
   if(!file) return;
-  if(file.type !== 'application/pdf'){ alert("Merci de sélectionner un fichier PDF."); return; }
+  // Certains navigateurs/OS ne renseignent pas (ou mal) file.type pour un PDF : on se fie aussi
+  // à l'extension pour éviter de refuser un vrai PDF à tort ("le format n'est pas pris").
+  const looksLikePdf = file.type === 'application/pdf' || /\.pdf$/i.test(file.name || '');
+  if(!looksLikePdf){ alert("Merci de sélectionner un fichier PDF."); return; }
   const storagePath = `${kind}.pdf`;
   const { error: upErr } = await sb.storage.from('platform-docs').upload(storagePath, file, { upsert: true, contentType: 'application/pdf' });
   if(upErr){ alert("Erreur d'envoi : " + upErr.message); return; }
@@ -2341,6 +2517,11 @@ window.onGenerateContractBookingChange = (username, bookingId) => { state.modal 
 window.confirmGenerateContract = async (e, username) => {
   const errEl = document.getElementById('gc-error');
   const p = state.profiles.find(x => x.username === username);
+  const missingClient = ['nom','prenom','adresse','telephone','numero_cni'].filter(f => !p[f]);
+  if(missingClient.length){
+    errEl.innerHTML = `<div class="msg msg-error">Impossible de générer : fiche client incomplète (${missingClient.join(', ')}). Complétez-la (onglet Utilisateurs) avant de générer le contrat.</div>`;
+    return;
+  }
   const clientBookings = state.bookings.filter(b => b.username === username);
   const bookingSel = document.getElementById('gc-booking');
   const chosenBookingId = bookingSel && bookingSel.value !== '—' ? bookingSel.value : (latestRelevantBookingFor(username)?.id || null);
@@ -2433,27 +2614,78 @@ window.confirmNewManualUser = async (e) => {
   render();
 };
 
-/* ---------- Contrat Propriétaire (master) ---------- */
-window.openGenerateOwnerContractModal = (username) => { state.modal = { type:"generateOwnerContract", username }; render(); };
-window.markAsOwnerThenGenerate = async (username) => {
-  const { data, error } = await sb.from('profiles').update({ is_owner: true }).eq('username', username).select().single();
+/* ---------- Propriétaire : marquage simplifié (master) ----------
+   Flux volontairement séparé et léger (voir renderGestionProprietaires) : cliquer sur le bouton
+   "Propriétaire" depuis la fiche d'un utilisateur ouvre CE petit modal (coordonnées facultatives
+   ici, pas de bandeau rouge), qui se contente de basculer profiles.is_owner et d'enregistrer les
+   coordonnées si elles sont saisies. L'édition/envoi du Contrat Propriétaire lui-même (avec ses
+   champs obligatoires bloquants) reste un second temps, réservé à l'onglet Gestion propriétaire. */
+window.openMarkAsOwnerModal = (username) => { state.modal = { type:"markAsOwner", username }; render(); };
+window.confirmMarkAsOwner = async (e, username) => {
+  const errEl = document.getElementById('mao-error');
+  const patch = {
+    is_owner: true,
+    civilite: document.getElementById('mao-civilite').value || null,
+    date_naissance: document.getElementById('mao-date-naissance').value || null,
+    lieu_naissance: document.getElementById('mao-lieu-naissance').value.trim() || null,
+    nationalite: document.getElementById('mao-nationalite').value.trim() || null,
+    adresse: document.getElementById('mao-adresse').value.trim() || null,
+    iban: document.getElementById('mao-iban').value.trim() || null,
+  };
+  const btn = e.target; const oldLabel = btn.textContent; btn.textContent = "Enregistrement..."; btn.disabled = true;
+  const { data, error } = await sb.from('profiles').update(patch).eq('username', username).select().single();
+  if(error){
+    errEl.innerHTML = `<div class="msg msg-error">Erreur : ${esc(error.message)}</div>`;
+    btn.textContent = oldLabel; btn.disabled = false;
+    return;
+  }
+  const p = state.profiles.find(x => x.username === username);
+  if(p) Object.assign(p, data);
+  state.modal = null;
+  render();
+};
+window.confirmUnmarkOwner = async (username) => {
+  if(!confirm("Retirer le statut Propriétaire de ce compte ? Il ne sera plus proposé comme Propriétaire de matériel (le contrat déjà signé, le cas échéant, reste consultable dans son historique).")) return;
+  const { data, error } = await sb.from('profiles').update({ is_owner: false }).eq('username', username).select().single();
   if(error){ alert("Erreur : " + error.message); return; }
   const p = state.profiles.find(x => x.username === username);
   if(p) Object.assign(p, data);
+  state.modal = null;
   render();
 };
+
+/* ---------- Contrat Propriétaire (master) ---------- */
+window.openGenerateOwnerContractModal = (username) => { state.modal = { type:"generateOwnerContract", username }; render(); };
 window.confirmGenerateOwnerContract = async (e, username) => {
   const errEl = document.getElementById('goc-error');
   const p = state.profiles.find(x => x.username === username);
   const myItems = state.items.filter(i => i.owner_username === username);
+  const civilite = document.getElementById('goc-civilite').value;
+  const dateNaissanceRaw = document.getElementById('goc-date-naissance').value;
+  const lieuNaissance = document.getElementById('goc-lieu-naissance').value.trim();
+  const nationalite = document.getElementById('goc-nationalite').value.trim();
+  const adresse = document.getElementById('goc-adresse').value.trim();
+  const missing = [];
+  if(!p.nom) missing.push('nom');
+  if(!p.prenom) missing.push('prénom');
+  if(!civilite) missing.push('civilité');
+  if(!dateNaissanceRaw) missing.push('date de naissance');
+  if(!lieuNaissance) missing.push('lieu de naissance');
+  if(!nationalite) missing.push('nationalité');
+  if(!adresse) missing.push('adresse');
+  if(!myItems.length) missing.push('matériel rattaché');
+  if(missing.length){
+    errEl.innerHTML = `<div class="msg msg-error">Impossible de générer : informations manquantes (${missing.join(', ')}). Complétez-les ci-dessus (ou la fiche/le catalogue) avant de générer le contrat.</div>`;
+    return;
+  }
   const fields = {
-    proprietaire_civilite: document.getElementById('goc-civilite').value,
+    proprietaire_civilite: civilite,
     proprietaire_prenom: p.prenom || '',
     proprietaire_nom: p.nom || clientDisplayName(p) || username,
-    proprietaire_date_naissance: document.getElementById('goc-date-naissance').value ? fmtDate(document.getElementById('goc-date-naissance').value) : 'en cours de modification',
-    proprietaire_lieu_naissance: document.getElementById('goc-lieu-naissance').value.trim() || 'en cours de modification',
-    proprietaire_nationalite: document.getElementById('goc-nationalite').value.trim() || 'en cours de modification',
-    proprietaire_adresse: document.getElementById('goc-adresse').value.trim() || 'en cours de modification',
+    proprietaire_date_naissance: fmtDate(dateNaissanceRaw),
+    proprietaire_lieu_naissance: lieuNaissance,
+    proprietaire_nationalite: nationalite,
+    proprietaire_adresse: adresse,
     proprietaire_iban: document.getElementById('goc-iban').value.trim(),
     materiel: myItems.map(i => ({
       designation: i.name,
@@ -2723,11 +2955,12 @@ function masterNavDef(){
   return [
     { id: "dashboard", label: "Tableau de bord", shortLabel: "Tableau" },
     { id: "gestion-group", label: "Gestion", icon: "gestion",
-      badge: () => state.bookings.filter(b => b.status === 'demande').length,
+      badge: () => state.bookings.filter(b => b.status === 'demande').length + state.owner_contracts.filter(oc => oc.signed_at && oc.signed_seen_by_master === false).length,
       sub: [
         { id: "gestion", label: "Location", badge: () => state.bookings.filter(b => b.status === 'demande').length },
         { id: "stock", label: "Stock" },
         { id: "catalogue", label: "Catalogue" },
+        { id: "gestion-proprietaires", label: "Gestion propriétaire", badge: () => state.owner_contracts.filter(oc => oc.signed_at && oc.signed_seen_by_master === false).length },
       ] },
     { id: "utilisateurs", label: "Utilisateurs", shortLabel: "Clients" },
     { id: "missions-group", label: "Missions", icon: "missions",
@@ -2748,13 +2981,16 @@ function clientNavDef(){
     { id: "planning", label: "Mes réservations", shortLabel: "Réservé" },
     { id: "missions", label: "Missions", badge: (u) => state.completions.filter(c => c.username === u.username && c.status !== 'attente' && c.client_seen === false).length },
     { id: "recompenses", label: "À gagner", badge: (u) => state.redemptions.filter(r => r.username === u.username && r.status !== 'attente' && r.client_seen === false).length },
-    { id: "contrat", label: "Mes contrats", shortLabel: "Contrat", badge: (u) => { const c = state.contracts.find(x => x.username === u.username); return (c && !c.signed_at) ? 1 : 0; } },
+    // "Mes contrats" regroupe le Contrat de Location ET, si un Contrat Propriétaire lui a été
+    // envoyé, ce dernier aussi (voir renderContratClient) — pas d'onglet séparé, et surtout pas
+    // de mention "Propriétaire" pour un compte qui n'a jamais reçu ce contrat, même si is_owner
+    // est vrai (ce drapeau sert seulement en coulisses, côté master).
+    { id: "contrat", label: "Mes contrats", shortLabel: "Contrat", badge: (u) => {
+      const c = state.contracts.find(x => x.username === u.username);
+      const oc = state.owner_contracts.find(x => x.username === u.username);
+      return ((c && !c.signed_at) ? 1 : 0) + ((oc && !oc.signed_at) ? 1 : 0);
+    } },
   ];
-  // Onglet réservé aux comptes Propriétaire (mise en location de matériel tiers) — absent pour
-  // un client locataire classique.
-  if(u && u.is_owner){
-    items.push({ id: "contrat-proprietaire", label: "Mon contrat propriétaire", shortLabel: "Propriétaire", badge: (u) => { const oc = state.owner_contracts.find(x => x.username === u.username); return (oc && !oc.signed_at) ? 1 : 0; } });
-  }
   items.push({ id: "profil", label: "Mon profil", shortLabel: "Profil" });
   return items;
 }
@@ -3122,6 +3358,39 @@ function renderGestionStock(){
   return `
     <div class="topbar"><div><h1>Gestion de stock</h1><div class="desc">Ajustez la quantité en stock de chaque matériel, sans avoir à le supprimer et le recréer.</div></div></div>
     <div style="display:flex;flex-direction:column;gap:10px;">${state.items.length ? rows : `<div class="empty">Aucun matériel enregistré pour le moment.</div>`}</div>
+  `;
+}
+
+/* ---------- Gestion propriétaire (master) ----------
+   Regroupe tout le système Propriétaire au même endroit : matériel rattaché (à titre
+   informatif — la disponibilité à la location reste 100% manuelle via Gestion de stock, jamais
+   automatique), édition/envoi du Contrat Propriétaire, suivi de signature. Pour marquer un
+   nouvel utilisateur comme Propriétaire, voir le bouton dédié depuis sa fiche (Utilisateurs). */
+function renderGestionProprietaires(){
+  const owners = state.profiles.filter(p => p.is_owner);
+  const rows = owners.map(p => {
+    const oc = state.owner_contracts.find(x => x.username === p.username);
+    const myItems = state.items.filter(i => i.owner_username === p.username);
+    let pill = `<span class="status-pill none">Aucun contrat envoyé</span>`;
+    if(oc && oc.signed_at) pill = `<span class="status-pill ok">Signé le ${fmtDate(oc.signed_at)}</span>`;
+    else if(oc) pill = `<span class="status-pill pending">En attente de signature</span>`;
+    const isNew = oc && oc.signed_at && oc.signed_seen_by_master === false;
+    return `
+      <div class="list-row">
+        <div>
+          <div class="t-title">${esc(clientDisplayName(p))} ${isNew ? `<span class="badge-dot" style="position:static;display:inline-flex;">Nouveau</span>` : ''}</div>
+          <div class="t-desc">${esc(p.username)} — ${pill}</div>
+          <div class="t-desc" style="margin-top:4px;">Matériel rattaché (informatif) : ${myItems.length ? myItems.map(i => esc(i.name)).join(', ') : 'aucun'}</div>
+        </div>
+        <div class="btn-row" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+          ${oc && oc.signed_pdf_path ? `<button type="button" class="btn btn-ghost btn-sm" onclick="openOwnerContractFile('${esc(p.username)}','signed')">Voir contrat signé</button>` : ''}
+          <button class="btn btn-primary btn-sm" onclick="openGenerateOwnerContractModal('${esc(p.username)}')">${oc ? 'Régénérer' : 'Envoyer'} le contrat propriétaire</button>
+        </div>
+      </div>`;
+  }).join("");
+  return `
+    <div class="topbar"><div><h1>Gestion propriétaire</h1><div class="desc">Édition et envoi du Contrat Propriétaire, suivi de signature. Le matériel affiché ici est indicatif : sa disponibilité à la location se règle toujours manuellement depuis Gestion de stock.</div></div></div>
+    ${!owners.length ? `<div class="empty">Aucun compte Propriétaire pour le moment — ouvrez la fiche d'un utilisateur (onglet Utilisateurs) et utilisez le bouton "Propriétaire" pour en désigner un.</div>` : `<div style="display:flex;flex-direction:column;gap:10px;">${rows}</div>`}
   `;
 }
 
@@ -3775,7 +4044,7 @@ function usersRowHtml(p){
       <td><div style="display:flex;gap:5px;flex-wrap:wrap;">
         ${!p.is_master ? `<button class="btn btn-ghost btn-sm" onclick="openViewProfile('${esc(p.username)}')">Fiche</button>` : ''}
         ${!p.is_master ? `<button class="btn btn-ghost btn-sm" onclick="resetUserToLevel1('${esc(p.username)}')">Reset XP</button>` : ''}
-        ${!p.is_master ? `<button class="btn btn-ghost btn-sm" onclick="openGenerateOwnerContractModal('${esc(p.username)}')">Éditer contrat propriétaire</button>` : ''}
+        ${!p.is_master ? `<button class="btn btn-ghost btn-sm" onclick="openMarkAsOwnerModal('${esc(p.username)}')">${p.is_owner ? 'Propriétaire' : 'Marquer Propriétaire'}</button>` : ''}
         ${!p.is_master ? `<button class="btn btn-danger btn-sm" onclick="deleteProfile('${esc(p.username)}')">Supprimer</button>` : ''}
       </div></td>
     </tr>`;
@@ -3866,11 +4135,12 @@ function platformDocRowHtml(kind, label){
     <div class="doc-row">
       <div>
         <div class="doc-title">${esc(label)}</div>
-        <div class="doc-sub">${has ? 'Envoyé le ' + fmtDate(pd[dateCol]) : 'Aucun document envoyé'}</div>
+        <div class="doc-sub">${has ? 'Généré/envoyé le ' + fmtDate(pd[dateCol]) : 'Aucun document généré'}</div>
       </div>
-      <div style="display:flex;gap:6px;">
+      <div style="display:flex;gap:6px;flex-wrap:wrap;">
         ${has ? `<button class="btn btn-ghost btn-sm" onclick="openPlatformDoc('${kind}')">Voir</button>` : ''}
-        <span class="btn btn-ghost btn-sm file-btn">${has?'Remplacer':'Uploader'}<input type="file" accept="application/pdf" onchange="handlePlatformDocUpload(event,'${kind}')"></span>
+        <button class="btn btn-primary btn-sm" onclick="generatePlatformDocConfirm('${kind}')">Générer automatiquement</button>
+        <span class="btn btn-ghost btn-sm file-btn">Uploader un PDF personnalisé<input type="file" accept="application/pdf,.pdf" onchange="handlePlatformDocUpload(event,'${kind}')"></span>
       </div>
     </div>`;
 }
@@ -3879,9 +4149,15 @@ function platformDocRowHtml(kind, label){
 function renderContratClient(){
   const u = currentProfile();
   const c = state.contracts.find(x => x.username === u.username);
+  // Le Contrat Propriétaire n'apparaît ici QUE si une ligne owner_contracts existe réellement
+  // pour ce compte (= le master lui a effectivement envoyé ce contrat) — jamais sur la seule
+  // base du drapeau is_owner, qui reste un détail interne côté master (voir clientNavDef et la
+  // consigne : un compte non-Propriétaire ne doit avoir aucune notion de "Propriétaire").
+  const oc = state.owner_contracts.find(x => x.username === u.username);
   return `
-    <div class="topbar"><div><h1>Mon contrat</h1><div class="desc">Consultez et signez votre contrat directement depuis votre mobile.</div></div>${xpBarHtml(u)}</div>
+    <div class="topbar"><div><h1>Mes contrats</h1><div class="desc">Consultez et signez vos contrats directement depuis votre mobile.</div></div>${xpBarHtml(u)}</div>
     <div class="panel">
+      <div class="section-title" style="margin-top:0;">Contrat de location</div>
       ${!c ? `<div class="empty">Aucun contrat ne vous a encore été transmis.</div>` : `
         <div style="display:flex;flex-direction:column;gap:14px;align-items:flex-start;">
           ${c.signed_at ? `<span class="status-pill ok">Signé le ${fmtDate(c.signed_at)}</span>` : `<span class="status-pill pending">En attente de votre signature</span>`}
@@ -3891,28 +4167,16 @@ function renderContratClient(){
         </div>
       `}
     </div>
-  `;
-}
-
-/* ---------- Mon contrat propriétaire (client Propriétaire) ----------
-   Système entièrement séparé du Contrat de Location ci-dessus (table owner_contracts, bucket
-   owner-contracts) : zéro risque de régression sur les contrats clients déjà en production. */
-function renderContratProprietaireClient(){
-  const u = currentProfile();
-  if(!u.is_owner) return `<div class="topbar"><div><h1>Mon contrat propriétaire</h1></div></div><div class="panel"><div class="empty">Cette section est réservée aux comptes Propriétaire.</div></div>`;
-  const oc = state.owner_contracts.find(x => x.username === u.username);
-  return `
-    <div class="topbar"><div><h1>Mon contrat propriétaire</h1><div class="desc">Consultez et signez le mandat de gestion de votre matériel directement depuis votre mobile.</div></div>${xpBarHtml(u)}</div>
+    ${oc ? `
     <div class="panel">
-      ${!oc ? `<div class="empty">Aucun contrat propriétaire ne vous a encore été transmis.</div>` : `
-        <div style="display:flex;flex-direction:column;gap:14px;align-items:flex-start;">
-          ${oc.signed_at ? `<span class="status-pill ok">Signé le ${fmtDate(oc.signed_at)}</span>` : `<span class="status-pill pending">En attente de votre signature</span>`}
-          <button type="button" class="btn btn-ghost" style="width:100%;" onclick="openOwnerContractFile('${esc(u.username)}','original')">${tacticalIconSvg('doc',{size:16})} Ouvrir le contrat (PDF)</button>
-          ${oc.signed_pdf_path ? `<button type="button" class="btn btn-ghost" style="width:100%;" onclick="openOwnerContractFile('${esc(u.username)}','signed')">${tacticalIconSvg('download',{size:16})} Télécharger mon contrat signé</button>` : ''}
-          ${!oc.signed_at ? `<button class="btn btn-primary" style="width:100%;" onclick="openOwnerSignaturePad()">${tacticalIconSvg('signature-pen',{size:16})} Signer mon contrat</button>` : ''}
-        </div>
-      `}
-    </div>
+      <div class="section-title" style="margin-top:0;">Contrat propriétaire</div>
+      <div style="display:flex;flex-direction:column;gap:14px;align-items:flex-start;">
+        ${oc.signed_at ? `<span class="status-pill ok">Signé le ${fmtDate(oc.signed_at)}</span>` : `<span class="status-pill pending">En attente de votre signature</span>`}
+        <button type="button" class="btn btn-ghost" style="width:100%;" onclick="openOwnerContractFile('${esc(u.username)}','original')">${tacticalIconSvg('doc',{size:16})} Ouvrir le contrat (PDF)</button>
+        ${oc.signed_pdf_path ? `<button type="button" class="btn btn-ghost" style="width:100%;" onclick="openOwnerContractFile('${esc(u.username)}','signed')">${tacticalIconSvg('download',{size:16})} Télécharger mon contrat signé</button>` : ''}
+        ${!oc.signed_at ? `<button class="btn btn-primary" style="width:100%;" onclick="openOwnerSignaturePad()">${tacticalIconSvg('signature-pen',{size:16})} Signer mon contrat</button>` : ''}
+      </div>
+    </div>` : ''}
   `;
 }
 
@@ -4124,6 +4388,36 @@ function renderModal(){
       </div>
     </div></div>`;
   }
+  if(m.type === "markAsOwner"){
+    const p = state.profiles.find(x => x.username === m.username);
+    if(!p) return "";
+    const already = !!p.is_owner;
+    return `
+    <div class="modal-bg" onclick="closeModalBg(event)"><div class="modal">
+      <h3>Propriétaire — ${esc(clientDisplayName(p))}</h3>
+      <div style="font-size:12.5px;color:var(--text-dim);line-height:1.55;margin:-6px 0 12px;">${already ? "Ce compte est déjà marqué comme Propriétaire. Vous pouvez mettre à jour ses coordonnées ci-dessous, ou lui retirer ce statut." : "Coordonnées facultatives ici — elles serviront à l'édition du Contrat Propriétaire, à compléter et envoyer depuis l'onglet Gestion propriétaire."}</div>
+      <div class="row">
+        <div class="field"><label>Civilité</label><select id="mao-civilite">
+          <option value="" ${!p.civilite?'selected':''}>—</option>
+          <option value="M." ${p.civilite==='M.'?'selected':''}>M.</option>
+          <option value="Mme" ${p.civilite==='Mme'?'selected':''}>Mme</option>
+        </select></div>
+        <div class="field"><label>Nationalité</label><input id="mao-nationalite" value="${esc(p.nationalite||'')}"></div>
+      </div>
+      <div class="row">
+        <div class="field"><label>Date de naissance</label><input id="mao-date-naissance" type="date" value="${esc(p.date_naissance||'')}"></div>
+        <div class="field"><label>Lieu de naissance</label><input id="mao-lieu-naissance" value="${esc(p.lieu_naissance||'')}"></div>
+      </div>
+      <div class="field"><label>Adresse</label><input id="mao-adresse" value="${esc(p.adresse||'')}"></div>
+      <div class="field"><label>IBAN (pour le reversement des loyers)</label><input id="mao-iban" value="${esc(p.iban||'')}"></div>
+      <div style="font-size:11.5px;color:var(--text-faint);margin:-2px 0 10px;">Le matériel qui lui sera rattaché (fiche article, champ "Propriétaire du matériel") reste ici à titre informatif : sa disponibilité à la location se règle toujours manuellement depuis Gestion de stock.</div>
+      <div id="mao-error"></div>
+      <div class="modal-actions" style="flex-wrap:wrap;">
+        ${already ? `<button class="btn btn-danger" onclick="confirmUnmarkOwner('${esc(p.username)}')">Retirer le statut</button>` : `<button class="btn btn-ghost" onclick="closeModal()">Annuler</button>`}
+        <button class="btn btn-primary" onclick="confirmMarkAsOwner(event,'${esc(p.username)}')">${already ? 'Enregistrer' : 'Marquer comme Propriétaire'}</button>
+      </div>
+    </div></div>`;
+  }
   if(m.type === "generateOwnerContract"){
     const p = state.profiles.find(x => x.username === m.username);
     if(!p) return "";
@@ -4131,10 +4425,10 @@ function renderModal(){
       return `
       <div class="modal-bg" onclick="closeModalBg(event)"><div class="modal">
         <h3>Contrat propriétaire — ${esc(clientDisplayName(p))}</h3>
-        <div class="msg msg-info">Ce compte n'est pas encore marqué comme Propriétaire. Marquez-le comme tel pour pouvoir générer son Contrat Propriétaire (mandat de gestion).</div>
+        <div class="msg msg-info">Ce compte n'est pas encore marqué comme Propriétaire. Utilisez le bouton "Marquer Propriétaire" depuis sa fiche (onglet Utilisateurs), puis revenez ici pour éditer et envoyer son contrat.</div>
         <div class="modal-actions">
-          <button class="btn btn-ghost" onclick="closeModal()">Annuler</button>
-          <button class="btn btn-primary" onclick="markAsOwnerThenGenerate('${esc(m.username)}')">Marquer comme Propriétaire</button>
+          <button class="btn btn-ghost" onclick="closeModal()">Fermer</button>
+          <button class="btn btn-primary" onclick="closeModal(); openMarkAsOwnerModal('${esc(m.username)}');">Marquer comme Propriétaire</button>
         </div>
       </div></div>`;
     }
@@ -4314,11 +4608,14 @@ function renderModal(){
       <div class="field"><label>Lieu de naissance</label><div class="static-val">${esc(p.lieu_naissance || '—')}</div></div>
       ${p.is_owner ? `<div class="field"><label>IBAN</label><div class="static-val">${esc(p.iban || '—')}</div></div>` : ''}
       ` : ''}
-      ${p.is_owner ? `
       <div class="section-title" style="margin-top:6px;">Propriétaire</div>
-      <div style="font-size:12.5px;color:var(--text-dim);line-height:1.55;margin-bottom:8px;">Matériel rattaché : ${state.items.filter(i => i.owner_username === p.username).map(i => esc(i.name)).join(', ') || 'aucun'}.</div>
-      <button class="btn btn-ghost btn-sm" onclick="closeModal(); openGenerateOwnerContractModal('${esc(p.username)}');">Éditer contrat propriétaire</button>
-      ` : ''}
+      ${p.is_owner ? `
+      <div style="font-size:12.5px;color:var(--text-dim);line-height:1.55;margin-bottom:8px;">Matériel rattaché (informatif) : ${state.items.filter(i => i.owner_username === p.username).map(i => esc(i.name)).join(', ') || 'aucun'}. Édition et envoi du contrat : onglet Gestion → Gestion propriétaire.</div>
+      <button class="btn btn-ghost btn-sm" onclick="closeModal(); openMarkAsOwnerModal('${esc(p.username)}');">Modifier ses informations Propriétaire</button>
+      ` : `
+      <div style="font-size:12.5px;color:var(--text-dim);line-height:1.55;margin-bottom:8px;">Ce compte n'est pas Propriétaire.</div>
+      <button class="btn btn-ghost btn-sm" onclick="closeModal(); openMarkAsOwnerModal('${esc(p.username)}');">Marquer comme Propriétaire</button>
+      `}
       <div class="section-title" style="margin-top:6px;">Documents</div>
       ${MEMBER_DOC_UPLOAD_ENABLED ? `
       ${docRowHtml('id', p, false)}
@@ -4367,7 +4664,7 @@ function render(){
   else if(state.view === "utilisateurs") content = renderUtilisateurs();
   else if(state.view === "contrats") content = renderContratsAdmin();
   else if(state.view === "contrat") content = renderContratClient();
-  else if(state.view === "contrat-proprietaire") content = renderContratProprietaireClient();
+  else if(state.view === "gestion-proprietaires") content = renderGestionProprietaires();
   else if(state.view === "profil") content = renderProfilClient();
 
   app.innerHTML = `
@@ -4435,6 +4732,7 @@ window.goto = (view) => {
   const u = currentProfile();
   if(u && !u.is_master && view === 'missions') markMissionsSeen(u.username);
   if(u && u.is_master && view === 'contrats') markContractsSeen();
+  if(u && u.is_master && view === 'gestion-proprietaires') markOwnerContractsSeen();
   if(u && !u.is_master && view === 'recompenses') markRedemptionsSeen(u.username);
   render();
 };
