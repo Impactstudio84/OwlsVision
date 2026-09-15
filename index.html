@@ -477,6 +477,10 @@
   .status-pill.info{background:var(--blue-soft);color:var(--blue);}
   .status-pill.active{background:var(--violet-soft);color:var(--violet);}
   .status-pill.danger{background:var(--danger-soft);color:#FFB3A6;}
+  /* Petit repère "Propriétaire" (icône maison + libellé) accolé au nom dans la liste Utilisateurs —
+     pour qu'on distingue un compte Propriétaire d'un simple client d'un coup d'œil, et que la
+     recherche textuelle "propriétaire" ait quelque chose à retrouver visuellement dans la liste. */
+  .owner-tag{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:600;padding:3px 9px 3px 7px;border-radius:var(--r-pill);background:var(--blue-soft);color:var(--blue);vertical-align:1px;white-space:nowrap;}
   .file-btn{position:relative;overflow:hidden;}
   .file-btn input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;}
   .checkbox-field{display:flex;align-items:center;gap:10px;font-size:13.5px;color:var(--text-dim);margin:4px 0 16px;}
@@ -550,6 +554,12 @@
     .backdrop{position:fixed;inset:0;background:rgba(0,0,0,0.55);z-index:39;}
     .topbar{flex-direction:column;}
     .xp-card{width:100%;min-width:0;}
+    /* Rangées d'actions (Contrats de location, Contrats propriétaire, documents CGU/vétusté...) :
+       en dessous de 860px on empile les boutons plutôt que de les laisser se répartir en largeur
+       "auto" façon desktop — ça évitait un bouton primaire disproportionné à côté de boutons
+       fantômes plus étroits, illisible au doigt sur mobile. Un bouton par ligne, pleine largeur. */
+    .btn-row, .doc-row > div:last-child{flex-direction:column;align-items:stretch;}
+    .btn-row .btn, .doc-row > div:last-child .btn{width:100%;}
 
     /* ---------- Bottom nav (mobile) ---------- */
     /* Chaque bouton a une largeur FIXE (flex:1 1 0, identique active ou non) : rien ne redimensionne
@@ -2746,6 +2756,7 @@ function tacticalIconSvg(name, opts){
     'id-badge': '<rect x="4" y="4" width="16" height="16" rx="2.4"/><circle cx="12" cy="9.8" r="2.3"/><path d="M7.5 17c.8-2.2 2.4-3.3 4.5-3.3s3.7 1.1 4.5 3.3"/>',
     'signature-pen': '<path d="M3 21c3-1 4.5-1 7-1s5 1.5 8 0"/><path d="M9 15 18 6a2 2 0 0 1 2.8 2.8L11.8 18l-3.6.8Z"/>',
     doc: '<path d="M14 2H7a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/><path d="M9 13h6M9 17h6"/>',
+    house: '<path d="M3 11l9-7 9 7"/><path d="M5 10v9a1 1 0 0 0 1 1h4v-6h4v6h4a1 1 0 0 0 1-1v-9"/>',
     trident: '<path d="M7 2v6"/><path d="M12 2v6"/><path d="M17 2v6"/><path d="M6 8h12"/><path d="M12 8v14"/><path d="M9 22h6"/>',
     leaf: '<path d="M12 3c5 3.2 8 8.1 8 12.3C20 19.4 16.6 21 12 21s-8-1.6-8-5.7C4 11.1 7 6.2 12 3Z"/><path d="M12 8.4v11.8"/><path d="M12 12.2c-1.7-.1-3-.75-4-1.9M12 15.6c1.7-.1 3-.75 4-1.9"/>',
     'tomoe-ring': '<circle cx="12" cy="12" r="9.2" fill="none"/><g fill="currentColor" stroke="none"><path d="M -1.572,-4.454 A 2.35 2.35 0 1 1 1.572,-4.454 Q 0.829,-3.784 0.000,-0.900 Q -2.539,-5.323 -1.572,-4.454 Z" transform="translate(12,12)"/><path d="M -1.572,-4.454 A 2.35 2.35 0 1 1 1.572,-4.454 Q 0.829,-3.784 0.000,-0.900 Q -2.539,-5.323 -1.572,-4.454 Z" transform="translate(12,12) rotate(120)"/><path d="M -1.572,-4.454 A 2.35 2.35 0 1 1 1.572,-4.454 Q 0.829,-3.784 0.000,-0.900 Q -2.539,-5.323 -1.572,-4.454 Z" transform="translate(12,12) rotate(240)"/><circle cx="12" cy="12" r="1.15"/></g>',
@@ -2954,13 +2965,20 @@ window.codePadPress = (d) => {
 function masterNavDef(){
   return [
     { id: "dashboard", label: "Tableau de bord", shortLabel: "Tableau" },
+    // Les DEUX systèmes de contrat (location vs propriétaire) sont volontairement regroupés et
+    // nommés en miroir ("Contrats de location" / "Contrats propriétaire") juste après
+    // "Réservations", pour qu'on ne les confonde plus : l'un gère le client qui loue, l'autre le
+    // tiers qui met du matériel en location via la Plateforme (mandat de gestion, reversement).
     { id: "gestion-group", label: "Gestion", icon: "gestion",
-      badge: () => state.bookings.filter(b => b.status === 'demande').length + state.owner_contracts.filter(oc => oc.signed_at && oc.signed_seen_by_master === false).length,
+      badge: () => state.bookings.filter(b => b.status === 'demande').length
+        + state.contracts.filter(c => c.signed_at && c.signed_seen_by_master === false).length
+        + state.owner_contracts.filter(oc => oc.signed_at && oc.signed_seen_by_master === false).length,
       sub: [
-        { id: "gestion", label: "Location", badge: () => state.bookings.filter(b => b.status === 'demande').length },
+        { id: "gestion", label: "Réservations", badge: () => state.bookings.filter(b => b.status === 'demande').length },
+        { id: "contrats", label: "Contrats de location", badge: () => state.contracts.filter(c => c.signed_at && c.signed_seen_by_master === false).length },
+        { id: "gestion-proprietaires", label: "Contrats propriétaire", badge: () => state.owner_contracts.filter(oc => oc.signed_at && oc.signed_seen_by_master === false).length },
         { id: "stock", label: "Stock" },
         { id: "catalogue", label: "Catalogue" },
-        { id: "gestion-proprietaires", label: "Gestion propriétaire", badge: () => state.owner_contracts.filter(oc => oc.signed_at && oc.signed_seen_by_master === false).length },
       ] },
     { id: "utilisateurs", label: "Utilisateurs", shortLabel: "Clients" },
     { id: "missions-group", label: "Missions", icon: "missions",
@@ -2970,7 +2988,6 @@ function masterNavDef(){
         { id: "missions-creation", label: "Création" },
       ] },
     { id: "recompenses", label: "À gagner", badge: () => state.redemptions.filter(r => r.status === 'attente').length },
-    { id: "contrats", label: "Contrats", badge: () => state.contracts.filter(c => c.signed_at && c.signed_seen_by_master === false).length },
   ];
 }
 function clientNavDef(){
@@ -3378,7 +3395,7 @@ function renderGestionProprietaires(){
     return `
       <div class="list-row">
         <div>
-          <div class="t-title">${esc(clientDisplayName(p))} ${isNew ? `<span class="badge-dot" style="position:static;display:inline-flex;">Nouveau</span>` : ''}</div>
+          <div class="t-title">${esc(clientDisplayName(p))} <span class="owner-tag">${tacticalIconSvg('house',{size:11})}Propriétaire</span> ${isNew ? `<span class="badge-dot" style="position:static;display:inline-flex;">Nouveau</span>` : ''}</div>
           <div class="t-desc">${esc(p.username)} — ${pill}</div>
           <div class="t-desc" style="margin-top:4px;">Matériel rattaché (informatif) : ${myItems.length ? myItems.map(i => esc(i.name)).join(', ') : 'aucun'}</div>
         </div>
@@ -3389,8 +3406,8 @@ function renderGestionProprietaires(){
       </div>`;
   }).join("");
   return `
-    <div class="topbar"><div><h1>Gestion propriétaire</h1><div class="desc">Édition et envoi du Contrat Propriétaire, suivi de signature. Le matériel affiché ici est indicatif : sa disponibilité à la location se règle toujours manuellement depuis Gestion de stock.</div></div></div>
-    ${!owners.length ? `<div class="empty">Aucun compte Propriétaire pour le moment — ouvrez la fiche d'un utilisateur (onglet Utilisateurs) et utilisez le bouton "Propriétaire" pour en désigner un.</div>` : `<div style="display:flex;flex-direction:column;gap:10px;">${rows}</div>`}
+    <div class="topbar"><div><h1>Contrats propriétaire</h1><div class="desc">Le contrat (mandat de gestion) entre OwlsVision et chaque <strong>Propriétaire tiers</strong> qui met du matériel en location via la Plateforme — distinct du <a href="#" onclick="goto('contrats');return false;" style="color:var(--accent);">contrat de location du client qui loue</a>. Le matériel affiché ici est indicatif : sa disponibilité à la location se règle toujours manuellement depuis Gestion de stock.</div></div></div>
+    ${!owners.length ? `<div class="empty">Aucun compte Propriétaire pour le moment — ouvrez la fiche d'un utilisateur (onglet Utilisateurs) et utilisez le bouton "Marquer Propriétaire" pour en désigner un.</div>` : `<div style="display:flex;flex-direction:column;gap:10px;">${rows}</div>`}
   `;
 }
 
@@ -3568,7 +3585,8 @@ function dashboardAlertsHtml(){
     { count: state.bookings.filter(b => b.status === 'demande').length, label: 'Demande(s) de location', sub: 'à accepter ou refuser', icon: 'clock', color: 'var(--amber)', soft: 'var(--amber-soft)', view: 'gestion' },
     { count: state.completions.filter(c => c.status === 'attente').length, label: 'Mission(s) à valider', sub: 'soumises par des clients', icon: 'check-circle', color: 'var(--blue)', soft: 'var(--blue-soft)', view: 'missions-validation' },
     { count: state.redemptions.filter(r => r.status === 'attente').length, label: 'Récompense(s) à traiter', sub: "demande(s) d'échange", icon: 'medal', color: 'var(--violet)', soft: 'var(--violet-soft)', view: 'recompenses' },
-    { count: state.contracts.filter(c => c.signed_at && c.signed_seen_by_master === false).length, label: 'Contrat(s) signé(s)', sub: 'non consultés', icon: 'signature-pen', color: 'var(--accent)', soft: 'var(--accent-soft)', view: 'contrats' },
+    { count: state.contracts.filter(c => c.signed_at && c.signed_seen_by_master === false).length, label: 'Contrat(s) de location signé(s)', sub: 'non consultés', icon: 'signature-pen', color: 'var(--accent)', soft: 'var(--accent-soft)', view: 'contrats' },
+    { count: state.owner_contracts.filter(oc => oc.signed_at && oc.signed_seen_by_master === false).length, label: 'Contrat(s) propriétaire signé(s)', sub: 'non consultés', icon: 'house', color: 'var(--blue)', soft: 'var(--blue-soft)', view: 'gestion-proprietaires' },
   ].filter(x => x.count > 0);
   if(!items.length) return `<div class="alert-empty">${tacticalIconSvg('check-circle', { size: 24, style: 'opacity:.5;' })}<div>Rien en attente — tout est à jour.</div></div>`;
   return `<div class="alert-list">${items.map(x => `
@@ -4025,7 +4043,14 @@ function renderRecompenses(){
 function usersMatchesSearch(p, q){
   if(!q) return true;
   const hay = [p.username, p.prenom, p.nom, clientDisplayName(p)].filter(Boolean).join(" ").toLowerCase();
-  return hay.includes(q);
+  if(hay.includes(q)) return true;
+  // Recherche par statut : taper "propriétaire" (avec ou sans accent, singulier ou pluriel) filtre
+  // directement sur les comptes marqués comme tels, en plus de la recherche par nom/pseudo.
+  if(p.is_owner){
+    const qFlat = q.normalize('NFD').replace(/[̀-ͯ]/g,'');
+    if(qFlat.length >= 4 && ('proprietaire'.includes(qFlat) || qFlat.includes('proprietair'))) return true;
+  }
+  return false;
 }
 function usersFilteredSorted(){
   const q = (state.usersSearch||'').trim().toLowerCase();
@@ -4037,7 +4062,7 @@ function usersFilteredSorted(){
 function usersRowHtml(p){
   return `
     <tr>
-      <td><div class="t-title">${esc(clientDisplayName(p))}${p.is_master?` <span style="display:inline-flex;vertical-align:-2px;color:var(--amber);">${tacticalIconSvg('rank-star',{size:13})}</span>`:''}</div>${p.prenom||p.nom ? `<div class="t-desc">@${esc(p.username)}</div>` : ''}</td>
+      <td><div class="t-title">${esc(clientDisplayName(p))}${p.is_master?` <span style="display:inline-flex;vertical-align:-2px;color:var(--amber);">${tacticalIconSvg('rank-star',{size:13})}</span>`:''}${p.is_owner?` <span class="owner-tag">${tacticalIconSvg('house',{size:11})}Propriétaire</span>`:''}</div>${p.prenom||p.nom ? `<div class="t-desc">@${esc(p.username)}</div>` : ''}</td>
       <td>${p.is_master ? '—' : `${p.xp} XP · Niv. ${levelFor(p.xp)}`}</td>
       <td>${fmtDate(p.created_at)}</td>
       <td>${fmtDateTime(p.last_login)}</td>
@@ -4065,7 +4090,7 @@ function renderUtilisateurs(){
       <button class="btn btn-primary btn-sm" style="width:auto;" onclick="openNewManualUserModal()">+ Créer un utilisateur</button>
     </div>
     <div class="filter-bar">
-      <input type="text" placeholder="Rechercher un compte par nom ou pseudo..." value="${esc(state.usersSearch)}" oninput="onUsersSearch(this.value)">
+      <input type="text" placeholder="Nom, pseudo... ou tapez « propriétaire » pour filtrer les comptes Propriétaire" value="${esc(state.usersSearch)}" oninput="onUsersSearch(this.value)">
     </div>
     <div class="panel"><table class="tbl-compact"><thead><tr><th>Compte</th><th>XP</th><th>Inscrit le</th><th>Dernière connexion</th><th></th></tr></thead><tbody id="users-tbody">${list.length ? list.map(usersRowHtml).join('') : `<tr><td colspan="5"><div class="empty">Aucun compte ne correspond à cette recherche.</div></td></tr>`}</tbody></table></div>
   `;
@@ -4106,7 +4131,7 @@ function renderContratsAdmin(){
       </div>`;
   }).join("");
   return `
-    <div class="topbar"><div><h1>Contrats</h1><div class="desc">Générez le contrat de location personnalisé de chaque client en un clic (fiche client + réservation). Le client le consulte et le signe depuis son mobile.</div></div></div>
+    <div class="topbar"><div><h1>Contrats de location</h1><div class="desc">Le contrat entre OwlsVision et chaque <strong>client qui loue</strong> du matériel. Générez-le en un clic (fiche client + réservation) — il le consulte et le signe depuis son mobile. Vous cherchez le contrat des Propriétaires qui mettent du matériel en location ? C'est <a href="#" onclick="goto('gestion-proprietaires');return false;" style="color:var(--accent);">par ici, dans Contrats propriétaire</a>.</div></div></div>
     <div class="panel">
       <div class="section-title">Documents de la plateforme (CGU et Annexe vétusté)</div>
       <div class="desc" style="margin-bottom:12px;">Ces documents sont communs à tous les clients — visibles depuis leur fiche "Mon profil" une fois déposés ici.</div>
@@ -4137,7 +4162,7 @@ function platformDocRowHtml(kind, label){
         <div class="doc-title">${esc(label)}</div>
         <div class="doc-sub">${has ? 'Généré/envoyé le ' + fmtDate(pd[dateCol]) : 'Aucun document généré'}</div>
       </div>
-      <div style="display:flex;gap:6px;flex-wrap:wrap;">
+      <div class="btn-row" style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;">
         ${has ? `<button class="btn btn-ghost btn-sm" onclick="openPlatformDoc('${kind}')">Voir</button>` : ''}
         <button class="btn btn-primary btn-sm" onclick="generatePlatformDocConfirm('${kind}')">Générer automatiquement</button>
         <span class="btn btn-ghost btn-sm file-btn">Uploader un PDF personnalisé<input type="file" accept="application/pdf,.pdf" onchange="handlePlatformDocUpload(event,'${kind}')"></span>
@@ -4585,7 +4610,7 @@ function renderModal(){
     if(!p) return "";
     return `
     <div class="modal-bg" onclick="closeModalBg(event)"><div class="modal">
-      <h3>Fiche client</h3>
+      <h3>Fiche client ${p.is_owner ? `<span class="owner-tag">${tacticalIconSvg('house',{size:11})}Propriétaire</span>` : ''}</h3>
       <div class="field"><label>Email</label><div class="static-val">${esc(p.username)}</div></div>
       <div class="row" style="align-items:flex-end;">
         <div class="field" style="flex:1;"><label>Nom</label><div class="static-val">${esc(p.nom || '—')}</div></div>
