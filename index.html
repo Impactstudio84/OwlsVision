@@ -603,7 +603,7 @@
    ========================================================= */
 const SUPABASE_URL = "https://zopnuziuhmnkezyisoex.supabase.co";
 const SUPABASE_ANON_KEY = "sb_publishable_EJtogFic_Yu5eO9n1u2s0Q_LH4KbTVe";
-const SITE_URL = "https://location.owlsvision.fr/";
+const SITE_URL = "https://impactstudio84.github.io/OwlsVision/";
 
 // storage: sessionStorage plutôt que localStorage -> chaque onglet garde sa propre session.
 // Se déconnecter (ou se connecter) dans un onglet n'affecte plus les autres onglets ouverts.
@@ -613,7 +613,9 @@ const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
 });
 let bootDone = false;
 
-const RANKS = [
+// Seuils par défaut, utilisés tant que l'équipe n'a rien personnalisé (table rank_config vide,
+// ex. juste après la migration) ou si cette table n'existe pas encore chez ce client.
+const DEFAULT_RANKS = [
   {min:0,   name:"Novice"},
   {min:150, name:"Explorateur"},
   {min:400, name:"Confirmé"},
@@ -621,9 +623,18 @@ const RANKS = [
   {min:1400,name:"Vétéran"},
   {min:2200,name:"Navy Seal"},
 ];
+// Grades personnalisables par l'équipe (voir "Configurer les grades" dans Missions — Création) :
+// state.rank_config vient de la table rank_config (6 lignes, une par rank_index 0..5). Les icônes
+// (rankIconSvg) restent, elles, fixées par position (0 à 5) — seuls le nom et le seuil d'XP
+// changent, jamais le nombre de paliers ni leur ordre.
+function getRanks(){
+  return (state.rank_config && state.rank_config.length === 6)
+    ? state.rank_config.slice().sort((a,b) => a.rank_index - b.rank_index)
+    : DEFAULT_RANKS;
+}
 const XP_STEP = 150;
-function rankFor(xp){ let r = RANKS[0]; for(const c of RANKS){ if(xp >= c.min) r = c; } return r.name; }
-function rankIndexFor(xp){ let i = 0; for(let k=0;k<RANKS.length;k++){ if(xp >= RANKS[k].min) i = k; } return i; }
+function rankFor(xp){ const ranks = getRanks(); let r = ranks[0]; for(const c of ranks){ if(xp >= c.min) r = c; } return r.name; }
+function rankIndexFor(xp){ const ranks = getRanks(); let i = 0; for(let k=0;k<ranks.length;k++){ if(xp >= ranks[k].min) i = k; } return i; }
 function levelFor(xp){ return Math.floor(xp / XP_STEP) + 1; }
 function xpInLevel(xp){ return xp % XP_STEP; }
 // Logo du grade : insigne façon armée qui se garnit à mesure que le client progresse.
@@ -681,7 +692,7 @@ let state = {
   loading: true,
   fatalError: null,
   session: null, // {username(=email pour les clients), isMaster}
-  profiles: [], items: [], bookings: [], tasks: [], completions: [], contracts: [], mission_groups: [], rewards: [], redemptions: [],
+  profiles: [], items: [], bookings: [], tasks: [], completions: [], contracts: [], mission_groups: [], rewards: [], redemptions: [], rank_config: [],
   view: "accueil",
   authTab: "login",
   showAdminLogin: false,
@@ -699,6 +710,7 @@ let state = {
   profileSaved: false,
   profileNotice: "",
   docError: "",
+  ranksError: "",
   gestionSearch: "",
   gestionFilter: "all",
   validationSearch: "",
@@ -734,7 +746,7 @@ function currentProfile(){ return state.profiles.find(p => p.username === state.
 
 /* ---------- Boot & data ---------- */
 async function fetchAll(){
-  const [profiles, items, bookings, tasks, completions, contracts, groups, rewards, redemptions, ownerContracts, platformDocs] = await Promise.all([
+  const [profiles, items, bookings, tasks, completions, contracts, groups, rewards, redemptions, ownerContracts, platformDocs, rankConfig] = await Promise.all([
     sb.from('profiles').select('*'),
     sb.from('items').select('*').order('sort_order', { ascending: true, nullsFirst: false }).order('created_at', { ascending: true }),
     sb.from('bookings').select('*'),
@@ -746,6 +758,7 @@ async function fetchAll(){
     sb.from('reward_redemptions').select('*'),
     sb.from('owner_contracts').select('*'),
     sb.from('platform_docs').select('*').eq('id', 'main').maybeSingle(),
+    sb.from('rank_config').select('*').order('rank_index', { ascending: true }),
   ]);
   state.profiles = profiles.data || [];
   state.items = items.data || [];
@@ -758,6 +771,9 @@ async function fetchAll(){
   state.redemptions = redemptions.data || [];
   state.owner_contracts = ownerContracts.data || [];
   state.platform_docs = platformDocs.data || null;
+  // Si la table n'existe pas encore (migration pas encore exécutée), rankConfig.data est undefined
+  // (erreur silencieuse ci-dessous) : on retombe sur DEFAULT_RANKS via getRanks(), rien ne casse.
+  state.rank_config = rankConfig.data || [];
 }
 
 async function boot(){
@@ -2838,7 +2854,7 @@ function ranksRoadmapHtml(xp){
   const curIdx = rankIndexFor(xp);
   return `
     <div class="ranks-roadmap">
-      ${RANKS.map((r, i) => `
+      ${getRanks().map((r, i) => `
         <div class="rank-step ${i<curIdx?'done':i===curIdx?'current':'locked'}">
           <div class="rank-icon">${rankIconSvg(i, { size:22 })}</div>
           <div class="rank-name">${i<curIdx?'✓ ':''}${esc(r.name)}</div>
@@ -3914,6 +3930,7 @@ function renderMissionsCreation(){
     <div style="display:flex;gap:10px;margin-bottom:18px;flex-wrap:wrap;">
       <button class="btn btn-primary btn-sm" style="width:auto;" onclick="openNewTaskModal()">+ Créer une mission</button>
       <button class="btn btn-ghost btn-sm" style="width:auto;" onclick="openNewGroupModal()">+ Créer un groupe</button>
+      <button class="btn btn-ghost btn-sm" style="width:auto;" onclick="openEditRanksModal()">${tacticalIconSvg('rank-star',{size:15})} Configurer les grades</button>
     </div>
     ${body}
   `;
@@ -4618,6 +4635,23 @@ function renderModal(){
       <div class="modal-actions"><button class="btn btn-ghost" onclick="closeModal()">Annuler</button><button class="btn btn-primary" onclick="confirmNewGroup()">Créer</button></div>
     </div></div>`;
   }
+  if(m.type === "editRanks"){
+    const ranks = getRanks();
+    const rows = ranks.map((r, i) => `
+      <div class="row" style="align-items:flex-end;margin-bottom:2px;">
+        <div style="display:flex;align-items:center;justify-content:center;width:38px;height:38px;border-radius:10px;background:var(--accent-soft);color:var(--accent);flex-shrink:0;">${rankIconSvg(i,{size:18})}</div>
+        <div class="field" style="flex:1;"><label>Nom du grade ${i+1}</label><input id="rk-name-${i}" value="${esc(r.name)}"></div>
+        <div class="field" style="width:130px;"><label>Seuil (XP total)</label><input id="rk-min-${i}" type="number" min="0" step="1" value="${r.min}"></div>
+      </div>`).join('');
+    return `
+    <div class="modal-bg" onclick="closeModalBg(event)"><div class="modal" style="max-width:560px;">
+      <h3>Configurer les grades</h3>
+      <p style="font-size:13.5px;color:var(--text-dim);line-height:1.6;margin:-6px 0 14px;">À partir de combien d'XP total un client atteint chaque grade. Les 6 paliers restent dans cet ordre ; chaque seuil doit être strictement supérieur au précédent.</p>
+      ${state.ranksError ? `<div class="msg msg-error">${esc(state.ranksError)}</div>` : ''}
+      ${rows}
+      <div class="modal-actions"><button class="btn btn-ghost" onclick="closeModal()">Annuler</button><button class="btn btn-primary" onclick="confirmEditRanks()">Enregistrer</button></div>
+    </div></div>`;
+  }
   if(m.type === "answerTask"){
     const task = state.tasks.find(t => t.id === m.taskId);
     return `
@@ -4652,7 +4686,7 @@ function renderModal(){
         <div class="field" style="flex:1;"><label>Nom</label><div class="static-val">${esc(p.nom || '—')}</div></div>
         <div class="field" style="flex:1;"><label>Prénom</label><div class="static-val">${esc(p.prenom || '—')}</div></div>
       </div>
-      <div class="field"><label>Progression</label><div class="static-val">${p.xp} XP · Niveau ${levelFor(p.xp)} · ${esc(RANKS[rankIndexFor(p.xp)].name)}</div></div>
+      <div class="field"><label>Progression</label><div class="static-val">${p.xp} XP · Niveau ${levelFor(p.xp)} · ${esc(getRanks()[rankIndexFor(p.xp)].name)}</div></div>
       <button class="btn btn-ghost btn-sm" onclick="resetUserToLevel1('${esc(p.username)}')">Reset XP</button>
       <div class="row">
         <div class="field"><label>Date de naissance</label><div class="static-val">${fmtDate(p.date_naissance)}</div></div>
@@ -5033,6 +5067,24 @@ window.confirmNewTask = (taskId) => {
 window.openEditTaskModal = (taskId) => { state.modal = { type:"editTask", taskId }; render(); };
 window.openNewGroupModal = () => { state.modal = { type:"newGroup" }; render(); };
 window.confirmNewGroup = () => { createMissionGroup(document.getElementById("grp-name").value); };
+window.openEditRanksModal = () => { state.ranksError = ""; state.modal = { type:"editRanks" }; render(); };
+window.confirmEditRanks = async () => {
+  const n = getRanks().length; // toujours 6 (DEFAULT_RANKS ou rank_config déjà complet)
+  const rows = [];
+  for(let i=0;i<n;i++){
+    const name = (document.getElementById(`rk-name-${i}`).value || '').trim();
+    const min = Number(document.getElementById(`rk-min-${i}`).value);
+    if(!name){ state.ranksError = `Le grade ${i+1} doit avoir un nom.`; render(); return; }
+    if(!Number.isFinite(min) || min < 0 || !Number.isInteger(min)){ state.ranksError = `Le seuil du grade ${i+1} doit être un nombre entier d'XP positif ou nul.`; render(); return; }
+    if(i > 0 && min <= rows[i-1].min){ state.ranksError = `Le seuil du grade ${i+1} (${min} XP) doit être strictement supérieur à celui du grade ${i} (${rows[i-1].min} XP).`; render(); return; }
+    rows.push({ rank_index: i, name, min });
+  }
+  const { data, error } = await sb.from('rank_config').upsert(rows, { onConflict: 'rank_index' }).select();
+  if(error){ state.ranksError = "Erreur : " + error.message; render(); return; }
+  state.rank_config = data;
+  state.modal = null;
+  render();
+};
 window.deleteMissionGroup = deleteMissionGroup;
 window.validateCompletion = validateCompletion;
 window.rejectCompletion = rejectCompletion;
