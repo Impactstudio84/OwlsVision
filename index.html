@@ -2448,7 +2448,7 @@ function renderCatalogue(){
     ${state.items.length ? `<div class="grid">${cards}</div>` : `<div class="empty">Aucun matériel enregistré pour le moment.</div>`}
     ${!u.is_master ? `
     <div style="margin-top:22px;text-align:center;">
-      <button type="button" class="btn btn-ghost" style="width:auto;" onclick="openMoreGearModal()">${tacticalIconSvg('mail',{size:16})} Plus de JVN disponible ?</button>
+      <button type="button" class="btn btn-ghost" style="width:auto;" onclick="openMoreGearModal()">${tacticalIconSvg('mail',{size:16})} Plus de stock ?</button>
     </div>` : ''}
   `;
 }
@@ -3437,8 +3437,8 @@ function renderModal(){
     return `
     <div class="modal-bg" onclick="closeModalBg(event)"><div class="modal" style="text-align:center;">
       <div style="display:flex;justify-content:center;color:var(--accent);margin-bottom:8px;">${tacticalIconSvg('scope',{size:36})}</div>
-      <h3>Vous cherchez un autre matériel ?</h3>
-      <p style="font-size:14px;color:var(--text-dim);line-height:1.6;margin:0 0 16px;">Si le JVN que vous cherchez n'est pas dans notre catalogue, écrivez-nous une demande particulière (modèle, génération, quantité, dates souhaitées...) à l'adresse ci-dessous : on regarde ce qu'on peut faire.</p>
+      <h3>Pas de stock disponible</h3>
+      <p style="font-size:14px;color:var(--text-dim);line-height:1.6;margin:0 0 16px;">Pas de stock disponible pour votre demande de location, veuillez contacter :</p>
       <button type="button" class="email-copy-btn" onclick="copyContactEmail()" title="Copier l'adresse dans le presse-papiers">
         ${tacticalIconSvg('mail',{size:17})}<span>${CONTACT_EMAIL}</span>${tacticalIconSvg('copy',{size:14})}
       </button>
