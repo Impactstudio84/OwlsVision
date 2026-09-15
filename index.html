@@ -2522,6 +2522,38 @@ async function openPlatformDoc(kind){
   window.open(data.signedUrl, '_blank', 'noopener');
 }
 window.openPlatformDoc = openPlatformDoc;
+/* ---------- Suppression des documents/contrats générés ----------
+   Placés directement à côté de chaque bouton qui GÉNÈRE quelque chose (contrat de location,
+   contrat propriétaire, CGU/Annexe vétusté), pour pouvoir revenir en arrière sans passer par la
+   base de données : le manager peut supprimer un contrat déjà envoyé (le client le perd de "Mes
+   contrats" et devra en recevoir un nouveau) ou un document plateforme, indépendamment du statut
+   Propriétaire du compte lui-même (voir confirmUnmarkOwner pour retirer CE statut). */
+window.deleteContract = async (username) => {
+  if(!confirm(`Supprimer le contrat de location de ${username} ? Il disparaît de "Mes contrats" côté client, qui devra en recevoir un nouveau. Cette action est irréversible.`)) return;
+  const { error } = await sb.from('contracts').delete().eq('username', username);
+  if(error){ alert("Erreur : " + error.message); return; }
+  await sb.storage.from('contracts').remove([`${username}/original.pdf`, `${username}/signed.pdf`]);
+  state.contracts = state.contracts.filter(c => c.username !== username);
+  render();
+};
+window.deleteOwnerContract = async (username) => {
+  if(!confirm(`Supprimer le contrat propriétaire de ${username} ? Il disparaît de "Mes contrats" côté client, qui devra en recevoir un nouveau. Le statut Propriétaire du compte n'est pas modifié — pour le retirer aussi, utilisez "Retirer le statut". Action irréversible.`)) return;
+  const { error } = await sb.from('owner_contracts').delete().eq('username', username);
+  if(error){ alert("Erreur : " + error.message); return; }
+  await sb.storage.from('owner-contracts').remove([`${username}/original.pdf`, `${username}/signed.pdf`]);
+  state.owner_contracts = state.owner_contracts.filter(c => c.username !== username);
+  render();
+};
+window.deletePlatformDoc = async (kind) => {
+  const label = kind === 'cgu' ? "les CGU" : "l'Annexe vétusté";
+  if(!confirm(`Supprimer ${label} ? Le document ne sera plus visible des clients tant qu'un nouveau n'aura pas été généré ou déposé.`)) return;
+  const pathCol = kind + '_path', dateCol = kind + '_uploaded_at';
+  const { error } = await sb.from('platform_docs').update({ [pathCol]: null, [dateCol]: null }).eq('id', 'main');
+  if(error){ alert("Erreur : " + error.message); return; }
+  await sb.storage.from('platform-docs').remove([`${kind}.pdf`]);
+  if(state.platform_docs){ state.platform_docs[pathCol] = null; state.platform_docs[dateCol] = null; }
+  render();
+};
 window.openGenerateContractModal = (username) => { state.modal = { type:"generateContract", username }; render(); };
 window.onGenerateContractBookingChange = (username, bookingId) => { state.modal = { type:"generateContract", username, bookingId }; render(); };
 window.confirmGenerateContract = async (e, username) => {
@@ -3402,6 +3434,8 @@ function renderGestionProprietaires(){
         <div class="btn-row" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
           ${oc && oc.signed_pdf_path ? `<button type="button" class="btn btn-ghost btn-sm" onclick="openOwnerContractFile('${esc(p.username)}','signed')">Voir contrat signé</button>` : ''}
           <button class="btn btn-primary btn-sm" onclick="openGenerateOwnerContractModal('${esc(p.username)}')">${oc ? 'Régénérer' : 'Envoyer'} le contrat propriétaire</button>
+          ${oc ? `<button type="button" class="btn btn-danger btn-sm" onclick="deleteOwnerContract('${esc(p.username)}')">Supprimer le contrat</button>` : ''}
+          <button type="button" class="btn btn-danger btn-sm" onclick="confirmUnmarkOwner('${esc(p.username)}')">Retirer le statut</button>
         </div>
       </div>`;
   }).join("");
@@ -4127,6 +4161,7 @@ function renderContratsAdmin(){
           ${!c ? `<button class="btn btn-primary btn-sm" onclick="openGenerateContractModal('${esc(usr.username)}')">Envoyer le contrat</button>` : ''}
           ${c && c.signed_pdf_path ? `<button type="button" class="btn btn-ghost btn-sm" onclick="openContractFile('${esc(usr.username)}','signed')">Voir contrat signé</button>` : ''}
           ${c ? `<button class="btn btn-primary btn-sm" onclick="openGenerateContractModal('${esc(usr.username)}')">Régénérer le contrat</button>` : ''}
+          ${c ? `<button type="button" class="btn btn-danger btn-sm" onclick="deleteContract('${esc(usr.username)}')">Supprimer le contrat</button>` : ''}
         </div>
       </div>`;
   }).join("");
@@ -4166,6 +4201,7 @@ function platformDocRowHtml(kind, label){
         ${has ? `<button class="btn btn-ghost btn-sm" onclick="openPlatformDoc('${kind}')">Voir</button>` : ''}
         <button class="btn btn-primary btn-sm" onclick="generatePlatformDocConfirm('${kind}')">Générer automatiquement</button>
         <span class="btn btn-ghost btn-sm file-btn">Uploader un PDF personnalisé<input type="file" accept="application/pdf,.pdf" onchange="handlePlatformDocUpload(event,'${kind}')"></span>
+        ${has ? `<button type="button" class="btn btn-danger btn-sm" onclick="deletePlatformDoc('${kind}')">Supprimer</button>` : ''}
       </div>
     </div>`;
 }
