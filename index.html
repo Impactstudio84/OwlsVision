@@ -1048,6 +1048,10 @@ function activeBookingsCount(itemId, start, end){
   return state.bookings.filter(b => b.item_id === itemId && ['demande','accepte','loue'].includes(b.status) && overlaps(b.start_date, b.end_date, start, end)).length;
 }
 const MIN_BOOKING_DAYS = 3;
+// Date de lancement de l'application : sert de plancher pour toute mission qui demande la date
+// d'une location (une mission ne peut porter que sur un événement survenu à partir de cette date).
+const MISSION_LAUNCH_DATE = '2026-08-15';
+const MISSION_DATE_TOO_EARLY_MSG = "Nos missions démarrent avec l'application elle-même : impossible de choisir une date antérieure au 15/08/2026.";
 async function submitBooking(itemId, start, end){
   const item = state.items.find(i => i.id === itemId);
   if(!item) return;
@@ -1166,12 +1170,13 @@ async function deleteMissionGroup(id){
 }
 
 /* ---------- Tasks / missions ---------- */
-async function createTask(title, description, xpReward, requiresAnswer, answerLabel, groupId, isRecurring){
+async function createTask(title, description, xpReward, requiresAnswer, answerLabel, groupId, isRecurring, requiresDate){
   if(!title.trim()) return;
   const nextSortOrder = state.tasks.reduce((m,t) => Math.max(m, t.sort_order||0), 0) + 1;
   const { data, error } = await sb.from('tasks').insert({
     title, description, xp_reward: Number(xpReward)||10,
     requires_answer: !!requiresAnswer, answer_label: requiresAnswer ? (answerLabel || "Votre réponse") : null,
+    requires_date: !!requiresDate,
     group_id: groupId || null, is_recurring: !!isRecurring, sort_order: nextSortOrder
   }).select().single();
   if(error){ alert("Erreur : " + error.message); return; }
@@ -1215,9 +1220,14 @@ function hasCompleted(taskId, username){
 // la référence globale "completeTask" (les déclarations de fonction top-level d'un script classique sont liées à
 // window). Tout appel ultérieur à l'identifiant nu "completeTask(...)" rappelait alors la fonction wrapper
 // elle-même en boucle infinie (RangeError silencieux, sans retour visible pour l'utilisateur).
-async function submitTaskCompletion(taskId, answer){
+async function submitTaskCompletion(taskId, answer, answerDate){
   const task = state.tasks.find(t => t.id === taskId);
   if(!task || blockingCompletion(taskId, state.session.username)) return;
+  // Garde-fou côté client en plus du "min" du champ date (qu'un devtools peut contourner) : une mission
+  // qui demande la date d'une location n'accepte jamais une date antérieure au lancement de l'app.
+  if(task.requires_date && (!answerDate || answerDate < MISSION_LAUNCH_DATE)){
+    state.answerError = MISSION_DATE_TOO_EARLY_MSG; render(); return;
+  }
   const username = state.session.username;
   // La table a une contrainte unique (task_id, username) : un client ne peut avoir qu'UNE ligne par
   // mission, jamais deux. Un "insert" classique échouait donc silencieusement dès qu'un client retentait
@@ -1225,7 +1235,7 @@ async function submitTaskCompletion(taskId, answer){
   // constraint". On utilise un upsert pour réécrire cette même ligne (nouvel essai = même ligne remise à
   // "attente"), ce qui est aussi ce qui permet réellement le "Retenter" après refus.
   const { data, error } = await sb.from('task_completions').upsert({
-    task_id: taskId, username, answer: answer || null,
+    task_id: taskId, username, answer: answer || null, answer_date: answerDate || null,
     status: 'attente', client_seen: true, completed_at: new Date().toISOString()
   }, { onConflict: 'task_id,username' }).select().single();
   if(error){ state.answerError = "Erreur : " + error.message; showErrorToast(error.message); render(); return; }
@@ -1276,9 +1286,11 @@ async function deleteValidation(completionId){
   state.completions = state.completions.filter(x => x.id !== completionId);
   render();
 }
-async function updateValidationAnswer(completionId, answer){
+async function updateValidationAnswer(completionId, answer, answerDate){
   if(!state.session.isMaster) return;
-  const { data, error } = await sb.from('task_completions').update({ answer: answer || null }).eq('id', completionId).select().single();
+  const fields = { answer: answer || null };
+  if(answerDate !== undefined) fields.answer_date = answerDate || null;
+  const { data, error } = await sb.from('task_completions').update(fields).eq('id', completionId).select().single();
   if(error){ alert("Erreur : " + error.message); return; }
   const c = state.completions.find(x => x.id === completionId);
   if(c) Object.assign(c, data);
@@ -3257,11 +3269,11 @@ function renderAccueil(){
         <div class="mission-spotlight-list">
           ${pending.slice(0,3).map(t => {
             const mine = latestCompletionFor(t.id, u.username);
-            const label = mine && mine.status === 'refusee' ? 'Retenter' : (mine && mine.status === 'validee' ? 'Refaire' : (t.requires_answer ? 'Compléter' : 'Marquer accomplie'));
+            const label = mine && mine.status === 'refusee' ? 'Retenter' : (mine && mine.status === 'validee' ? 'Refaire' : ((t.requires_answer || t.requires_date) ? 'Compléter' : 'Marquer accomplie'));
             return `
             <div class="mission-spotlight-row">
               <div><div class="msr-title">${esc(t.title)}${t.is_recurring ? ' <span class="tag" style="margin-left:4px;">Récurrente</span>' : ''}</div><span class="task-xp">+${t.xp_reward} XP</span></div>
-              ${t.requires_answer ? `<button class="btn btn-primary btn-sm" onclick="openAnswerModal('${t.id}')">${label}</button>` : `<button class="btn btn-primary btn-sm" onclick="completeTask('${t.id}')">${label}</button>`}
+              ${(t.requires_answer || t.requires_date) ? `<button class="btn btn-primary btn-sm" onclick="openAnswerModal('${t.id}')">${label}</button>` : `<button class="btn btn-primary btn-sm" onclick="completeTask('${t.id}')">${label}</button>`}
             </div>`;
           }).join('')}
           ${pending.length > 3 ? `<div class="card-desc" style="text-align:center;">+ ${pending.length - 3} autre${pending.length-3>1?'s':''} mission${pending.length-3>1?'s':''}...</div>` : ''}
@@ -3843,8 +3855,8 @@ function missionCardHtml(t, isMaster, u){
   else if(status === 'refusee') clientStatusLine = `<div class="card-desc" style="color:#FFB3A6;flex:0;">Non validée par l'équipe — vous pouvez retenter.</div>`;
   let clientAction = '';
   if(!isMaster && (!mine || status === 'refusee' || canRedo)){
-    const label = status === 'refusee' ? 'Retenter' : canRedo ? 'Refaire' : (t.requires_answer ? 'Compléter' : 'Marquer accomplie');
-    clientAction = `<div class="card-foot" style="border-top:none;padding-top:0;">${t.requires_answer ? `<button class="btn btn-primary btn-sm" style="width:100%;" onclick="openAnswerModal('${t.id}')">${label}</button>` : `<button class="btn btn-primary btn-sm" style="width:100%;" onclick="completeTask('${t.id}')">${label}</button>`}</div>`;
+    const label = status === 'refusee' ? 'Retenter' : canRedo ? 'Refaire' : ((t.requires_answer || t.requires_date) ? 'Compléter' : 'Marquer accomplie');
+    clientAction = `<div class="card-foot" style="border-top:none;padding-top:0;">${(t.requires_answer || t.requires_date) ? `<button class="btn btn-primary btn-sm" style="width:100%;" onclick="openAnswerModal('${t.id}')">${label}</button>` : `<button class="btn btn-primary btn-sm" style="width:100%;" onclick="completeTask('${t.id}')">${label}</button>`}</div>`;
   }
   return `
     <div class="card mission-card ${status==='validee' && !canRedo?'done':''}">
@@ -3858,6 +3870,7 @@ function missionCardHtml(t, isMaster, u){
       ${t.description ? `<div class="card-desc">${esc(t.description)}</div>` : ''}
       ${clientStatusLine}
       ${isMaster && t.requires_answer ? `<div class="card-desc" style="flex:0;">Champ demandé : ${esc(t.answer_label)}</div>` : ''}
+      ${isMaster && t.requires_date ? `<div class="card-desc" style="flex:0;">Date de location demandée (à partir du 15/08/2026)</div>` : ''}
       ${isMaster && submissions.length ? `<div>${submissions.map(s => `
         <div class="submission-row" style="flex-direction:column;align-items:stretch;gap:4px;">
           <div style="display:flex;justify-content:space-between;"><span>${esc(s.username)}${t.requires_answer ? ' — ' + esc(s.answer||'') : ''}</span><span>${fmtDate(s.completed_at)}</span></div>
@@ -3930,6 +3943,10 @@ function renderMissions(){
       <div><h1>Missions</h1><div class="desc">${isMaster ? "Créez des missions, regroupez-les par thème, et validez les soumissions des clients." : "Accomplissez des missions pour gagner de l'XP. Chaque soumission est validée par notre équipe."}</div></div>
       ${xpBarHtml(u)}
     </div>
+    <div class="panel" style="border-left:3px solid var(--accent);margin-bottom:22px;padding:16px 20px;display:flex;align-items:center;gap:12px;">
+      <span style="font-size:20px;line-height:1;flex-shrink:0;">🌙</span>
+      <div style="font-size:13.5px;color:var(--text-dim);line-height:1.55;">L'app est née le 15/08/2026 — et les missions avec elle. Ce qui s'est passé avant reste une belle histoire, mais seules les locations à partir de cette date ouvrent droit à une mission.</div>
+    </div>
     ${isMaster ? `<div style="display:flex;gap:10px;margin-bottom:18px;flex-wrap:wrap;">
       <button class="btn btn-primary btn-sm" style="width:auto;" onclick="openNewTaskModal()">+ Créer une mission</button>
       <button class="btn btn-ghost btn-sm" style="width:auto;" onclick="openNewGroupModal()">+ Créer un groupe</button>
@@ -3961,6 +3978,7 @@ function missionManageCardHtml(t, groupKey){
       </div>
       ${t.description ? `<div class="card-desc">${esc(t.description)}</div>` : ''}
       ${t.requires_answer ? `<div class="card-desc" style="flex:0;">Champ demandé : ${esc(t.answer_label)}</div>` : ''}
+      ${t.requires_date ? `<div class="card-desc" style="flex:0;">Date de location demandée (à partir du 15/08/2026)</div>` : ''}
       <div class="card-desc" style="flex:0;color:var(--text-faint);">${submissionsCount} soumission${submissionsCount>1?'s':''} au total</div>
       <div class="card-foot"><button class="btn btn-ghost btn-sm" onclick="openEditTaskModal('${t.id}')">Modifier</button><button class="btn btn-danger btn-sm" onclick="deleteTask('${t.id}')">Supprimer</button></div>
     </div>`;
@@ -4039,10 +4057,11 @@ function validationRowHtml(c){
         <span class="task-xp">+${task ? task.xp_reward : '?'} XP</span>
       </div>
       ${task && task.requires_answer ? `<div class="card-desc" style="flex:0;"><strong>${esc(task.answer_label||'Réponse')}</strong> : ${esc(c.answer||'—')}</div>` : ''}
+      ${task && task.requires_date ? `<div class="card-desc" style="flex:0;"><strong>Date de la location</strong> : ${c.answer_date ? esc(fmtDate(c.answer_date)) : '—'}</div>` : ''}
       <div class="btn-row" style="display:flex;gap:8px;flex-wrap:wrap;">
         <button class="btn btn-primary btn-sm" onclick="validateCompletion('${c.id}')">Valider</button>
         <button class="btn btn-ghost btn-sm" onclick="rejectCompletion('${c.id}')">Refuser</button>
-        ${task && task.requires_answer ? `<button class="btn btn-ghost btn-sm" onclick="openEditValidationModal('${c.id}')">Modifier</button>` : ''}
+        ${task && (task.requires_answer || task.requires_date) ? `<button class="btn btn-ghost btn-sm" onclick="openEditValidationModal('${c.id}')">Modifier</button>` : ''}
         <button class="btn btn-danger btn-sm" onclick="deleteValidation('${c.id}')">Supprimer</button>
       </div>
     </div>`;
@@ -4056,7 +4075,7 @@ function validationHistoryRowHtml(c){
     <td>${statusPillHtml(c.status === 'validee' ? 'accepte' : 'refuse')}</td>
     <td>${fmtDateTime(c.completed_at)}</td>
     <td><div style="display:flex;gap:6px;flex-wrap:wrap;">
-      ${task && task.requires_answer ? `<button class="btn btn-ghost btn-sm" onclick="openEditValidationModal('${c.id}')">Modifier</button>` : ''}
+      ${task && (task.requires_answer || task.requires_date) ? `<button class="btn btn-ghost btn-sm" onclick="openEditValidationModal('${c.id}')">Modifier</button>` : ''}
       <button class="btn btn-danger btn-sm" onclick="deleteValidation('${c.id}')">Supprimer</button>
     </div></td>
   </tr>`;
@@ -4703,6 +4722,7 @@ function renderModal(){
       <div id="tk-answer-wrap" style="display:${editing && t.requires_answer?'block':'none'};">
         <div class="field"><label>Intitulé du champ demandé</label><input id="tk-answer-label" placeholder="ex. Votre pseudo utilisé pour l'avis Google" value="${editing?esc(t.answer_label||''):''}"></div>
       </div>
+      <label class="checkbox-field"><input type="checkbox" id="tk-requires-date" ${editing && t.requires_date?'checked':''}> Demander la date de la location (bloquée avant le 15/08/2026, lancement de l'app)</label>
       <label class="checkbox-field"><input type="checkbox" id="tk-recurring" ${editing && t.is_recurring?'checked':''}> Mission récurrente — redevient disponible pour le client dès qu'elle est validée et l'XP créditée</label>
       <div class="modal-actions"><button class="btn btn-ghost" onclick="closeModal()">Annuler</button><button class="btn btn-primary" onclick="confirmNewTask(${editing?`'${t.id}'`:'null'})">${editing?'Enregistrer':'Créer'}</button></div>
     </div></div>`;
@@ -4739,7 +4759,8 @@ function renderModal(){
       <h3>${esc(task.title)}</h3>
       ${task.description ? `<p style="font-size:13.5px;color:var(--text-dim);margin:-6px 0 14px;">${esc(task.description)}</p>` : ''}
       ${state.answerError ? `<div class="msg msg-error">${esc(state.answerError)}</div>` : ''}
-      <div class="field"><label>${esc(task.answer_label || 'Votre réponse')}</label><input id="ans-input" placeholder="Tapez votre réponse..."></div>
+      ${task.requires_answer ? `<div class="field"><label>${esc(task.answer_label || 'Votre réponse')}</label><input id="ans-input" placeholder="Tapez votre réponse..."></div>` : ''}
+      ${task.requires_date ? `<div class="field"><label>Date de la location</label><input id="ans-date-input" type="date" min="${MISSION_LAUNCH_DATE}"><div style="font-size:12px;color:var(--text-faint);margin-top:6px;line-height:1.5;">${esc(MISSION_DATE_TOO_EARLY_MSG)}</div></div>` : ''}
       <div class="modal-actions"><button class="btn btn-ghost" onclick="closeModal()">Annuler</button><button class="btn btn-primary" onclick="confirmAnswerTask('${task.id}')">Valider</button></div>
     </div></div>`;
   }
@@ -4751,7 +4772,8 @@ function renderModal(){
     <div class="modal-bg" onclick="closeModalBg(event)"><div class="modal">
       <h3>Modifier la réponse</h3>
       <p style="font-size:13.5px;color:var(--text-dim);margin:-6px 0 14px;">${esc(task.title)} — ${esc(clientDisplayName(state.profiles.find(p => p.username === c.username)) || c.username)}</p>
-      <div class="field"><label>${esc(task.answer_label || 'Réponse')}</label><textarea id="edit-answer-input" rows="3">${esc(c.answer||'')}</textarea></div>
+      ${task.requires_answer ? `<div class="field"><label>${esc(task.answer_label || 'Réponse')}</label><textarea id="edit-answer-input" rows="3">${esc(c.answer||'')}</textarea></div>` : ''}
+      ${task.requires_date ? `<div class="field"><label>Date de la location</label><input id="edit-answer-date-input" type="date" min="${MISSION_LAUNCH_DATE}" value="${esc(c.answer_date||'')}"></div>` : ''}
       <div class="modal-actions"><button class="btn btn-ghost" onclick="closeModal()">Annuler</button><button class="btn btn-primary" onclick="confirmEditValidationAnswer('${c.id}')">Enregistrer</button></div>
     </div></div>`;
   }
@@ -5132,16 +5154,18 @@ window.confirmNewTask = (taskId) => {
   const xp = document.getElementById("tk-xp").value;
   const requiresAnswer = document.getElementById("tk-requires").checked;
   const answerLabel = document.getElementById("tk-answer-label")?.value.trim();
+  const requiresDate = document.getElementById("tk-requires-date").checked;
   const groupId = document.getElementById("tk-group").value || null;
   const isRecurring = document.getElementById("tk-recurring").checked;
   if(taskId){
     updateTask(taskId, {
       title, description: desc, xp_reward: Number(xp)||10,
       requires_answer: !!requiresAnswer, answer_label: requiresAnswer ? (answerLabel || "Votre réponse") : null,
+      requires_date: !!requiresDate,
       group_id: groupId, is_recurring: !!isRecurring
     }).then(ok => { if(ok) state.modal = null; render(); });
   } else {
-    createTask(title, desc, xp, requiresAnswer, answerLabel, groupId, isRecurring);
+    createTask(title, desc, xp, requiresAnswer, answerLabel, groupId, isRecurring, requiresDate);
   }
 };
 window.openEditTaskModal = (taskId) => { state.modal = { type:"editTask", taskId }; render(); };
@@ -5171,8 +5195,11 @@ window.rejectCompletion = rejectCompletion;
 window.deleteValidation = deleteValidation;
 window.openEditValidationModal = (id) => { state.modal = { type: "editValidationAnswer", completionId: id }; render(); };
 window.confirmEditValidationAnswer = (id) => {
-  const val = document.getElementById('edit-answer-input').value.trim();
-  updateValidationAnswer(id, val);
+  const answerEl = document.getElementById('edit-answer-input');
+  const dateEl = document.getElementById('edit-answer-date-input');
+  const val = answerEl ? answerEl.value.trim() : undefined;
+  const dateVal = dateEl ? dateEl.value : undefined;
+  updateValidationAnswer(id, val, dateVal);
 };
 window.onValidationSearch = (v) => { state.validationSearch = v; refreshValidationView(); };
 window.openNewRewardModal = () => { state.modal = { type:"newReward" }; render(); };
@@ -5217,9 +5244,14 @@ window.confirmNewReward = async (e, rewardId) => {
   }
 };
 window.confirmAnswerTask = (taskId) => {
-  const val = document.getElementById("ans-input").value.trim();
-  if(!val){ state.answerError = "Merci de renseigner une réponse."; render(); return; }
-  submitTaskCompletion(taskId, val);
+  const task = state.tasks.find(t => t.id === taskId);
+  const answerEl = document.getElementById("ans-input");
+  const dateEl = document.getElementById("ans-date-input");
+  const val = answerEl ? answerEl.value.trim() : '';
+  const dateVal = dateEl ? dateEl.value : '';
+  if(task && task.requires_answer && !val){ state.answerError = "Merci de renseigner une réponse."; render(); return; }
+  if(task && task.requires_date && (!dateVal || dateVal < MISSION_LAUNCH_DATE)){ state.answerError = MISSION_DATE_TOO_EARLY_MSG; render(); return; }
+  submitTaskCompletion(taskId, val, dateVal);
 };
 function computeAvailabilityText(itemId, start, end){
   const item = state.items.find(i => i.id === itemId);
