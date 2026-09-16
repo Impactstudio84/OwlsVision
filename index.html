@@ -717,6 +717,7 @@ let state = {
   usersSearch: "",
   gestionSort: { field: "start_date", dir: "asc" },
   contratsSort: "client_asc",
+  contratsSearch: "",
 };
 
 const STATUS_LABELS = {
@@ -2815,7 +2816,9 @@ window.confirmGenerateOwnerContract = async (e, username) => {
   if(!lieuNaissance) missing.push('lieu de naissance');
   if(!nationalite) missing.push('nationalité');
   if(!adresse) missing.push('adresse');
-  if(!myItems.length) missing.push('matériel rattaché');
+  // Le matériel rattaché n'est plus exigé ici : le contrat (et son statut Propriétaire) peuvent être
+  // établis avant même que la paire de matériel existe en stock — l'Annexe 1 reste vide jusqu'à ce
+  // qu'un article lui soit rattaché, puis se complète d'elle-même à la prochaine régénération.
   if(missing.length){
     errEl.innerHTML = `<div class="msg msg-error">Impossible de générer : informations manquantes (${missing.join(', ')}). Complétez-les ci-dessus (ou la fiche/le catalogue) avant de générer le contrat.</div>`;
     return;
@@ -3419,6 +3422,16 @@ function gestionRowHtml(b){
     actions.push(`<button class="btn btn-primary btn-sm" onclick="setBookingStatus('${b.id}','loue')">Marquer loué</button>`);
   } else if(b.status === 'loue'){
     actions.push(`<button class="btn btn-primary btn-sm" onclick="setBookingStatus('${b.id}','retourne')">Marquer retourné</button>`);
+  }
+  // Envoi du contrat directement depuis la réservation (une fois acceptée) : évite d'avoir à
+  // recherchr le client dans l'onglet Contrats de location une fois qu'on vient de l'accepter ici.
+  // openGenerateContractModal() sélectionne déjà automatiquement sa réservation la plus pertinente
+  // (voir latestRelevantBookingFor) : pas besoin de lui transmettre l'id de cette réservation-ci.
+  if(b.status === 'accepte' || b.status === 'loue'){
+    const c = state.contracts.find(x => x.username === b.username);
+    const contractLabel = c && c.signed_at ? 'Contrat signé' : c ? 'Contrat envoyé' : 'Envoyer le contrat';
+    const contractCls = c ? 'btn-ghost' : 'btn-primary';
+    actions.push(`<button class="btn ${contractCls} btn-sm" onclick="openGenerateContractModal('${esc(b.username)}')">${contractLabel}</button>`);
   }
   actions.push(`<button class="btn btn-danger btn-sm" onclick="cancelBooking('${b.id}')">Supprimer</button>`);
   return `
@@ -4244,10 +4257,22 @@ function contratStatusRank(c){
   if(c.signed_at) return 2; // Signé
   return 1; // En attente de signature
 }
-function renderContratsAdmin(){
+// Ne liste que les clients ayant réellement fait au moins une demande de location : la page
+// listait auparavant TOUS les comptes enregistrés (y compris ceux qui n'ont jamais rien demandé),
+// sans rapport avec son objet (gérer les contrats des locataires).
+function contratsEligibleClients(){
+  const withBooking = new Set(state.bookings.map(b => b.username));
+  return state.profiles.filter(p => !p.is_master && withBooking.has(p.username));
+}
+function contratsMatchesSearch(usr, q){
+  if(!q) return true;
+  return clientDisplayName(usr).toLowerCase().includes(q) || usr.username.toLowerCase().includes(q);
+}
+function contratsFilteredSorted(){
   const sortKey = state.contratsSort || 'client_asc';
-  let clients = state.profiles.filter(p => !p.is_master);
-  clients = clients.slice().sort((a, b) => {
+  const q = (state.contratsSearch||'').trim().toLowerCase();
+  let clients = contratsEligibleClients().filter(p => contratsMatchesSearch(p, q));
+  return clients.slice().sort((a, b) => {
     const ca = state.contracts.find(x => x.username === a.username);
     const cb = state.contracts.find(x => x.username === b.username);
     if(sortKey === 'client_asc') return clientDisplayName(a).localeCompare(clientDisplayName(b));
@@ -4257,22 +4282,39 @@ function renderContratsAdmin(){
     if(sortKey === 'date_signature') return (cb?.signed_at || '').localeCompare(ca?.signed_at || '');
     return 0;
   });
-  const rows = clients.map(usr => {
-    const c = state.contracts.find(x => x.username === usr.username);
-    let pill = `<span class="status-pill none">Aucun contrat</span>`;
-    if(c && c.signed_at) pill = `<span class="status-pill ok">Signé le ${fmtDate(c.signed_at)}</span>`;
-    else if(c) pill = `<span class="status-pill pending">En attente de signature</span>`;
-    return `
-      <div class="list-row">
-        <div><div class="t-title">${esc(usr.username)}</div><div class="t-desc">${pill}</div></div>
-        <div class="btn-row" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
-          ${!c ? `<button class="btn btn-primary btn-sm" onclick="openGenerateContractModal('${esc(usr.username)}')">Envoyer le contrat</button>` : ''}
-          ${c && c.signed_pdf_path ? `<button type="button" class="btn btn-ghost btn-sm" onclick="openContractFile('${esc(usr.username)}','signed')">Voir contrat signé</button>` : ''}
-          ${c ? `<button class="btn btn-primary btn-sm" onclick="openGenerateContractModal('${esc(usr.username)}')">Régénérer le contrat</button>` : ''}
-          ${c ? `<button type="button" class="btn btn-danger btn-sm" onclick="deleteContract('${esc(usr.username)}')">Supprimer le contrat</button>` : ''}
-        </div>
-      </div>`;
-  }).join("");
+}
+function contratsRowHtml(usr){
+  const c = state.contracts.find(x => x.username === usr.username);
+  let pill = `<span class="status-pill none">Aucun contrat</span>`;
+  if(c && c.signed_at) pill = `<span class="status-pill ok">Signé le ${fmtDate(c.signed_at)}</span>`;
+  else if(c) pill = `<span class="status-pill pending">En attente de signature</span>`;
+  // Contexte immédiat (matériel + statut de sa location la plus pertinente) pour éviter d'avoir à
+  // aller chercher l'info dans Gestion location.
+  const lb = latestRelevantBookingFor(usr.username);
+  const item = lb ? state.items.find(i => i.id === lb.item_id) : null;
+  const bookingSub = lb ? `${esc(item?.name || 'Matériel supprimé')} · ${statusPillHtml(lb.status)}` : '';
+  return `
+    <div class="list-row">
+      <div><div class="t-title">${esc(clientDisplayName(usr))}</div><div class="t-desc">${pill}${bookingSub ? ' · ' + bookingSub : ''}</div></div>
+      <div class="btn-row" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+        ${!c ? `<button class="btn btn-primary btn-sm" onclick="openGenerateContractModal('${esc(usr.username)}')">Envoyer le contrat</button>` : ''}
+        ${c && c.signed_pdf_path ? `<button type="button" class="btn btn-ghost btn-sm" onclick="openContractFile('${esc(usr.username)}','signed')">Voir contrat signé</button>` : ''}
+        ${c ? `<button class="btn btn-primary btn-sm" onclick="openGenerateContractModal('${esc(usr.username)}')">Régénérer le contrat</button>` : ''}
+        ${c ? `<button type="button" class="btn btn-danger btn-sm" onclick="deleteContract('${esc(usr.username)}')">Supprimer le contrat</button>` : ''}
+      </div>
+    </div>`;
+}
+function refreshContratsView(){
+  const list = contratsFilteredSorted();
+  const container = document.getElementById('contrats-list');
+  const count = document.getElementById('contrats-count');
+  if(!container) return;
+  container.innerHTML = list.length ? list.map(contratsRowHtml).join('') : `<div class="empty">Aucun client ne correspond à cette recherche.</div>`;
+  if(count) count.textContent = `${list.length} client${list.length>1?'s':''}`;
+}
+function renderContratsAdmin(){
+  const list = contratsFilteredSorted();
+  const sortKey = state.contratsSort || 'client_asc';
   return `
     <div class="topbar"><div><h1>Contrats de location</h1><div class="desc">Le contrat entre OwlsVision et chaque <strong>client qui loue</strong> du matériel. Générez-le en un clic (fiche client + réservation) — il le consulte et le signe depuis son mobile. Vous cherchez le contrat des Propriétaires qui mettent du matériel en location ? C'est <a href="#" onclick="goto('gestion-proprietaires');return false;" style="color:var(--accent);">par ici, dans Contrats propriétaire</a>.</div></div></div>
     <div class="panel">
@@ -4292,6 +4334,7 @@ function renderContratsAdmin(){
       </div>
     </div>
     <div class="filter-bar" style="margin-bottom:16px;">
+      <input type="text" placeholder="Rechercher un client..." value="${esc(state.contratsSearch)}" oninput="onContratsSearch(this.value)">
       <select onchange="onContratsSort(this.value)">
         <option value="client_asc" ${sortKey==='client_asc'?'selected':''}>Client (A→Z)</option>
         <option value="client_desc" ${sortKey==='client_desc'?'selected':''}>Client (Z→A)</option>
@@ -4300,7 +4343,8 @@ function renderContratsAdmin(){
         <option value="date_signature" ${sortKey==='date_signature'?'selected':''}>Date de signature (récent d'abord)</option>
       </select>
     </div>
-    <div style="display:flex;flex-direction:column;gap:10px;">${clients.length ? rows : `<div class="empty">Aucun client enregistré.</div>`}</div>
+    <div class="result-count" id="contrats-count">${list.length} client${list.length>1?'s':''}</div>
+    <div style="display:flex;flex-direction:column;gap:10px;" id="contrats-list">${list.length ? list.map(contratsRowHtml).join('') : `<div class="empty">Aucun client n'a encore fait de demande de location.</div>`}</div>
   `;
 }
 function platformDocRowHtml(kind, label){
@@ -4615,7 +4659,7 @@ function renderModal(){
     <div class="modal-bg" onclick="closeModalBg(event)"><div class="modal" style="max-width:560px;">
       <h3>Contrat propriétaire — ${esc(clientDisplayName(p))}</h3>
       ${missing.length ? `<div class="msg msg-error">Fiche incomplète (${missing.join(', ')}) — complétez la fiche de ce Propriétaire avant de générer si possible.</div>` : ''}
-      ${!myItems.length ? `<div class="msg msg-error">Aucun matériel n'est rattaché à ce Propriétaire (voir le champ "Propriétaire du matériel" dans la fiche d'un article du catalogue) — l'Annexe 1 du contrat sera vide.</div>` : `<div class="msg msg-info">Matériel rattaché : ${myItems.map(i => esc(i.name)).join(', ')}.</div>`}
+      ${!myItems.length ? `<div class="msg msg-info">Aucun matériel n'est encore rattaché à ce Propriétaire (voir le champ "Propriétaire du matériel" dans la fiche d'un article du catalogue) — l'Annexe 1 du contrat sera vide pour l'instant. Vous pouvez générer et envoyer le contrat dès maintenant : régénérez-le une fois le matériel prêt pour que l'Annexe 1 se complète.</div>` : `<div class="msg msg-info">Matériel rattaché : ${myItems.map(i => esc(i.name)).join(', ')}.</div>`}
       <div class="row">
         <div class="field"><label>Civilité</label><select id="goc-civilite">
           <option value="" ${!p.civilite?'selected':''}>—</option>
@@ -5087,6 +5131,7 @@ window.onGestionSort = (field) => {
   refreshGestionView();
 };
 window.onContratsSort = (value) => { state.contratsSort = value; render(); };
+window.onContratsSearch = (v) => { state.contratsSearch = v; refreshContratsView(); };
 window.completeTask = (taskId) => submitTaskCompletion(taskId, null);
 window.cancelBooking = cancelBooking;
 window.openBookModal = (itemId) => {
