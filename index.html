@@ -295,6 +295,34 @@
   th.sortable .sort-arrow{opacity:.55;margin-left:4px;}
   .result-count{font-size:12.5px;color:var(--text-faint);margin-bottom:12px;font-weight:500;}
 
+  /* ---------- Calendrier des locations (Gestion location, master) ---------- */
+  .cal-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:18px;}
+  .cal-nav{display:flex;align-items:center;gap:6px;}
+  .cal-nav-btn{width:34px;height:34px;border-radius:10px;border:1px solid var(--border-soft);background:var(--surface);color:var(--text-dim);display:flex;align-items:center;justify-content:center;cursor:pointer;transition:background .15s var(--ease), color .15s var(--ease);}
+  .cal-nav-btn:hover{background:var(--surface-hover);color:var(--text);}
+  .cal-month-label{font-family:var(--font-disp);font-size:18px;font-weight:700;letter-spacing:0.01em;min-width:150px;text-align:center;}
+  .cal-today-btn{font-size:12px;color:var(--accent);background:none;border:none;cursor:pointer;font-weight:700;padding:6px 8px;}
+  .cal-weekdays{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin-bottom:6px;}
+  .cal-weekday{font-size:11px;color:var(--text-faint);text-align:center;font-weight:700;letter-spacing:0.04em;text-transform:uppercase;}
+  .cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;}
+  .cal-day{position:relative;aspect-ratio:1/1;border-radius:11px;border:1px solid var(--border-soft);background:rgba(255,255,255,0.02);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font-size:12.5px;color:var(--text-dim);}
+  .cal-day.outside{opacity:0.25;}
+  .cal-day.today{border-color:var(--accent);}
+  .cal-day.has-bookings{background:var(--accent-soft);border-color:var(--accent-soft-2);color:var(--text);}
+  .cal-day-num{font-weight:600;}
+  .cal-day-badge{font-size:10px;font-weight:800;color:var(--accent-ink);background:var(--accent);padding:1px 6px;border-radius:var(--r-pill);line-height:1.5;}
+  .cal-tooltip{position:absolute;top:calc(100% + 8px);left:50%;transform:translateX(-50%) translateY(-4px);background:#0E100E;border:1px solid var(--border);border-radius:var(--r-sm);padding:11px 13px;min-width:190px;box-shadow:var(--shadow-2);opacity:0;pointer-events:none;transition:opacity .15s var(--ease), transform .15s var(--ease);z-index:30;text-align:left;}
+  .cal-day.has-bookings:hover .cal-tooltip{opacity:1;transform:translateX(-50%) translateY(0);pointer-events:auto;}
+  .cal-grid .cal-day:nth-child(7n+1) .cal-tooltip, .cal-grid .cal-day:nth-child(7n+2) .cal-tooltip{left:0;transform:translateY(-4px);}
+  .cal-grid .cal-day:nth-child(7n+1).has-bookings:hover .cal-tooltip, .cal-grid .cal-day:nth-child(7n+2).has-bookings:hover .cal-tooltip{transform:translateY(0);}
+  .cal-grid .cal-day:nth-child(7n) .cal-tooltip, .cal-grid .cal-day:nth-child(7n-1) .cal-tooltip{left:auto;right:0;transform:translateY(-4px);}
+  .cal-grid .cal-day:nth-child(7n).has-bookings:hover .cal-tooltip, .cal-grid .cal-day:nth-child(7n-1).has-bookings:hover .cal-tooltip{transform:translateY(0);}
+  .cal-tooltip-date{font-size:11px;color:var(--text-faint);margin-bottom:7px;font-weight:700;text-transform:uppercase;letter-spacing:0.03em;}
+  .cal-tooltip-row{display:flex;justify-content:space-between;gap:14px;font-size:12.5px;color:var(--text);padding:2.5px 0;}
+  .cal-tooltip-row b{color:var(--accent);font-weight:800;}
+  .cal-legend{display:flex;align-items:center;gap:8px;margin-top:16px;font-size:11.5px;color:var(--text-faint);}
+  .cal-legend-swatch{width:13px;height:13px;border-radius:4px;background:var(--accent-soft);border:1px solid var(--accent-soft-2);}
+
   /* ---------- Dashboard gauges ---------- */
   .gauge-grid{display:grid;grid-template-columns:repeat(auto-fit, minmax(230px,1fr));gap:18px;}
   .gauge-card{background: var(--surface);border:1px solid var(--border);border-radius: var(--r-md);padding:22px;display:flex;flex-direction:column;align-items:center;backdrop-filter: blur(20px);-webkit-backdrop-filter: blur(20px);}
@@ -718,6 +746,7 @@ let state = {
   gestionSort: { field: "start_date", dir: "asc" },
   contratsSort: "client_asc",
   contratsSearch: "",
+  calendarMonth: null, // {year, month} — initialisé au mois courant à la première ouverture du calendrier
 };
 
 const STATUS_LABELS = {
@@ -1031,6 +1060,15 @@ async function grantXp(username, amount){
   prof.xp = newXp;
   if(username === state.session?.username) checkLevelUp(oldXp, newXp);
 }
+async function addXpToUser(username, amount){
+  if(!state.session.isMaster) return 'forbidden';
+  const prof = state.profiles.find(p => p.username === username);
+  if(!prof) return 'notfound';
+  const n = Number(amount);
+  if(!Number.isFinite(n) || !Number.isInteger(n) || n <= 0) return 'invalid';
+  await grantXp(username, n);
+  return 'ok';
+}
 async function resetUserToLevel1(username){
   if(!state.session.isMaster) return;
   const prof = state.profiles.find(p => p.username === username);
@@ -1171,14 +1209,18 @@ async function deleteMissionGroup(id){
 }
 
 /* ---------- Tasks / missions ---------- */
-async function createTask(title, description, xpReward, requiresAnswer, answerLabel, groupId, isRecurring, requiresDate){
+async function createTask(title, description, xpReward, requiresAnswer, answerLabel, groupId, isRecurring, requiresDate, requiresBooking){
   if(!title.trim()) return;
   const nextSortOrder = state.tasks.reduce((m,t) => Math.max(m, t.sort_order||0), 0) + 1;
   const { data, error } = await sb.from('tasks').insert({
     title, description, xp_reward: Number(xpReward)||10,
     requires_answer: !!requiresAnswer, answer_label: requiresAnswer ? (answerLabel || "Votre réponse") : null,
     requires_date: !!requiresDate,
-    group_id: groupId || null, is_recurring: !!isRecurring, sort_order: nextSortOrder
+    // Une mission plafonnée aux locations confirmées est nécessairement récurrente (elle doit
+    // redevenir disponible à chaque nouveau contrat) : voir confirmNewTask, qui force la case
+    // "récurrente" dès que celle-ci est cochée.
+    requires_booking: !!requiresBooking,
+    group_id: groupId || null, is_recurring: !!isRecurring || !!requiresBooking, sort_order: nextSortOrder
   }).select().single();
   if(error){ alert("Erreur : " + error.message); return; }
   state.tasks.push(data);
@@ -1246,14 +1288,50 @@ async function submitTaskCompletion(taskId, answer, answerDate){
   state.modal = null;
   render();
 }
+// Une mission "plafonnée aux locations confirmées" (requires_booking) ne doit jamais être créditée
+// plus de fois que le client n'a de locations réellement confirmées (statut accepte/loue) : c'est le
+// garde-fou direct contre une mission récurrente créditée indéfiniment sans rapport avec un vrai
+// contrat de location. Compté ici côté client (retour visuel) ET revérifié juste avant validation
+// (ci-dessous) ET imposé sans échappatoire côté base de données (voir migration_lot15, trigger
+// task_completions_enforce_contract_cap_trigger) : même un bug applicatif ou un appel API direct ne
+// peut pas dépasser ce plafond.
+function eligibleBookingsCountFor(username){
+  return state.bookings.filter(b => b.username === username && (b.status === 'accepte' || b.status === 'loue')).length;
+}
+// IMPORTANT : task_completions n'a qu'UNE ligne par (mission, client) — une resoumission écrase cette
+// même ligne (upsert onConflict task_id,username) et remet son statut à "attente". Compter les lignes
+// au statut "validee" perdrait donc l'historique dès qu'un "Refaire" est en cours. Le nombre réel de
+// validations passées est conservé séparément par le compteur serveur task_completions.times_validated
+// (jamais réinitialisé par une resoumission — voir migration_lot15 et validateCompletion ci-dessous).
+function validatedCountForTask(taskId, username){
+  const c = state.completions.find(x => x.task_id === taskId && x.username === username);
+  return c ? (c.times_validated || 0) : 0;
+}
+function contractCapReached(task, username){
+  if(!task || !task.requires_booking) return false;
+  return validatedCountForTask(task.id, username) >= eligibleBookingsCountFor(username);
+}
 async function validateCompletion(completionId){
   if(!state.session.isMaster) return;
   const c = state.completions.find(x => x.id === completionId);
   if(!c || c.status !== 'attente') return;
   const task = state.tasks.find(t => t.id === c.task_id);
   const clientLabel = clientDisplayName(state.profiles.find(p => p.username === c.username)) || c.username;
+  if(task && task.requires_booking){
+    const eligible = eligibleBookingsCountFor(c.username);
+    const already = validatedCountForTask(task.id, c.username);
+    if(already >= eligible){
+      alert(`Impossible de valider : cette mission est plafonnée à une fois par location confirmée. ${clientLabel} a ${eligible} location(s) confirmée(s) (statut Acceptée/Louée) et cette mission a déjà été créditée ${already} fois. Il faut une nouvelle location confirmée avant de pouvoir la valider à nouveau.`);
+      return;
+    }
+  }
   if(!confirm(`Valider la mission "${task ? task.title : ''}" de ${clientLabel} ? ${task ? task.xp_reward : 0} XP lui seront crédités.`)) return;
-  const { data, error } = await sb.from('task_completions').update({ status:'validee', client_seen:false }).eq('id', completionId).select().single();
+  // times_validated : calculé ici pour un retour immédiat côté interface, mais c'est le déclencheur
+  // serveur task_completions_enforce_contract_cap_trigger (migration_lot15) qui fait foi et recalcule
+  // cette valeur lui-même sans jamais faire confiance à ce que l'application envoie — c'est lui, pas
+  // ce calcul côté client, qui empêche réellement de dépasser le plafond.
+  const nextTimesValidated = (c.times_validated || 0) + 1;
+  const { data, error } = await sb.from('task_completions').update({ status:'validee', client_seen:false, times_validated: nextTimesValidated }).eq('id', completionId).select().single();
   if(error){ alert("Erreur : " + error.message); return; }
   Object.assign(c, data);
   if(task) await grantXp(c.username, task.xp_reward);
@@ -2900,6 +2978,9 @@ function tacticalIconSvg(name, opts){
     mail: '<rect x="3" y="5" width="18" height="14" rx="2.2"/><path d="M3.5 6.5 12 13l8.5-6.5"/>',
     copy: '<rect x="8.5" y="8.5" width="12" height="12" rx="2"/><path d="M15.5 8.5V5.5a2 2 0 0 0-2-2h-9a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h3"/>',
     grip: '<g fill="currentColor" stroke="none"><circle cx="9" cy="6" r="1.35"/><circle cx="15" cy="6" r="1.35"/><circle cx="9" cy="12" r="1.35"/><circle cx="15" cy="12" r="1.35"/><circle cx="9" cy="18" r="1.35"/><circle cx="15" cy="18" r="1.35"/></g>',
+    calendar: '<rect x="3.5" y="5" width="17" height="15.5" rx="2.3"/><path d="M3.5 9.7h17"/><path d="M8 3v4M16 3v4"/><circle cx="8.1" cy="14" r="1.15" fill="currentColor" stroke="none"/><circle cx="12" cy="14" r="1.15" fill="currentColor" stroke="none"/><circle cx="15.9" cy="14" r="1.15" fill="currentColor" stroke="none"/>',
+    'chevron-left': '<path d="M14.5 5 8 12l6.5 7"/>',
+    'chevron-right': '<path d="M9.5 5 16 12l-6.5 7"/>',
   };
   return `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;${opts.style||''}">${paths[name] || ''}</svg>`;
 }
@@ -3467,10 +3548,127 @@ function refreshGestionView(){
   tbody.innerHTML = list.length ? list.map(gestionRowHtml).join('') : `<tr><td colspan="7"><div class="empty">Aucune location ne correspond à cette recherche.</div></td></tr>`;
   count.textContent = `${list.length} location${list.length>1?'s':''}`;
 }
+/* ---------- Calendrier des locations (master) ----------
+   Vue purement visuelle en surcouche de Gestion location : n'affiche que les réservations
+   "validées" (statut accepte, loue ou retourne — donc ni une simple demande en attente, ni une
+   réservation refusée), regroupées par jour et par matériel. Aucune donnée propre : tout est
+   recalculé à la volée depuis state.bookings/state.items à chaque ouverture/navigation. */
+const CAL_VALID_STATUSES = ['accepte','loue','retourne'];
+const CAL_WEEKDAYS = ['Lun','Mar','Mer','Jeu','Ven','Sam','Dim'];
+function pad2(n){ return String(n).padStart(2,'0'); }
+function dateStrFor(year, monthIndex, day){ return `${year}-${pad2(monthIndex+1)}-${pad2(day)}`; }
+// Matrice de semaines complètes (Lundi -> Dimanche) couvrant le mois demandé, avec les jours des
+// mois voisins en remplissage (grisés à l'affichage) pour ne jamais casser la grille 7 colonnes.
+function calendarMonthDays(year, monthIndex){
+  const firstOfMonth = new Date(Date.UTC(year, monthIndex, 1));
+  const startOffset = (firstOfMonth.getUTCDay() + 6) % 7; // Lundi = 0
+  const daysInMonth = new Date(Date.UTC(year, monthIndex + 1, 0)).getUTCDate();
+  const daysInPrevMonth = new Date(Date.UTC(year, monthIndex, 0)).getUTCDate();
+  const cells = [];
+  for(let i = 0; i < startOffset; i++){
+    const day = daysInPrevMonth - startOffset + 1 + i;
+    const d = new Date(Date.UTC(year, monthIndex - 1, day));
+    cells.push({ dateStr: dateStrFor(d.getUTCFullYear(), d.getUTCMonth(), day), day, inMonth: false });
+  }
+  for(let day = 1; day <= daysInMonth; day++){
+    cells.push({ dateStr: dateStrFor(year, monthIndex, day), day, inMonth: true });
+  }
+  let nextDay = 1;
+  while(cells.length % 7 !== 0){
+    const d = new Date(Date.UTC(year, monthIndex + 1, nextDay));
+    cells.push({ dateStr: dateStrFor(d.getUTCFullYear(), d.getUTCMonth(), nextDay), day: nextDay, inMonth: false });
+    nextDay++;
+  }
+  return cells;
+}
+// Locations "validées" couvrant ce jour, regroupées par modèle de matériel — c'est exactement ce
+// qui s'affiche dans l'encart au survol d'une case.
+function dayBookingSummary(dateStr){
+  const dayBookings = state.bookings.filter(b => CAL_VALID_STATUSES.includes(b.status) && b.start_date <= dateStr && b.end_date >= dateStr);
+  const byItem = {};
+  dayBookings.forEach(b => {
+    const item = state.items.find(i => i.id === b.item_id);
+    const name = item ? item.name : 'Matériel supprimé';
+    byItem[name] = (byItem[name] || 0) + 1;
+  });
+  const items = Object.entries(byItem).map(([name, count]) => ({ name, count })).sort((a,b) => b.count - a.count);
+  return { total: dayBookings.length, items };
+}
+const MONTH_LABELS_FR = ['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
+window.openBookingCalendarModal = () => {
+  if(!state.calendarMonth){
+    const now = new Date();
+    state.calendarMonth = { year: now.getFullYear(), month: now.getMonth() };
+  }
+  state.modal = { type: "bookingCalendar" };
+  render();
+};
+window.calendarShiftMonth = (delta) => {
+  let { year, month } = state.calendarMonth;
+  month += delta;
+  if(month < 0){ month = 11; year -= 1; }
+  else if(month > 11){ month = 0; year += 1; }
+  state.calendarMonth = { year, month };
+  render();
+};
+window.calendarGoToday = () => {
+  const now = new Date();
+  state.calendarMonth = { year: now.getFullYear(), month: now.getMonth() };
+  render();
+};
+function bookingCalendarModalHtml(){
+  const { year, month } = state.calendarMonth;
+  const cells = calendarMonthDays(year, month);
+  const todayStrVal = todayStr();
+  const dayCellsHtml = cells.map(c => {
+    const summary = c.inMonth ? dayBookingSummary(c.dateStr) : { total: 0, items: [] };
+    const isToday = c.dateStr === todayStrVal;
+    const cls = ['cal-day'];
+    if(!c.inMonth) cls.push('outside');
+    if(isToday) cls.push('today');
+    if(c.inMonth && summary.total > 0) cls.push('has-bookings');
+    const tooltip = (c.inMonth && summary.total > 0) ? `
+      <div class="cal-tooltip">
+        <div class="cal-tooltip-date">${fmtDate(c.dateStr)}</div>
+        ${summary.items.map(it => `<div class="cal-tooltip-row"><span>${esc(it.name)}</span><b>${it.count}</b></div>`).join('')}
+      </div>` : '';
+    return `
+      <div class="${cls.join(' ')}">
+        <span class="cal-day-num">${c.day}</span>
+        ${c.inMonth && summary.total > 0 ? `<span class="cal-day-badge">${summary.total}</span>` : ''}
+        ${tooltip}
+      </div>`;
+  }).join('');
+  return `
+    <div class="modal-bg" onclick="closeModalBg(event)"><div class="modal" style="max-width:680px;">
+      <div class="cal-head">
+        <div>
+          <h3 style="margin-bottom:2px;">${tacticalIconSvg('calendar',{size:19,style:'vertical-align:-3px;margin-right:6px;'})}Calendrier des locations</h3>
+          <div class="section-title" style="margin-bottom:0;">Locations validées (acceptées, en cours ou retournées)</div>
+        </div>
+      </div>
+      <div class="cal-head" style="margin-top:2px;">
+        <div class="cal-nav">
+          <button type="button" class="cal-nav-btn" onclick="calendarShiftMonth(-1)" title="Mois précédent">${tacticalIconSvg('chevron-left',{size:17})}</button>
+          <div class="cal-month-label">${MONTH_LABELS_FR[month]} ${year}</div>
+          <button type="button" class="cal-nav-btn" onclick="calendarShiftMonth(1)" title="Mois suivant">${tacticalIconSvg('chevron-right',{size:17})}</button>
+        </div>
+        <button type="button" class="cal-today-btn" onclick="calendarGoToday()">Aujourd'hui</button>
+      </div>
+      <div class="cal-weekdays">${CAL_WEEKDAYS.map(w => `<div class="cal-weekday">${w}</div>`).join('')}</div>
+      <div class="cal-grid">${dayCellsHtml}</div>
+      <div class="cal-legend"><span class="cal-legend-swatch"></span>Jour avec au moins une location validée — survolez pour le détail</div>
+      <div class="modal-actions"><button class="btn btn-ghost" style="width:100%;" onclick="closeModal()">Fermer</button></div>
+    </div></div>`;
+}
+
 function renderGestionLocation(){
   const list = gestionFilteredSorted();
   return `
-    <div class="topbar"><div><h1>Gestion location</h1><div class="desc">Recherchez, filtrez et faites avancer chaque location : demande → acceptée → louée → retournée.</div></div></div>
+    <div class="topbar">
+      <div><h1>Gestion location</h1><div class="desc">Recherchez, filtrez et faites avancer chaque location : demande → acceptée → louée → retournée.</div></div>
+      <button type="button" class="btn btn-ghost" style="width:auto;" onclick="openBookingCalendarModal()" title="Calendrier des locations">${tacticalIconSvg('calendar',{size:16})} Calendrier</button>
+    </div>
     <div class="filter-bar">
       <input type="text" placeholder="Rechercher un client, un matériel..." value="${esc(state.gestionSearch)}" oninput="onGestionSearch(this.value)">
       <select onchange="onGestionFilter(this.value)">
@@ -3853,7 +4051,8 @@ function latestCompletionFor(taskId, username){
 function missionCardHtml(t, isMaster, u){
   const mine = isMaster ? null : latestCompletionFor(t.id, u.username);
   const status = mine ? mine.status : null;
-  const canRedo = t.is_recurring && status === 'validee';
+  const capReached = !isMaster && contractCapReached(t, u.username);
+  const canRedo = t.is_recurring && status === 'validee' && !capReached;
   const submissions = isMaster ? state.completions.filter(c => c.task_id === t.id).sort((a,b)=>(b.completed_at||'').localeCompare(a.completed_at||'')) : [];
   const iconByStatus = {
     validee: { name: 'check-circle', color: 'var(--accent)', bg: 'var(--accent-soft)' },
@@ -3863,7 +4062,16 @@ function missionCardHtml(t, isMaster, u){
   const iconInfo = iconByStatus[status] || { name: 'reticle', color: 'var(--accent)', bg: 'var(--accent-soft)' };
   const icon = tacticalIconSvg(iconInfo.name, { size: 21 });
   let clientStatusLine = '';
-  if(status === 'validee') clientStatusLine = `<div class="card-desc" style="color:var(--accent);flex:0;">Mission accomplie ✓${canRedo ? ' · mission récurrente, refaisable dès maintenant' : ''}</div>`;
+  if(status === 'validee'){
+    let extra = '';
+    if(t.requires_booking){
+      const val = validatedCountForTask(t.id, u.username), elig = eligibleBookingsCountFor(u.username);
+      extra = ` · ${val}/${elig} location(s) confirmée(s) créditée(s)${capReached ? ' — une nouvelle location confirmée est nécessaire pour refaire cette mission' : ', refaisable dès maintenant'}`;
+    } else if(canRedo){
+      extra = ' · mission récurrente, refaisable dès maintenant';
+    }
+    clientStatusLine = `<div class="card-desc" style="color:var(--accent);flex:0;">Mission accomplie ✓${extra}</div>`;
+  }
   else if(status === 'attente') clientStatusLine = `<div class="card-desc" style="color:var(--amber);flex:0;">En attente de validation par l'équipe.</div>`;
   else if(status === 'refusee') clientStatusLine = `<div class="card-desc" style="color:#FFB3A6;flex:0;">Non validée par l'équipe — vous pouvez retenter.</div>`;
   let clientAction = '';
@@ -3884,6 +4092,7 @@ function missionCardHtml(t, isMaster, u){
       ${clientStatusLine}
       ${isMaster && t.requires_answer ? `<div class="card-desc" style="flex:0;">Champ demandé : ${esc(t.answer_label)}</div>` : ''}
       ${isMaster && t.requires_date ? `<div class="card-desc" style="flex:0;">Date de location demandée (à partir du 15/08/2026)</div>` : ''}
+      ${isMaster && t.requires_booking ? `<div class="card-desc" style="flex:0;color:var(--accent);">Plafonnée aux locations confirmées — 1 crédit max. par contrat</div>` : ''}
       ${isMaster && submissions.length ? `<div>${submissions.map(s => `
         <div class="submission-row" style="flex-direction:column;align-items:stretch;gap:4px;">
           <div style="display:flex;justify-content:space-between;"><span>${esc(s.username)}${t.requires_answer ? ' — ' + esc(s.answer||'') : ''}</span><span>${fmtDate(s.completed_at)}</span></div>
@@ -3992,6 +4201,7 @@ function missionManageCardHtml(t, groupKey){
       ${t.description ? `<div class="card-desc">${esc(t.description)}</div>` : ''}
       ${t.requires_answer ? `<div class="card-desc" style="flex:0;">Champ demandé : ${esc(t.answer_label)}</div>` : ''}
       ${t.requires_date ? `<div class="card-desc" style="flex:0;">Date de location demandée (à partir du 15/08/2026)</div>` : ''}
+      ${t.requires_booking ? `<div class="card-desc" style="flex:0;color:var(--accent);">Plafonnée aux locations confirmées — 1 crédit max. par contrat</div>` : ''}
       <div class="card-desc" style="flex:0;color:var(--text-faint);">${submissionsCount} soumission${submissionsCount>1?'s':''} au total</div>
       <div class="card-foot"><button class="btn btn-ghost btn-sm" onclick="openEditTaskModal('${t.id}')">Modifier</button><button class="btn btn-danger btn-sm" onclick="deleteTask('${t.id}')">Supprimer</button></div>
     </div>`;
@@ -4223,6 +4433,7 @@ function usersRowHtml(p){
       <td>${fmtDateTime(p.last_login)}</td>
       <td><div style="display:flex;gap:5px;flex-wrap:wrap;">
         ${!p.is_master ? `<button class="btn btn-ghost btn-sm" onclick="openViewProfile('${esc(p.username)}')">Fiche</button>` : ''}
+        ${!p.is_master ? `<button class="btn btn-ghost btn-sm" onclick="openAddXpModal('${esc(p.username)}')">Ajouter XP</button>` : ''}
         ${!p.is_master ? `<button class="btn btn-ghost btn-sm" onclick="resetUserToLevel1('${esc(p.username)}')">Reset XP</button>` : ''}
         ${!p.is_master ? `<button class="btn btn-ghost btn-sm" onclick="openMarkAsOwnerModal('${esc(p.username)}')">${p.is_owner ? 'Propriétaire' : 'Marquer Propriétaire'}</button>` : ''}
         ${!p.is_master ? `<button class="btn btn-danger btn-sm" onclick="deleteProfile('${esc(p.username)}')">Supprimer</button>` : ''}
@@ -4443,9 +4654,9 @@ function renderProfilClient(){
       <div class="section-title">Documents contractuels de la plateforme</div>
       <div style="display:flex;gap:10px;flex-wrap:wrap;">
         <button class="btn btn-ghost" ${!state.platform_docs?.cgu_path?'disabled':''} onclick="openPlatformDoc('cgu')">Conditions générales d'utilisation (CGU)</button>
-        <button class="btn btn-ghost" ${!state.platform_docs?.vetuste_path?'disabled':''} onclick="openPlatformDoc('vetuste')">Annexe — Grille d'usure et de vétusté</button>
+        ${u.is_owner ? `<button class="btn btn-ghost" ${!state.platform_docs?.vetuste_path?'disabled':''} onclick="openPlatformDoc('vetuste')">Annexe — Grille d'usure et de vétusté</button>` : ''}
       </div>
-      ${(!state.platform_docs?.cgu_path || !state.platform_docs?.vetuste_path) ? `<div style="font-size:11.5px;color:var(--text-faint);margin-top:8px;">Document pas encore mis en ligne par l'équipe.</div>` : ''}
+      ${(!state.platform_docs?.cgu_path || (u.is_owner && !state.platform_docs?.vetuste_path)) ? `<div style="font-size:11.5px;color:var(--text-faint);margin-top:8px;">Document pas encore mis en ligne par l'équipe.</div>` : ''}
     </div>
   `;
 }
@@ -4494,6 +4705,9 @@ function clientHistoryHtml(username){
 function renderModal(){
   if(!state.modal) return "";
   const m = state.modal;
+  if(m.type === "bookingCalendar"){
+    return bookingCalendarModalHtml();
+  }
   if(m.type === "moreGear"){
     return `
     <div class="modal-bg" onclick="closeModalBg(event)"><div class="modal" style="text-align:center;">
@@ -4767,7 +4981,8 @@ function renderModal(){
         <div class="field"><label>Intitulé du champ demandé</label><input id="tk-answer-label" placeholder="ex. Votre pseudo utilisé pour l'avis Google" value="${editing?esc(t.answer_label||''):''}"></div>
       </div>
       <label class="checkbox-field"><input type="checkbox" id="tk-requires-date" ${editing && t.requires_date?'checked':''}> Demander la date de la location (bloquée avant le 15/08/2026, lancement de l'app)</label>
-      <label class="checkbox-field"><input type="checkbox" id="tk-recurring" ${editing && t.is_recurring?'checked':''}> Mission récurrente — redevient disponible pour le client dès qu'elle est validée et l'XP créditée</label>
+      <label class="checkbox-field"><input type="checkbox" id="tk-recurring" ${editing && (t.is_recurring||t.requires_booking)?'checked':''} ${editing && t.requires_booking?'disabled':''}> Mission récurrente — redevient disponible pour le client dès qu'elle est validée et l'XP créditée</label>
+      <label class="checkbox-field"><input type="checkbox" id="tk-requires-booking" ${editing && t.requires_booking?'checked':''} onchange="const r=document.getElementById('tk-recurring'); if(this.checked){ r.checked=true; r.disabled=true; } else { r.disabled=false; }"> Plafonner aux locations confirmées — créditée UNE SEULE FOIS par contrat de location (jamais par jour, jamais de façon illimitée) ; nécessite une location au statut « Acceptée » ou « Louée » par crédit</label>
       <div class="modal-actions"><button class="btn btn-ghost" onclick="closeModal()">Annuler</button><button class="btn btn-primary" onclick="confirmNewTask(${editing?`'${t.id}'`:'null'})">${editing?'Enregistrer':'Créer'}</button></div>
     </div></div>`;
   }
@@ -4826,14 +5041,18 @@ function renderModal(){
     if(!p) return "";
     return `
     <div class="modal-bg" onclick="closeModalBg(event)"><div class="modal">
-      <h3>Fiche client ${p.is_owner ? `<span class="owner-tag">${tacticalIconSvg('house',{size:11})}Propriétaire</span>` : ''}</h3>
+      <h3>${esc(clientDisplayName(p))} ${p.is_owner ? `<span class="owner-tag">${tacticalIconSvg('house',{size:11})}Propriétaire</span>` : ''}</h3>
+      <div class="desc" style="margin:-8px 0 14px;">Fiche client</div>
       <div class="field"><label>Email</label><div class="static-val">${esc(p.username)}</div></div>
       <div class="row" style="align-items:flex-end;">
-        <div class="field" style="flex:1;"><label>Nom</label><div class="static-val">${esc(p.nom || '—')}</div></div>
         <div class="field" style="flex:1;"><label>Prénom</label><div class="static-val">${esc(p.prenom || '—')}</div></div>
+        <div class="field" style="flex:1;"><label>Nom</label><div class="static-val">${esc(p.nom || '—')}</div></div>
       </div>
       <div class="field"><label>Progression</label><div class="static-val">${p.xp} XP · Niveau ${levelFor(p.xp)} · ${esc(getRanks()[rankIndexFor(p.xp)].name)}</div></div>
-      <button class="btn btn-ghost btn-sm" onclick="resetUserToLevel1('${esc(p.username)}')">Reset XP</button>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <button class="btn btn-ghost btn-sm" onclick="openAddXpModal('${esc(p.username)}')">Ajouter XP</button>
+        <button class="btn btn-ghost btn-sm" onclick="resetUserToLevel1('${esc(p.username)}')">Reset XP</button>
+      </div>
       <div class="row">
         <div class="field"><label>Date de naissance</label><div class="static-val">${fmtDate(p.date_naissance)}</div></div>
         <div class="field"><label>Téléphone</label><div class="static-val">${esc(p.telephone || '—')}</div></div>
@@ -4874,6 +5093,18 @@ function renderModal(){
         <button class="btn btn-ghost btn-sm" ${!state.platform_docs?.vetuste_path?'disabled':''} onclick="openPlatformDoc('vetuste')">Annexe grille de vétusté</button>
       </div>
       <div class="modal-actions"><button class="btn btn-ghost" style="width:100%;" onclick="closeModal()">Fermer</button></div>
+    </div></div>`;
+  }
+  if(m.type === "addXp"){
+    const p = state.profiles.find(x => x.username === m.username);
+    if(!p) return "";
+    return `
+    <div class="modal-bg" onclick="closeModalBg(event)"><div class="modal">
+      <h3>Ajouter de l'XP — ${esc(clientDisplayName(p))}</h3>
+      <div class="desc" style="margin:-6px 0 14px;">Crédité immédiatement, en plus de l'XP déjà acquise (${p.xp} XP actuellement).</div>
+      ${state.addXpError ? `<div class="msg msg-error">${esc(state.addXpError)}</div>` : ''}
+      <div class="field"><label>Nombre d'XP à créditer</label><input id="axp-amount" type="number" min="1" step="1" placeholder="ex. 50" autofocus></div>
+      <div class="modal-actions"><button class="btn btn-ghost" onclick="closeModal()">Annuler</button><button class="btn btn-primary" onclick="confirmAddXp('${esc(p.username)}')">Créditer</button></div>
     </div></div>`;
   }
   return "";
@@ -5148,7 +5379,25 @@ window.openEditItemModal = (itemId) => { state.modal = { type:"editItem", itemId
 window.openNewTaskModal = () => { state.modal = { type:"newTask" }; render(); };
 window.openAnswerModal = (taskId) => { state.answerError = ""; state.modal = { type:"answerTask", taskId }; render(); };
 window.openViewProfile = (username) => { state.modal = { type:"viewProfile", username }; render(); };
-window.closeModal = () => { state.modal = null; state.bookingError = ""; state.answerError = ""; render(); };
+window.openAddXpModal = (username) => { state.addXpError = ""; state.modal = { type:"addXp", username }; render(); };
+window.confirmAddXp = async (username) => {
+  const raw = document.getElementById('axp-amount').value;
+  const n = Number(raw);
+  if(!raw || !Number.isFinite(n) || !Number.isInteger(n) || n <= 0){
+    state.addXpError = "Entrez un nombre entier positif d'XP.";
+    render();
+    return;
+  }
+  const result = await addXpToUser(username, n);
+  if(result !== 'ok'){
+    state.addXpError = "Erreur : l'XP n'a pas pu être créditée.";
+    render();
+    return;
+  }
+  state.modal = null;
+  render();
+};
+window.closeModal = () => { state.modal = null; state.bookingError = ""; state.answerError = ""; state.addXpError = ""; render(); };
 window.closeModalBg = (e) => { if(e.target.classList.contains('modal-bg')) window.closeModal(); };
 window.confirmBooking = (itemId) => {
   const start = document.getElementById("bk-start").value;
@@ -5201,16 +5450,21 @@ window.confirmNewTask = (taskId) => {
   const answerLabel = document.getElementById("tk-answer-label")?.value.trim();
   const requiresDate = document.getElementById("tk-requires-date").checked;
   const groupId = document.getElementById("tk-group").value || null;
-  const isRecurring = document.getElementById("tk-recurring").checked;
+  const requiresBooking = document.getElementById("tk-requires-booking").checked;
+  // Une mission plafonnée aux locations confirmées est forcément récurrente : la case "récurrente"
+  // est auto-cochée et désactivée par tk-requires-booking (voir modal), mais on sécurise ici aussi
+  // au cas où l'utilisateur aurait quand même réussi à la décocher.
+  const isRecurring = document.getElementById("tk-recurring").checked || requiresBooking;
   if(taskId){
     updateTask(taskId, {
       title, description: desc, xp_reward: Number(xp)||10,
       requires_answer: !!requiresAnswer, answer_label: requiresAnswer ? (answerLabel || "Votre réponse") : null,
       requires_date: !!requiresDate,
+      requires_booking: !!requiresBooking,
       group_id: groupId, is_recurring: !!isRecurring
     }).then(ok => { if(ok) state.modal = null; render(); });
   } else {
-    createTask(title, desc, xp, requiresAnswer, answerLabel, groupId, isRecurring, requiresDate);
+    createTask(title, desc, xp, requiresAnswer, answerLabel, groupId, isRecurring, requiresDate, requiresBooking);
   }
 };
 window.openEditTaskModal = (taskId) => { state.modal = { type:"editTask", taskId }; render(); };
