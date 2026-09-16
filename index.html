@@ -1093,6 +1093,17 @@ async function cancelBooking(id){
 }
 async function setBookingStatus(id, status){
   if(!state.session.isMaster) return;
+  const b = state.bookings.find(x => x.id === id);
+  const item = b ? state.items.find(i => i.id === b.item_id) : null;
+  const clientLabel = b ? (clientDisplayName(state.profiles.find(p => p.username === b.username)) || b.username) : 'ce client';
+  const itemLabel = item ? item.name : 'ce matériel';
+  const confirmMsgByStatus = {
+    accepte: `Accepter la demande de ${clientLabel} pour ${itemLabel} ? Il en sera informé.`,
+    refuse: `Refuser la demande de ${clientLabel} pour ${itemLabel} ? Il en sera informé.`,
+    loue: `Marquer ${itemLabel} comme loué à ${clientLabel} ?`,
+    retourne: `Marquer ${itemLabel} comme retourné par ${clientLabel} ?`,
+  };
+  if(!confirm(confirmMsgByStatus[status] || `Changer le statut de cette réservation ?`)) return;
   const { data, error } = await sb.from('bookings').update({ status }).eq('id', id).select().single();
   if(error){ alert("Erreur : " + error.message); return; }
   const idx = state.bookings.findIndex(b => b.id === id);
@@ -1229,6 +1240,8 @@ async function validateCompletion(completionId){
   const c = state.completions.find(x => x.id === completionId);
   if(!c || c.status !== 'attente') return;
   const task = state.tasks.find(t => t.id === c.task_id);
+  const clientLabel = clientDisplayName(state.profiles.find(p => p.username === c.username)) || c.username;
+  if(!confirm(`Valider la mission "${task ? task.title : ''}" de ${clientLabel} ? ${task ? task.xp_reward : 0} XP lui seront crédités.`)) return;
   const { data, error } = await sb.from('task_completions').update({ status:'validee', client_seen:false }).eq('id', completionId).select().single();
   if(error){ alert("Erreur : " + error.message); return; }
   Object.assign(c, data);
@@ -1239,6 +1252,9 @@ async function rejectCompletion(completionId){
   if(!state.session.isMaster) return;
   const c = state.completions.find(x => x.id === completionId);
   if(!c || c.status !== 'attente') return;
+  const task = state.tasks.find(t => t.id === c.task_id);
+  const clientLabel = clientDisplayName(state.profiles.find(p => p.username === c.username)) || c.username;
+  if(!confirm(`Refuser la mission "${task ? task.title : ''}" de ${clientLabel} ? Il pourra la soumettre à nouveau.`)) return;
   const { data, error } = await sb.from('task_completions').update({ status:'refusee', client_seen:false }).eq('id', completionId).select().single();
   if(error){ alert("Erreur : " + error.message); return; }
   Object.assign(c, data);
@@ -1374,6 +1390,8 @@ async function validateRedemption(id){
   const r = state.redemptions.find(x => x.id === id);
   if(!r || r.status !== 'attente') return;
   const reward = state.rewards.find(x => x.id === r.reward_id);
+  const clientLabel = clientDisplayName(state.profiles.find(p => p.username === r.username)) || r.username;
+  if(!confirm(`Valider l'échange "${reward ? reward.name : ''}" pour ${clientLabel} ? ${reward ? reward.xp_cost : 0} XP lui seront retirés.`)) return;
   const { data, error } = await sb.from('reward_redemptions').update({ status:'validee', resolved_at: new Date().toISOString(), client_seen:false }).eq('id', id).select().single();
   if(error){ alert("Erreur : " + error.message); return; }
   Object.assign(r, data);
@@ -1384,6 +1402,9 @@ async function rejectRedemption(id){
   if(!state.session.isMaster) return;
   const r = state.redemptions.find(x => x.id === id);
   if(!r || r.status !== 'attente') return;
+  const reward = state.rewards.find(x => x.id === r.reward_id);
+  const clientLabel = clientDisplayName(state.profiles.find(p => p.username === r.username)) || r.username;
+  if(!confirm(`Refuser la demande "${reward ? reward.name : ''}" de ${clientLabel} ? Aucun XP ne sera retiré.`)) return;
   const { data, error } = await sb.from('reward_redemptions').update({ status:'refusee', resolved_at: new Date().toISOString(), client_seen:false }).eq('id', id).select().single();
   if(error){ alert("Erreur : " + error.message); return; }
   Object.assign(r, data);
@@ -2076,8 +2097,59 @@ function buildAnnexeVetusteDocDefinition(){
     { text: [`Document établi à `, { text: CONTRACT_OWNER.lieuSignatureDefaut, bold: true }, `, le `, { text: dateGeneration, bold: true }, `.`], margin: [0, 14, 0, 0] },
   ]);
 }
+// Contrats "type" — spécimens vierges (mêmes gabarits pdfMake que les vrais contrats, remplis de
+// mentions entre crochets à la place des données d'un client ou d'un Propriétaire réel) que le
+// master peut consulter à tout moment depuis "Contrats de location", sans dépendre d'un client ou
+// d'une réservation existante. Rangés dans platform_docs comme CGU/Annexe vétusté : mêmes boutons
+// Voir/Générer/Uploader/Supprimer, même bucket privé à signed URL.
+function contratLocataireTypeFields(){
+  return {
+    isOwnerRental: false,
+    proprietaire_nom: '', proprietaire_prenom: '', date_contrat_proprietaire: '',
+    locataire_nom: '[Nom et prénom du locataire]',
+    locataire_adresse: '[Adresse du locataire]',
+    locataire_tel: '[Téléphone]',
+    locataire_email: '[email@exemple.fr]',
+    locataire_cni: '[Numéro de CNI / passeport]',
+    item_categorie: '[Catégorie de matériel]',
+    item_description: '[Description du matériel]',
+    item_numero_serie: '[Numéro de série]',
+    item_valeur_ref: '[Valeur de référence]',
+    date_remise: '[Date de remise]',
+    etat_aspect: '[État — aspect]',
+    etat_fonctionnement: '[État — fonctionnement]',
+    prix_location: '[Prix]',
+    date_debut: '[Date de début]',
+    date_fin: '[Date de fin]',
+    duree_jours: '[Durée en jours]',
+    tarif_jour: '[Tarif / jour]',
+    montant_caution: '[Montant de la caution]',
+    delai_liberation_caution: CONTRACT_OWNER.delaiLiberationCaution,
+    delai_indemnisation: CONTRACT_OWNER.delaiIndemnisation,
+    lieu_signature: CONTRACT_OWNER.lieuSignatureDefaut,
+    date_signature: '[Date de signature]',
+  };
+}
+function contratProprietaireTypeFields(){
+  return {
+    proprietaire_civilite: 'M./Mme',
+    proprietaire_prenom: '[Prénom]',
+    proprietaire_nom: '[Nom du Propriétaire]',
+    proprietaire_date_naissance: '[Date de naissance]',
+    proprietaire_lieu_naissance: '[Lieu de naissance]',
+    proprietaire_nationalite: '[Nationalité]',
+    proprietaire_adresse: '[Adresse]',
+    proprietaire_iban: '[IBAN]',
+    materiel: [{ designation: '[Désignation du matériel]', numero_serie: '[N° de série]', valeur: '[Valeur]', date_acquisition: "[Date d'acquisition]", etat: '[État]' }],
+    lieu_signature: CONTRACT_OWNER.lieuSignatureDefaut,
+    date_signature: '[Date de signature]',
+  };
+}
 async function generatePlatformDoc(kind){
-  const dd = kind === 'cgu' ? buildCGUDocDefinition() : buildAnnexeVetusteDocDefinition();
+  const dd = kind === 'cgu' ? buildCGUDocDefinition()
+    : kind === 'vetuste' ? buildAnnexeVetusteDocDefinition()
+    : kind === 'contrat_locataire_type' ? buildContractDocDefinition(contratLocataireTypeFields())
+    : buildOwnerContractDocDefinition(contratProprietaireTypeFields());
   const blob = await window.pdfMake.createPdf(dd).getBlob();
   const storagePath = `${kind}.pdf`;
   const { error: upErr } = await sb.storage.from('platform-docs').upload(storagePath, blob, { upsert: true, contentType: 'application/pdf' });
@@ -4184,6 +4256,14 @@ function renderContratsAdmin(){
   }).join("");
   return `
     <div class="topbar"><div><h1>Contrats de location</h1><div class="desc">Le contrat entre OwlsVision et chaque <strong>client qui loue</strong> du matériel. Générez-le en un clic (fiche client + réservation) — il le consulte et le signe depuis son mobile. Vous cherchez le contrat des Propriétaires qui mettent du matériel en location ? C'est <a href="#" onclick="goto('gestion-proprietaires');return false;" style="color:var(--accent);">par ici, dans Contrats propriétaire</a>.</div></div></div>
+    <div class="panel">
+      <div class="section-title">Contrats type (référence interne)</div>
+      <div class="desc" style="margin-bottom:12px;">Spécimens vierges des deux contrats, à consulter à tout moment — visibles uniquement par vous (l'équipe), jamais par un client.</div>
+      <div style="display:flex;flex-direction:column;gap:10px;">
+        ${platformDocRowHtml('contrat_locataire_type', 'Contrat type — Locataire')}
+        ${platformDocRowHtml('contrat_proprietaire_type', 'Contrat type — Propriétaire')}
+      </div>
+    </div>
     <div class="panel">
       <div class="section-title">Documents de la plateforme (CGU et Annexe vétusté)</div>
       <div class="desc" style="margin-bottom:12px;">Ces documents sont communs à tous les clients — visibles depuis leur fiche "Mon profil" une fois déposés ici.</div>
