@@ -1114,19 +1114,19 @@ async function submitBooking(itemId, start, end){
   }
   bookingSubmitInFlight = true;
   try{
-    // Sécurité (lot 10) : la réservation ET le crédit d'XP associé passent par une fonction serveur
-    // dédiée (RPC) plutôt que par un insert + une mise à jour du XP faites directement depuis le
-    // navigateur. Avant ce lot, un client malveillant pouvait — en contournant l'interface et en
-    // appelant l'API directement — s'attribuer n'importe quel montant de XP, rien côté serveur ne
-    // vérifiant que la valeur correspondait bien au matériel réservé. La fonction
-    // book_item_and_grant_xp() (voir migration_lot10_securite.sql) revalide tout côté serveur et
-    // calcule elle-même le XP à partir de la fiche matériel — impossible à falsifier depuis le client.
-    const oldXp = u.xp;
-    const { data, error } = await sb.rpc('book_item_and_grant_xp', { p_item_id: itemId, p_start: start, p_end: end });
+    // Sécurité (lot 10) : la réservation passe par une fonction serveur dédiée (RPC) plutôt que par
+    // un insert fait directement depuis le navigateur. Avant ce lot, un client malveillant pouvait —
+    // en contournant l'interface et en appelant l'API directement — s'attribuer n'importe quel
+    // montant de XP, rien côté serveur ne vérifiant que la valeur correspondait bien au matériel
+    // réservé. La fonction book_item() (voir migration_lot10_securite.sql puis lot 17) revalide tout
+    // côté serveur.
+    // XP différée (lot 17) : book_item() NE crédite PLUS d'XP à l'envoi de la demande — seulement
+    // une fois que l'équipe confirme la réservation (voir setBookingStatus / migration_lot17), via
+    // un déclencheur côté base. Rien à faire ici : state.profiles sera mis à jour par la
+    // synchronisation temps réel (subscribeRealtime) quand ce crédit aura lieu.
+    const { data, error } = await sb.rpc('book_item', { p_item_id: itemId, p_start: start, p_end: end });
     if(error){ state.bookingError = "Erreur : " + error.message; render(); return; }
     state.bookings.push(data.booking);
-    u.xp = data.new_xp;
-    checkLevelUp(oldXp, data.new_xp);
     state.bookingError = "";
     state.modal = { type: "bookConfirm", itemName: item.name };
     render();
@@ -1607,6 +1607,16 @@ async function finalizeContractAssignment(username, path){
   return true;
 }
 async function masterUploadContract(username, file){
+  // Confirmation (toute action ayant une répercussion sur un client) : ce téléversement remplace
+  // silencieusement l'ancien PDF et, s'il était déjà signé, efface cette signature (voir plus bas) —
+  // sans ce message, choisir le mauvais fichier écraserait un contrat déjà signé sans avertissement.
+  const p = state.profiles.find(x => x.username === username);
+  const clientLabelMUC = (typeof clientDisplayName === 'function' ? clientDisplayName(p) : null) || username;
+  const existingContractMUC = state.contracts.find(c => c.username === username);
+  const confirmMsgMUC = existingContractMUC && existingContractMUC.signed_pdf_path
+    ? `Envoyer ce PDF comme contrat pour ${clientLabelMUC} ? Le contrat déjà SIGNÉ sera remplacé : ${clientLabelMUC} devra re-signer le nouveau contrat.`
+    : `Envoyer ce PDF comme contrat pour ${clientLabelMUC} ?`;
+  if(!confirm(confirmMsgMUC)) return;
   // Chemin stable (pas d'horodatage) : un nouvel envoi remplace l'ancien fichier au lieu de s'accumuler dans le stockage.
   const path = `${username}/original.pdf`;
   const { error: upErr } = await sb.storage.from('contracts').upload(path, file, { upsert: true, contentType: 'application/pdf' });
@@ -2340,11 +2350,15 @@ async function masterRemoveSignature(username){
 }
 
 /* ---------- Documents fiche membre (pièce d'identité / justificatif de domicile) ----------
-   Désactivé (RGPD) : on ne stocke plus ces documents dans l'appli, ils sont demandés par email
-   (voir emailDocsNoticeHtml / copyContactEmail plus bas). Le système reste codé ci-dessous —
-   fonctions, colonnes, storage — mais son affichage est coupé partout via ce drapeau, pour
-   pouvoir le remettre en place facilement si besoin sans tout réécrire. */
-const MEMBER_DOC_UPLOAD_ENABLED = false;
+   Réactivé (lot 18) : le client dépose à nouveau ses documents directement dans l'appli (upload
+   dans le bucket "documents", déjà sécurisé — voir migration_lot10_securite.sql : chaque fichier
+   n'est lisible que par son propriétaire ou l'équipe, jamais public). Le message "envoyez-les-nous
+   par email" est retiré. Ceux-ci ne restent pas indéfiniment dans l'appli pour autant : Luka les
+   récupère depuis la fiche client (bouton "Voir"), les archive lui-même sur son propre stockage
+   RGPD, puis les supprime d'ici (bouton "Supprimer", désormais aussi visible côté équipe — voir
+   docRowHtml plus bas) une fois l'extraction faite. Ce drapeau reste en place pour pouvoir
+   redésactiver l'upload en un clic si besoin, sans rien réécrire. */
+const MEMBER_DOC_UPLOAD_ENABLED = true;
 const MEMBER_DOC_DEFS = {
   id: { pathCol: 'id_doc_path', dateCol: 'id_doc_uploaded_at', label: "Pièce d'identité" },
   address: { pathCol: 'address_doc_path', dateCol: 'address_doc_uploaded_at', label: "Justificatif de domicile (- de 3 mois)" },
@@ -2392,9 +2406,14 @@ async function saveClientNote(username){
   if(p) Object.assign(p, data);
   render();
 }
-function docRowHtml(kind, p, editable){
+// "editable" = peut déposer/remplacer le document (réservé au client, sur sa propre fiche).
+// "allowDelete" = peut le supprimer une fois consulté (le client sur le sien ; l'équipe aussi,
+// désormais — lot 18 : c'est ce qui permet à Luka d'extraire le document puis de le retirer de
+// l'appli une fois archivé sur son propre stockage RGPD, sans pouvoir en déposer un à la place).
+function docRowHtml(kind, p, editable, allowDelete){
   const def = MEMBER_DOC_DEFS[kind];
   const has = !!p[def.pathCol];
+  const canDelete = allowDelete === undefined ? editable : allowDelete;
   return `
     <div class="doc-row">
       <div>
@@ -2404,7 +2423,7 @@ function docRowHtml(kind, p, editable){
       <div class="doc-actions">
         ${has ? `<button class="btn btn-ghost btn-sm" onclick="openMemberDoc('${kind}','${esc(p.username)}')">Voir</button>` : ''}
         ${editable ? `<span class="btn btn-primary btn-sm file-btn">${has?'Remplacer':'Envoyer'}<input type="file" accept="image/*,application/pdf" onchange="handleMemberDocUpload(event,'${kind}','${esc(p.username)}')"></span>` : ''}
-        ${editable && has ? `<button class="btn btn-danger btn-sm" onclick="deleteMemberDoc('${kind}','${esc(p.username)}')">Supprimer</button>` : ''}
+        ${canDelete && has ? `<button class="btn btn-danger btn-sm" onclick="deleteMemberDoc('${kind}','${esc(p.username)}')">Supprimer</button>` : ''}
       </div>
     </div>`;
 }
@@ -2781,6 +2800,15 @@ window.confirmGenerateContract = async (e, username) => {
     errEl.innerHTML = `<div class="msg msg-error">Impossible de générer : fiche client incomplète (${missingClient.join(', ')}). Complétez-la (onglet Utilisateurs) avant de générer le contrat.</div>`;
     return;
   }
+  // Confirmation (toute action ayant une répercussion sur un client) : régénérer écrase le contrat
+  // existant et, s'il était déjà signé, EFFACE cette signature (voir generateClientContract /
+  // finalizeContractAssignment) — le client devrait alors re-signer. Le message change selon le cas.
+  const clientLabelGC = clientDisplayName(p) || username;
+  const existingContractGC = state.contracts.find(c => c.username === username);
+  const confirmMsgGC = existingContractGC && existingContractGC.signed_pdf_path
+    ? `Régénérer le contrat de ${clientLabelGC} ? Le contrat déjà SIGNÉ sera remplacé : ${clientLabelGC} devra re-signer le nouveau contrat.`
+    : `Générer le contrat pour ${clientLabelGC} ?`;
+  if(!confirm(confirmMsgGC)) return;
   const clientBookings = state.bookings.filter(b => b.username === username);
   const bookingSel = document.getElementById('gc-booking');
   const chosenBookingId = bookingSel && bookingSel.value !== '—' ? bookingSel.value : (latestRelevantBookingFor(username)?.id || null);
@@ -2939,6 +2967,14 @@ window.confirmGenerateOwnerContract = async (e, username) => {
     errEl.innerHTML = `<div class="msg msg-error">Impossible de générer : informations manquantes (${missing.join(', ')}). Complétez-les ci-dessus (ou la fiche/le catalogue) avant de générer le contrat.</div>`;
     return;
   }
+  // Confirmation (toute action ayant une répercussion sur un client) : voir la même note dans
+  // confirmGenerateContract ci-dessus — régénérer efface la signature déjà obtenue le cas échéant.
+  const ownerLabelGOC = clientDisplayName(p) || username;
+  const existingOwnerContractGOC = state.owner_contracts.find(c => c.username === username);
+  const confirmMsgGOC = existingOwnerContractGOC && existingOwnerContractGOC.signed_pdf_path
+    ? `Régénérer le contrat Propriétaire de ${ownerLabelGOC} ? Le contrat déjà SIGNÉ sera remplacé : ${ownerLabelGOC} devra re-signer le nouveau contrat.`
+    : `Générer le contrat Propriétaire pour ${ownerLabelGOC} ?`;
+  if(!confirm(confirmMsgGOC)) return;
   const fields = {
     proprietaire_civilite: civilite,
     proprietaire_prenom: p.prenom || '',
@@ -3019,6 +3055,7 @@ function tacticalIconSvg(name, opts){
     calendar: '<rect x="3.5" y="5" width="17" height="15.5" rx="2.3"/><path d="M3.5 9.7h17"/><path d="M8 3v4M16 3v4"/><circle cx="8.1" cy="14" r="1.15" fill="currentColor" stroke="none"/><circle cx="12" cy="14" r="1.15" fill="currentColor" stroke="none"/><circle cx="15.9" cy="14" r="1.15" fill="currentColor" stroke="none"/>',
     'chevron-left': '<path d="M14.5 5 8 12l6.5 7"/>',
     'chevron-right': '<path d="M9.5 5 16 12l-6.5 7"/>',
+    'trending-up': '<path d="M3 17l6-6 4 4 8-9"/><path d="M15 6h6v6"/>',
   };
   return `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;${opts.style||''}">${paths[name] || ''}</svg>`;
 }
@@ -3995,6 +4032,18 @@ function renderDashboard(){
   const clients = state.profiles.filter(p => !p.is_master);
   const totalXp = clients.reduce((s, c) => s + (c.xp || 0), 0);
   const activeBookings = counts.accepte + counts.loue;
+  // Lot 18 : "atterrissage possible" — total estimé de toutes les locations déjà ACCEPTÉES par
+  // l'équipe (statuts accepte/loue/retourne), qu'elles soient déjà signées ou encore en attente de
+  // signature du client — demandé par Luka comme indicateur "en direct" du revenu déjà engagé.
+  // Recalculé à chaque render() : synchro en direct dès qu'une réservation change de statut
+  // (realtime, voir subscribeRealtime). Distinct du "CA estimé — ce mois-ci" ci-dessous, qui ne
+  // compte que les locations déjà louées/retournées, sur le mois en cours uniquement.
+  const landingBookings = state.bookings.filter(b => ['accepte','loue','retourne'].includes(b.status));
+  const atterrissage = landingBookings.reduce((sum, b) => sum + (estimatedBookingPrice(b) || 0), 0);
+  const landingUnsignedCount = landingBookings.filter(b => {
+    const c = state.contracts.find(x => x.username === b.username);
+    return !(c && c.signed_at);
+  }).length;
 
   return `
     <div class="topbar"><div><h1>Tableau de bord</h1><div class="desc">Vue d'ensemble en temps réel de toutes les locations Owls Vision.</div></div></div>
@@ -4022,6 +4071,14 @@ function renderDashboard(){
         </div>
         <div class="stat-value">${fmtPrice(caMonth)}</div>
         <div class="stat-label">CA estimé — ce mois-ci</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-card-top">
+          <div class="stat-icon" style="background:var(--accent-soft);color:var(--accent);">${tacticalIconSvg('trending-up',{size:19})}</div>
+          ${landingUnsignedCount>0 ? `<span class="stat-delta up" style="background:var(--accent-soft);color:var(--accent);">${landingUnsignedCount} à signer</span>` : ''}
+        </div>
+        <div class="stat-value">${fmtPrice(atterrissage)}</div>
+        <div class="stat-label">Atterrissage possible (accepté + signé)</div>
       </div>
       <div class="stat-card">
         <div class="stat-card-top">
@@ -4770,7 +4827,7 @@ function renderModal(){
       </div>
       <div id="bk-availability" style="font-size:12.5px;color:var(--accent);margin-bottom:8px;"></div>
       ${(item.price_per_day!=null || item.price_per_week!=null) ? `<div style="font-size:12.5px;color:var(--text-dim);margin-bottom:6px;">${item.price_per_day!=null?`Prix journalier de référence : ${Number(item.price_per_day).toFixed(2)} €`:''}${item.price_per_day!=null&&item.price_per_week!=null?' · ':''}${item.price_per_week!=null?`${Number(item.price_per_week).toFixed(2)} €/semaine`:''}</div>` : ''}
-      <div style="font-size:12px;color:var(--text-faint);">Votre demande sera envoyée à l'équipe, qui vous contactera par téléphone pour confirmer. Gain à l'envoi de la demande : +${item.xp_value} XP.</div>
+      <div style="font-size:12px;color:var(--text-faint);">Votre demande sera envoyée à l'équipe, qui vous contactera par téléphone pour confirmer. Gain de +${item.xp_value} XP dès que la location sera confirmée par notre équipe.</div>
       <div class="modal-actions"><button class="btn btn-ghost" onclick="closeModal()">Annuler</button><button class="btn btn-primary" onclick="confirmBooking('${item.id}')">Envoyer la demande</button></div>
     </div></div>`;
   }
@@ -4779,7 +4836,7 @@ function renderModal(){
     <div class="modal-bg"><div class="modal" style="text-align:center;">
       <div style="display:flex;justify-content:center;color:var(--accent);margin-bottom:8px;">${tacticalIconSvg('check-circle',{size:42})}</div>
       <h3>Demande envoyée !</h3>
-      <p style="font-size:14px;color:var(--text-dim);line-height:1.6;">Votre demande de location pour <strong>${esc(m.itemName)}</strong> a bien été enregistrée.<br><br>Notre équipe va confirmer la location et ses modalités lors d'un appel dans les 24h.</p>
+      <p style="font-size:14px;color:var(--text-dim);line-height:1.6;">Votre demande de location pour <strong>${esc(m.itemName)}</strong> a bien été enregistrée.<br><br>Notre équipe va confirmer la location et ses modalités lors d'un appel dans les 24h. L'XP correspondante sera créditée dès cette confirmation.</p>
       <div class="modal-actions"><button class="btn btn-primary" style="width:100%;" onclick="closeModal(); goto('planning');">Fermer</button></div>
     </div></div>`;
   }
@@ -5116,8 +5173,9 @@ function renderModal(){
       `}
       <div class="section-title" style="margin-top:6px;">Documents</div>
       ${MEMBER_DOC_UPLOAD_ENABLED ? `
-      ${docRowHtml('id', p, false)}
-      ${docRowHtml('address', p, false)}` : `
+      <p style="font-size:12px;line-height:1.5;color:var(--text-faint);margin:0 0 8px;">Une fois le document récupéré et archivé de ton côté, pense à le supprimer d'ici.</p>
+      ${docRowHtml('id', p, false, true)}
+      ${docRowHtml('address', p, false, true)}` : `
       <p style="font-size:12.5px;line-height:1.55;color:var(--text-faint);margin:0;">Pièce d'identité, justificatif de domicile et attestation d'assurance habitation ne sont plus déposés dans l'appli (RGPD) : demandés au client par email à ${esc(CONTACT_EMAIL)}.</p>`}
       <div class="section-title" style="margin-top:6px;">Historique du compte (missions, locations, récompenses, contrat...)</div>
       ${clientHistoryHtml(p.username)}
@@ -5431,6 +5489,11 @@ window.confirmAddXp = async (username) => {
     render();
     return;
   }
+  // Confirmation (toute action ayant une répercussion sur un client) : dernier garde-fou avant un
+  // crédit d'XP manuel réel et immédiat (voir grantXp) — utile en particulier contre une faute de
+  // frappe dans le montant.
+  const clientLabelAXP = clientDisplayName(state.profiles.find(p => p.username === username)) || username;
+  if(!confirm(`Créditer ${n} XP à ${clientLabelAXP} ?`)) return;
   addXpInFlight = true;
   try{
     const result = await addXpToUser(username, n);
