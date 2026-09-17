@@ -1091,7 +1091,15 @@ const MIN_BOOKING_DAYS = 3;
 // d'une location (une mission ne peut porter que sur un événement survenu à partir de cette date).
 const MISSION_LAUNCH_DATE = '2026-08-15';
 const MISSION_DATE_TOO_EARLY_MSG = "Nos missions démarrent avec l'application elle-même : impossible de choisir une date antérieure au 15/08/2026.";
+// Verrou anti double-clic (lot 16 : sécurisation anti-doublon XP) : sans lui, cliquer deux fois de
+// suite sur "Envoyer la demande" avant que le premier appel réseau ne revienne crée DEUX
+// réservations bien réelles et donc DEUX crédits d'XP pour une seule intention du client — le
+// contrôle de stock (activeBookingsCount) ne voit pas la première réservation tant qu'elle n'a pas
+// fini d'être enregistrée localement, donc il ne bloque rien dans cette fenêtre. Un simple booléen
+// suffit : un client ne peut avoir qu'une seule demande de réservation "en vol" à la fois.
+let bookingSubmitInFlight = false;
 async function submitBooking(itemId, start, end){
+  if(bookingSubmitInFlight) return;
   const item = state.items.find(i => i.id === itemId);
   if(!item) return;
   const u = currentProfile();
@@ -1104,22 +1112,27 @@ async function submitBooking(itemId, start, end){
   if(activeBookingsCount(itemId, start, end) >= item.qty){
     state.bookingError = `Aucun exemplaire disponible sur cette période (${item.qty} en stock).`; render(); return;
   }
-  // Sécurité (lot 10) : la réservation ET le crédit d'XP associé passent par une fonction serveur
-  // dédiée (RPC) plutôt que par un insert + une mise à jour du XP faites directement depuis le
-  // navigateur. Avant ce lot, un client malveillant pouvait — en contournant l'interface et en
-  // appelant l'API directement — s'attribuer n'importe quel montant de XP, rien côté serveur ne
-  // vérifiant que la valeur correspondait bien au matériel réservé. La fonction
-  // book_item_and_grant_xp() (voir migration_lot10_securite.sql) revalide tout côté serveur et
-  // calcule elle-même le XP à partir de la fiche matériel — impossible à falsifier depuis le client.
-  const oldXp = u.xp;
-  const { data, error } = await sb.rpc('book_item_and_grant_xp', { p_item_id: itemId, p_start: start, p_end: end });
-  if(error){ state.bookingError = "Erreur : " + error.message; render(); return; }
-  state.bookings.push(data.booking);
-  u.xp = data.new_xp;
-  checkLevelUp(oldXp, data.new_xp);
-  state.bookingError = "";
-  state.modal = { type: "bookConfirm", itemName: item.name };
-  render();
+  bookingSubmitInFlight = true;
+  try{
+    // Sécurité (lot 10) : la réservation ET le crédit d'XP associé passent par une fonction serveur
+    // dédiée (RPC) plutôt que par un insert + une mise à jour du XP faites directement depuis le
+    // navigateur. Avant ce lot, un client malveillant pouvait — en contournant l'interface et en
+    // appelant l'API directement — s'attribuer n'importe quel montant de XP, rien côté serveur ne
+    // vérifiant que la valeur correspondait bien au matériel réservé. La fonction
+    // book_item_and_grant_xp() (voir migration_lot10_securite.sql) revalide tout côté serveur et
+    // calcule elle-même le XP à partir de la fiche matériel — impossible à falsifier depuis le client.
+    const oldXp = u.xp;
+    const { data, error } = await sb.rpc('book_item_and_grant_xp', { p_item_id: itemId, p_start: start, p_end: end });
+    if(error){ state.bookingError = "Erreur : " + error.message; render(); return; }
+    state.bookings.push(data.booking);
+    u.xp = data.new_xp;
+    checkLevelUp(oldXp, data.new_xp);
+    state.bookingError = "";
+    state.modal = { type: "bookConfirm", itemName: item.name };
+    render();
+  } finally {
+    bookingSubmitInFlight = false;
+  }
 }
 async function cancelBooking(id){
   const b = state.bookings.find(x => x.id === id);
@@ -1311,8 +1324,15 @@ function contractCapReached(task, username){
   if(!task || !task.requires_booking) return false;
   return validatedCountForTask(task.id, username) >= eligibleBookingsCountFor(username);
 }
+// Verrou anti double-clic (lot 16), par soumission : sans lui, un double-clic sur "Valider" pendant
+// que le premier appel réseau est encore en cours passe DEUX FOIS le test "c.status !== 'attente'"
+// (toujours vrai localement tant que la première réponse n'est pas revenue) et déclenche donc DEUX
+// crédits grantXp() réels pour une seule validation voulue par le master — ce n'est pas une faille
+// de sécurité (seul le master peut valider), c'est un doublon de sa propre action légitime.
+const inFlightValidations = new Set();
 async function validateCompletion(completionId){
   if(!state.session.isMaster) return;
+  if(inFlightValidations.has(completionId)) return;
   const c = state.completions.find(x => x.id === completionId);
   if(!c || c.status !== 'attente') return;
   const task = state.tasks.find(t => t.id === c.task_id);
@@ -1326,16 +1346,24 @@ async function validateCompletion(completionId){
     }
   }
   if(!confirm(`Valider la mission "${task ? task.title : ''}" de ${clientLabel} ? ${task ? task.xp_reward : 0} XP lui seront crédités.`)) return;
-  // times_validated : calculé ici pour un retour immédiat côté interface, mais c'est le déclencheur
-  // serveur task_completions_enforce_contract_cap_trigger (migration_lot15) qui fait foi et recalcule
-  // cette valeur lui-même sans jamais faire confiance à ce que l'application envoie — c'est lui, pas
-  // ce calcul côté client, qui empêche réellement de dépasser le plafond.
-  const nextTimesValidated = (c.times_validated || 0) + 1;
-  const { data, error } = await sb.from('task_completions').update({ status:'validee', client_seen:false, times_validated: nextTimesValidated }).eq('id', completionId).select().single();
-  if(error){ alert("Erreur : " + error.message); return; }
-  Object.assign(c, data);
-  if(task) await grantXp(c.username, task.xp_reward);
-  render();
+  // Un second clic arrivant APRÈS ce point (donc après la confirmation) tombe forcément sur le verrou
+  // ci-dessous avant de pouvoir relire quoi que ce soit — c'est ce qui ferme la fenêtre de course.
+  if(inFlightValidations.has(completionId)) return;
+  inFlightValidations.add(completionId);
+  try{
+    // times_validated : calculé ici pour un retour immédiat côté interface, mais c'est le déclencheur
+    // serveur task_completions_enforce_contract_cap_trigger (migration_lot15) qui fait foi et recalcule
+    // cette valeur lui-même sans jamais faire confiance à ce que l'application envoie — c'est lui, pas
+    // ce calcul côté client, qui empêche réellement de dépasser le plafond.
+    const nextTimesValidated = (c.times_validated || 0) + 1;
+    const { data, error } = await sb.from('task_completions').update({ status:'validee', client_seen:false, times_validated: nextTimesValidated }).eq('id', completionId).select().single();
+    if(error){ alert("Erreur : " + error.message); return; }
+    Object.assign(c, data);
+    if(task) await grantXp(c.username, task.xp_reward);
+    render();
+  } finally {
+    inFlightValidations.delete(completionId);
+  }
 }
 async function rejectCompletion(completionId){
   if(!state.session.isMaster) return;
@@ -1476,18 +1504,28 @@ async function redeemReward(rewardId){
   state.redemptions.push(data);
   render();
 }
+// Verrou anti double-clic (lot 16) : même bug que validateCompletion, ici en sens inverse — un
+// double-clic sur "Valider" retirerait deux fois le coût XP de la récompense au client.
+const inFlightRedemptions = new Set();
 async function validateRedemption(id){
   if(!state.session.isMaster) return;
+  if(inFlightRedemptions.has(id)) return;
   const r = state.redemptions.find(x => x.id === id);
   if(!r || r.status !== 'attente') return;
   const reward = state.rewards.find(x => x.id === r.reward_id);
   const clientLabel = clientDisplayName(state.profiles.find(p => p.username === r.username)) || r.username;
   if(!confirm(`Valider l'échange "${reward ? reward.name : ''}" pour ${clientLabel} ? ${reward ? reward.xp_cost : 0} XP lui seront retirés.`)) return;
-  const { data, error } = await sb.from('reward_redemptions').update({ status:'validee', resolved_at: new Date().toISOString(), client_seen:false }).eq('id', id).select().single();
-  if(error){ alert("Erreur : " + error.message); return; }
-  Object.assign(r, data);
-  if(reward) await grantXp(r.username, -reward.xp_cost);
-  render();
+  if(inFlightRedemptions.has(id)) return;
+  inFlightRedemptions.add(id);
+  try{
+    const { data, error } = await sb.from('reward_redemptions').update({ status:'validee', resolved_at: new Date().toISOString(), client_seen:false }).eq('id', id).select().single();
+    if(error){ alert("Erreur : " + error.message); return; }
+    Object.assign(r, data);
+    if(reward) await grantXp(r.username, -reward.xp_cost);
+    render();
+  } finally {
+    inFlightRedemptions.delete(id);
+  }
 }
 async function rejectRedemption(id){
   if(!state.session.isMaster) return;
@@ -5380,7 +5418,12 @@ window.openNewTaskModal = () => { state.modal = { type:"newTask" }; render(); };
 window.openAnswerModal = (taskId) => { state.answerError = ""; state.modal = { type:"answerTask", taskId }; render(); };
 window.openViewProfile = (username) => { state.modal = { type:"viewProfile", username }; render(); };
 window.openAddXpModal = (username) => { state.addXpError = ""; state.modal = { type:"addXp", username }; render(); };
+// Verrou anti double-clic (lot 16) : même raisonnement que submitBooking/validateCompletion — un
+// double-clic sur "Créditer" avant la fin du premier appel réenverrait un second crédit du même
+// montant, cette fois sans même de statut ("attente"/"validee") pour s'en apercevoir après coup.
+let addXpInFlight = false;
 window.confirmAddXp = async (username) => {
+  if(addXpInFlight) return;
   const raw = document.getElementById('axp-amount').value;
   const n = Number(raw);
   if(!raw || !Number.isFinite(n) || !Number.isInteger(n) || n <= 0){
@@ -5388,14 +5431,19 @@ window.confirmAddXp = async (username) => {
     render();
     return;
   }
-  const result = await addXpToUser(username, n);
-  if(result !== 'ok'){
-    state.addXpError = "Erreur : l'XP n'a pas pu être créditée.";
+  addXpInFlight = true;
+  try{
+    const result = await addXpToUser(username, n);
+    if(result !== 'ok'){
+      state.addXpError = "Erreur : l'XP n'a pas pu être créditée.";
+      render();
+      return;
+    }
+    state.modal = null;
     render();
-    return;
+  } finally {
+    addXpInFlight = false;
   }
-  state.modal = null;
-  render();
 };
 window.closeModal = () => { state.modal = null; state.bookingError = ""; state.answerError = ""; state.addXpError = ""; render(); };
 window.closeModalBg = (e) => { if(e.target.classList.contains('modal-bg')) window.closeModal(); };
