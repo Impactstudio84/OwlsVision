@@ -498,6 +498,38 @@
   .check-row{display:flex;align-items:flex-start;gap:10px;margin:18px 0;font-size:13.5px;color:var(--text-dim);line-height:1.4;}
   .check-row input{margin-top:3px;width:18px;height:18px;accent-color:var(--accent);flex-shrink:0;}
 
+  /* ---------- Messagerie (chat direct client <-> équipe) ---------- */
+  .chat-wrap{display:flex;height:calc(100vh - 250px);min-height:380px;border:1px solid var(--border);border-radius: var(--r-lg);overflow:hidden;background:var(--surface);backdrop-filter: blur(20px);-webkit-backdrop-filter: blur(20px);}
+  .chat-list-pane{width:300px;flex-shrink:0;display:flex;flex-direction:column;border-right:1px solid var(--border-soft);min-height:0;}
+  .chat-list-pane .filter-bar{padding:12px;margin:0;border-bottom:1px solid var(--border-soft);}
+  .chat-list-pane .filter-bar input{width:100%;background:rgba(255,255,255,0.055);border:1px solid var(--border-soft);color:var(--text);padding:10px 13px;border-radius:var(--r-sm);font-size:13.5px;outline:none;}
+  .chat-list-pane .filter-bar input:focus{border-color:var(--accent-soft-2);box-shadow:0 0 0 4px var(--accent-soft);}
+  .chat-conv-list{flex:1;overflow-y:auto;min-height:0;}
+  .chat-conv-row{display:flex;align-items:center;gap:10px;width:100%;padding:12px 14px;background:none;border:none;border-bottom:1px solid var(--border-soft);text-align:left;color:var(--text);transition:background .15s var(--ease);}
+  .chat-conv-row:hover{background:var(--surface-hover);}
+  .chat-conv-row.active{background:var(--accent-soft);}
+  .chat-conv-info{flex:1;min-width:0;}
+  .chat-conv-name{font-size:13.5px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .chat-conv-preview{font-size:12px;color:var(--text-faint);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .chat-thread-pane{flex:1;min-width:0;min-height:0;display:flex;flex-direction:column;}
+  .chat-thread-header{display:flex;align-items:center;gap:10px;padding:14px 18px;border-bottom:1px solid var(--border-soft);flex-shrink:0;}
+  .chat-back-btn{display:none;width:36px;height:36px;border-radius:var(--r-sm);background:var(--surface);border:1px solid var(--border);align-items:center;justify-content:center;flex-shrink:0;color:var(--text);}
+  .chat-messages{flex:1;overflow-y:auto;min-height:0;padding:18px;display:flex;flex-direction:column;gap:10px;}
+  .chat-bubble-row{display:flex;}
+  .chat-bubble-row.mine{justify-content:flex-end;}
+  .chat-bubble{position:relative;max-width:74%;padding:10px 14px;border-radius:16px;font-size:14px;line-height:1.45;}
+  .chat-bubble-row:not(.mine) .chat-bubble{background:rgba(255,255,255,0.06);border:1px solid var(--border-soft);border-bottom-left-radius:4px;}
+  .chat-bubble-row.mine .chat-bubble{background:var(--accent);color:var(--accent-ink);border-bottom-right-radius:4px;}
+  .chat-bubble-text{white-space:pre-wrap;word-break:break-word;}
+  .chat-bubble-meta{font-size:10.5px;opacity:.65;margin-top:4px;}
+  .chat-bubble-del{position:absolute;top:-9px;right:-9px;width:20px;height:20px;border-radius:50%;background:var(--danger);color:#fff;border:2px solid var(--bg);display:none;align-items:center;justify-content:center;padding:0;}
+  .chat-bubble:hover .chat-bubble-del{display:flex;}
+  .chat-compose{display:flex;gap:10px;align-items:flex-end;padding:12px 14px;border-top:1px solid var(--border-soft);flex-shrink:0;}
+  .chat-compose textarea{flex:1;resize:none;max-height:120px;min-height:42px;background:rgba(255,255,255,0.055);border:1px solid var(--border-soft);color:var(--text);padding:11px 14px;border-radius:var(--r-sm);font-size:14.5px;outline:none;transition:border-color .18s var(--ease), box-shadow .18s var(--ease);}
+  .chat-compose textarea:focus{border-color:var(--accent-soft-2);box-shadow:0 0 0 4px var(--accent-soft);}
+  .chat-compose .btn{width:auto;flex-shrink:0;}
+  .chat-empty-thread{flex:1;display:flex;align-items:center;justify-content:center;padding:24px;}
+
   .status-pill{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;font-weight:600;padding:5px 12px;border-radius:var(--r-pill);white-space:nowrap;}
   .status-pill.ok{background:var(--accent-soft);color:var(--accent);}
   .status-pill.pending{background: var(--amber-soft);color:var(--amber);}
@@ -619,6 +651,18 @@
     /* La bottom-nav occupe désormais le bas de l'écran : les toasts (level-up/erreur) doivent
        flotter au-dessus d'elle plutôt que par-dessus. */
     .levelup-toast{bottom:calc(74px + env(safe-area-inset-bottom));}
+
+    /* ---------- Messagerie (chat) : sous 860px, la liste des conversations et le fil de discussion
+       ne peuvent pas tenir côte à côte (illisible) — on bascule l'un ou l'autre en plein écran via
+       .thread-open plutôt que de les empiler. Pas de :hover tactile fiable : le bouton de suppression
+       d'un message reste donc visible en permanence ici, au lieu d'apparaître seulement au survol. */
+    .chat-wrap{height:calc(100vh - 300px);border-radius:var(--r-md);}
+    .chat-list-pane{width:100%;border-right:none;}
+    .chat-wrap.thread-open .chat-list-pane{display:none;}
+    .chat-wrap:not(.thread-open) .chat-thread-pane{display:none;}
+    .chat-back-btn{display:flex;}
+    .chat-bubble{max-width:86%;}
+    .chat-bubble-del{display:flex;width:22px;height:22px;}
   }
 </style>
 </head>
@@ -720,8 +764,11 @@ let state = {
   loading: true,
   fatalError: null,
   session: null, // {username(=email pour les clients), isMaster}
-  profiles: [], items: [], bookings: [], tasks: [], completions: [], contracts: [], mission_groups: [], rewards: [], redemptions: [], rank_config: [],
+  profiles: [], items: [], bookings: [], tasks: [], completions: [], contracts: [], mission_groups: [], rewards: [], redemptions: [], rank_config: [], messages: [],
   view: "accueil",
+  messagesSelectedUser: null, // (master) conversation actuellement ouverte dans le volet de droite
+  messagesMobileOpen: false,  // (master, mobile uniquement) bascule liste <-> conversation
+  messagesSearch: "",
   authTab: "login",
   showAdminLogin: false,
   showCodePad: false,
@@ -776,7 +823,7 @@ function currentProfile(){ return state.profiles.find(p => p.username === state.
 
 /* ---------- Boot & data ---------- */
 async function fetchAll(){
-  const [profiles, items, bookings, tasks, completions, contracts, groups, rewards, redemptions, ownerContracts, platformDocs, rankConfig] = await Promise.all([
+  const [profiles, items, bookings, tasks, completions, contracts, groups, rewards, redemptions, ownerContracts, platformDocs, rankConfig, messages] = await Promise.all([
     sb.from('profiles').select('*'),
     sb.from('items').select('*').order('sort_order', { ascending: true, nullsFirst: false }).order('created_at', { ascending: true }),
     sb.from('bookings').select('*'),
@@ -789,6 +836,7 @@ async function fetchAll(){
     sb.from('owner_contracts').select('*'),
     sb.from('platform_docs').select('*').eq('id', 'main').maybeSingle(),
     sb.from('rank_config').select('*').order('rank_index', { ascending: true }),
+    sb.from('messages').select('*').order('created_at', { ascending: true }),
   ]);
   state.profiles = profiles.data || [];
   state.items = items.data || [];
@@ -804,6 +852,9 @@ async function fetchAll(){
   // Si la table n'existe pas encore (migration pas encore exécutée), rankConfig.data est undefined
   // (erreur silencieuse ci-dessous) : on retombe sur DEFAULT_RANKS via getRanks(), rien ne casse.
   state.rank_config = rankConfig.data || [];
+  // Idem messagerie : tant que migration_lot18_messagerie.sql n'a pas été exécutée, messages.data
+  // est undefined -> l'onglet Messages reste vide au lieu de planter le reste de l'appli.
+  state.messages = messages.data || [];
 }
 
 async function boot(){
@@ -876,7 +927,7 @@ function renderUnlessTyping(){
 }
 function subscribeRealtime(){
   const channel = sb.channel('ov-sync');
-  ['items','bookings','tasks','task_completions','contracts','profiles','mission_groups','rewards','reward_redemptions'].forEach(table => {
+  ['items','bookings','tasks','task_completions','contracts','profiles','mission_groups','rewards','reward_redemptions','messages'].forEach(table => {
     channel.on('postgres_changes', { event:'*', schema:'public', table }, () => {
       clearTimeout(window.__ovSyncTimer);
       window.__ovSyncTimer = setTimeout(async () => {
@@ -1427,6 +1478,23 @@ function markRedemptionsSeen(username){
   if(!toMark.length) return;
   toMark.forEach(r => r.client_seen = true);
   sb.from('reward_redemptions').update({ client_seen: true }).eq('username', username).neq('status','attente').eq('client_seen', false).then(()=>{});
+}
+// Marque comme vus les messages de l'équipe dans la conversation du client connecté (appelé à
+// l'ouverture de l'onglet "Messages" côté client) — fait disparaître sa pastille de notification.
+function markMessagesSeenByClient(username){
+  const toMark = state.messages.filter(m => m.username === username && m.sender_is_master && !m.seen_by_client);
+  if(!toMark.length) return;
+  toMark.forEach(m => m.seen_by_client = true);
+  sb.from('messages').update({ seen_by_client: true }).eq('username', username).eq('sender_is_master', true).eq('seen_by_client', false).then(()=>{});
+}
+// Marque comme vus les messages d'UN client précis (appelé quand le master ouvre CETTE conversation
+// précise — jamais toutes en une fois, sinon on effacerait la pastille de conversations jamais
+// vraiment ouvertes).
+function markMessagesSeenByMaster(username){
+  const toMark = state.messages.filter(m => m.username === username && !m.sender_is_master && !m.seen_by_master);
+  if(!toMark.length) return;
+  toMark.forEach(m => m.seen_by_master = true);
+  sb.from('messages').update({ seen_by_master: true }).eq('username', username).eq('sender_is_master', false).eq('seen_by_master', false).then(()=>{});
 }
 
 /* ---------- Récompenses (À gagner) ---------- */
@@ -3073,6 +3141,7 @@ function iconFor(name){
     gestion: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 3h6v4H9z"/><rect x="4" y="7" width="16" height="14" rx="2"/><path d="M8 13h8M8 17h5"/></svg>',
     stock: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-5 9 5-9 5-9-5Z"/><path d="M3 9v6l9 5 9-5V9"/><path d="M12 14v6"/></svg>',
     recompenses: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12v9H4v-9"/><path d="M2 7h20v5H2z"/><path d="M12 22V7"/><path d="M12 7C10 3 5 3 5 6.5S9 9 12 7Z"/><path d="M12 7c2-4 7-4 7-.5S15 9 12 7Z"/></svg>',
+    messages: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5.5h16a1 1 0 0 1 1 1V16a1 1 0 0 1-1 1H9l-4.6 3.4A.6.6 0 0 1 3.5 20V17H4a1 1 0 0 1-1-1V6.5a1 1 0 0 1 1-1Z"/><path d="M7.5 9.5h9M7.5 13h6"/></svg>',
   };
   return icons[name] || "";
 }
@@ -3272,6 +3341,8 @@ function masterNavDef(){
         { id: "catalogue", label: "Catalogue" },
       ] },
     { id: "utilisateurs", label: "Utilisateurs", shortLabel: "Clients" },
+    { id: "messages", label: "Messages", icon: "messages",
+      badge: () => state.messages.filter(m => !m.sender_is_master && !m.seen_by_master).length },
     { id: "missions-group", label: "Missions", icon: "missions",
       badge: () => state.completions.filter(c => c.status === 'attente').length,
       sub: [
@@ -3287,6 +3358,8 @@ function clientNavDef(){
     { id: "accueil", label: "Accueil" },
     { id: "catalogue", label: "Catalogue location JVN", shortLabel: "Catalogue" },
     { id: "planning", label: "Mes réservations", shortLabel: "Réservé" },
+    { id: "messages", label: "Messages", icon: "messages",
+      badge: (u) => state.messages.filter(m => m.username === u.username && m.sender_is_master && !m.seen_by_client).length },
     { id: "missions", label: "Missions", badge: (u) => state.completions.filter(c => c.username === u.username && c.status !== 'attente' && c.client_seen === false).length },
     { id: "recompenses", label: "À gagner", badge: (u) => state.redemptions.filter(r => r.username === u.username && r.status !== 'attente' && r.client_seen === false).length },
     // "Mes contrats" regroupe le Contrat de Location ET, si un Contrat Propriétaire lui a été
@@ -4557,6 +4630,116 @@ function renderUtilisateurs(){
   `;
 }
 
+/* ---------- Messagerie (chat direct client <-> équipe) ---------- */
+// Une "conversation" par client (pas de messagerie entre clients) : on part de la liste des
+// comptes clients (comme Utilisateurs) et on y accroche le dernier message + le nombre de messages
+// non lus côté équipe, pour trier les conversations actives en premier.
+function messagesConversations(){
+  const clients = state.profiles.filter(p => !p.is_master);
+  return clients.map(p => {
+    const msgs = state.messages.filter(m => m.username === p.username);
+    const last = msgs.length ? msgs[msgs.length - 1] : null; // state.messages est trié par created_at croissant (fetchAll)
+    const unread = msgs.filter(m => !m.sender_is_master && !m.seen_by_master).length;
+    return { profile: p, last, unread };
+  }).sort((a, b) => {
+    if(!!a.unread !== !!b.unread) return a.unread ? -1 : 1;
+    const at = a.last ? new Date(a.last.created_at).getTime() : 0;
+    const bt = b.last ? new Date(b.last.created_at).getTime() : 0;
+    if(at !== bt) return bt - at;
+    return clientDisplayName(a.profile).localeCompare(clientDisplayName(b.profile));
+  });
+}
+function messagesMatchesSearch(p, q){
+  if(!q) return true;
+  return [p.username, p.prenom, p.nom, clientDisplayName(p)].filter(Boolean).join(" ").toLowerCase().includes(q);
+}
+function chatConvRowHtml(conv){
+  const p = conv.profile;
+  const active = state.messagesSelectedUser === p.username;
+  let preview = "Aucun message pour le moment";
+  if(conv.last){
+    const raw = (conv.last.sender_is_master ? "Vous : " : "") + conv.last.body.replace(/\n/g, " ");
+    preview = raw.length > 58 ? raw.slice(0, 58) + "…" : raw;
+  }
+  return `
+    <button type="button" class="chat-conv-row ${active?'active':''}" onclick="openConversation('${esc(p.username)}')">
+      <div class="avatar">${esc(p.username.slice(0,2).toUpperCase())}</div>
+      <div class="chat-conv-info">
+        <div class="chat-conv-name">${esc(clientDisplayName(p))}</div>
+        <div class="chat-conv-preview">${esc(preview)}</div>
+      </div>
+      ${conv.unread > 0 ? `<span class="badge-dot">${conv.unread>99?'99+':conv.unread}</span>` : ''}
+    </button>`;
+}
+// isMasterViewer = qui REGARDE l'écran (pas qui a écrit) : détermine de quel côté la bulle s'affiche
+// et si le bouton de suppression (réservé au master) apparaît.
+function chatBubbleHtml(m, isMasterViewer){
+  const mine = isMasterViewer ? m.sender_is_master : !m.sender_is_master;
+  return `
+    <div class="chat-bubble-row ${mine?'mine':''}">
+      <div class="chat-bubble">
+        ${isMasterViewer ? `<button type="button" class="chat-bubble-del" title="Supprimer ce message" onclick="deleteMessage('${m.id}')">${tacticalIconSvg('x-circle',{size:13})}</button>` : ''}
+        <div class="chat-bubble-text">${esc(m.body)}</div>
+        <div class="chat-bubble-meta">${fmtDateTime(m.created_at)}</div>
+      </div>
+    </div>`;
+}
+function renderMessagesClient(){
+  const u = currentProfile();
+  const msgs = state.messages.filter(m => m.username === u.username);
+  return `
+    <div class="topbar"><div><h1>Messages</h1><div class="desc">Discutez en direct avec l'équipe Owls Vision.</div></div></div>
+    <div class="chat-wrap">
+      <div class="chat-thread-pane">
+        <div class="chat-thread-header"><div class="t-title">Équipe Owls Vision</div></div>
+        <div class="chat-messages" id="chat-messages">${msgs.length ? msgs.map(m => chatBubbleHtml(m, false)).join('') : `<div class="chat-empty-thread"><div class="empty">Envoyez un message, l'équipe vous répondra ici.</div></div>`}</div>
+        <div class="chat-compose">
+          <textarea id="chat-input" rows="1" placeholder="Écrivez un message…" onkeydown="onChatKeydown(event,'${esc(u.username)}')" oninput="autoGrowChatInput(this)"></textarea>
+          <button type="button" class="btn btn-primary btn-sm" onclick="sendMessage('${esc(u.username)}')">Envoyer</button>
+        </div>
+      </div>
+    </div>`;
+}
+function renderMessagesMaster(){
+  const q = (state.messagesSearch||'').trim().toLowerCase();
+  const convs = messagesConversations().filter(c => messagesMatchesSearch(c.profile, q));
+  const selUsername = state.messagesSelectedUser;
+  const selProfile = selUsername ? state.profiles.find(p => p.username === selUsername) : null;
+  const msgs = selProfile ? state.messages.filter(m => m.username === selUsername) : [];
+  return `
+    <div class="topbar"><div><h1>Messages</h1><div class="desc">Discutez en direct avec vos clients.</div></div></div>
+    <div class="chat-wrap ${state.messagesMobileOpen?'thread-open':''}">
+      <div class="chat-list-pane">
+        <div class="filter-bar"><input type="text" placeholder="Rechercher un client…" value="${esc(state.messagesSearch)}" oninput="onMessagesSearch(this.value)"></div>
+        <div class="chat-conv-list" id="chat-conv-list">${convs.length ? convs.map(chatConvRowHtml).join('') : `<div class="empty" style="margin:16px;">Aucun client pour le moment.</div>`}</div>
+      </div>
+      <div class="chat-thread-pane">
+        ${selProfile ? `
+          <div class="chat-thread-header">
+            <button type="button" class="chat-back-btn" onclick="closeConversation()">${tacticalIconSvg('chevron-left',{size:19})}</button>
+            <div class="t-title" style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${esc(clientDisplayName(selProfile))}</div>
+            <button type="button" class="btn btn-ghost btn-sm" style="width:auto;flex-shrink:0;" onclick="deleteConversation('${esc(selProfile.username)}')">Supprimer la conversation</button>
+          </div>
+          <div class="chat-messages" id="chat-messages">${msgs.length ? msgs.map(m => chatBubbleHtml(m, true)).join('') : `<div class="chat-empty-thread"><div class="empty">Aucun message avec ce client pour le moment.</div></div>`}</div>
+          <div class="chat-compose">
+            <textarea id="chat-input" rows="1" placeholder="Répondre…" onkeydown="onChatKeydown(event,'${esc(selProfile.username)}')" oninput="autoGrowChatInput(this)"></textarea>
+            <button type="button" class="btn btn-primary btn-sm" onclick="sendMessage('${esc(selProfile.username)}')">Envoyer</button>
+          </div>
+        ` : `<div class="chat-empty-thread"><div class="empty">Sélectionnez une conversation pour l'ouvrir.</div></div>`}
+      </div>
+    </div>`;
+}
+function refreshMessagesListPane(){
+  const q = (state.messagesSearch||'').trim().toLowerCase();
+  const convs = messagesConversations().filter(c => messagesMatchesSearch(c.profile, q));
+  const el = document.getElementById('chat-conv-list');
+  if(el) el.innerHTML = convs.length ? convs.map(chatConvRowHtml).join('') : `<div class="empty" style="margin:16px;">Aucun client pour le moment.</div>`;
+}
+function scrollChatToBottom(){
+  const el = document.getElementById('chat-messages');
+  if(el) el.scrollTop = el.scrollHeight;
+}
+
 /* ---------- Contrats (équipe) ---------- */
 function contratStatusRank(c){
   if(!c) return 0; // Aucun contrat
@@ -5230,6 +5413,7 @@ function render(){
   else if(state.view === "missions-validation") content = renderMissionsValidation();
   else if(state.view === "missions-creation") content = renderMissionsCreation();
   else if(state.view === "utilisateurs") content = renderUtilisateurs();
+  else if(state.view === "messages") content = u.is_master ? renderMessagesMaster() : renderMessagesClient();
   else if(state.view === "contrats") content = renderContratsAdmin();
   else if(state.view === "contrat") content = renderContratClient();
   else if(state.view === "gestion-proprietaires") content = renderGestionProprietaires();
@@ -5251,6 +5435,7 @@ function render(){
     ${renderModal()}
   `;
   animateXpTotal();
+  scrollChatToBottom();
 }
 
 // XP total (accueil) : ne s'anime que lorsque le chiffre change réellement (mission validée,
@@ -5302,6 +5487,14 @@ window.goto = (view) => {
   if(u && u.is_master && view === 'contrats') markContractsSeen();
   if(u && u.is_master && view === 'gestion-proprietaires') markOwnerContractsSeen();
   if(u && !u.is_master && view === 'recompenses') markRedemptionsSeen(u.username);
+  if(u && !u.is_master && view === 'messages') markMessagesSeenByClient(u.username);
+  if(u && u.is_master && view === 'messages'){
+    // Sur mobile on revient toujours à la liste des conversations en arrivant sur l'onglet (l'ouverture
+    // d'UNE conversation précise se fait ensuite via openConversation) ; sur desktop ce flag n'a pas
+    // d'effet visuel (les deux volets sont toujours affichés côte à côte), donc rien à préserver.
+    state.messagesMobileOpen = false;
+    if(state.messagesSelectedUser) markMessagesSeenByMaster(state.messagesSelectedUser);
+  }
   render();
 };
 window.toggleNavGroup = (id) => { state.navOpenGroups[id] = !state.navOpenGroups[id]; render(); };
@@ -5451,6 +5644,69 @@ window.saveProfile = saveProfile;
 window.setBookingStatus = setBookingStatus;
 window.onGestionSearch = (v) => { state.gestionSearch = v; refreshGestionView(); };
 window.onUsersSearch = (v) => { state.usersSearch = v; refreshUsersView(); };
+window.onMessagesSearch = (v) => { state.messagesSearch = v; refreshMessagesListPane(); };
+window.openConversation = (username) => {
+  state.messagesSelectedUser = username;
+  state.messagesMobileOpen = true;
+  markMessagesSeenByMaster(username);
+  render();
+};
+window.closeConversation = () => { state.messagesMobileOpen = false; render(); };
+window.onChatKeydown = (e, conversationUsername) => {
+  // Entrée envoie, Maj+Entrée insère un retour à la ligne — convention chat standard, cohérente
+  // sur mobile (clavier virtuel) et desktop.
+  if(e.key === 'Enter' && !e.shiftKey){
+    e.preventDefault();
+    sendMessage(conversationUsername);
+  }
+};
+window.autoGrowChatInput = (ta) => {
+  ta.style.height = 'auto';
+  ta.style.height = Math.min(ta.scrollHeight, 120) + 'px';
+};
+window.sendMessage = async (conversationUsername) => {
+  const ta = document.getElementById('chat-input');
+  if(!ta) return;
+  const body = ta.value.trim();
+  if(!body) return;
+  const u = currentProfile();
+  if(!u) return;
+  const isMaster = !!u.is_master;
+  ta.disabled = true;
+  const { data, error } = await sb.from('messages').insert({
+    username: conversationUsername,
+    sender: u.username,
+    sender_is_master: isMaster,
+    body,
+    seen_by_master: isMaster,
+    seen_by_client: !isMaster,
+  }).select().single();
+  if(error){
+    ta.disabled = false;
+    showErrorToast("Message non envoyé : " + error.message);
+    return;
+  }
+  state.messages.push(data);
+  render();
+  const ta2 = document.getElementById('chat-input');
+  if(ta2) ta2.focus();
+};
+window.deleteMessage = async (id) => {
+  if(!confirm("Supprimer ce message ? Il disparaît aussi pour le client. Action irréversible.")) return;
+  const { error } = await sb.from('messages').delete().eq('id', id);
+  if(error){ alert("Erreur : " + error.message); return; }
+  state.messages = state.messages.filter(m => m.id !== id);
+  render();
+};
+window.deleteConversation = async (username) => {
+  const p = state.profiles.find(x => x.username === username);
+  if(!confirm(`Supprimer TOUTE la conversation avec ${p ? clientDisplayName(p) : username} ? Tous les messages échangés seront définitivement supprimés. Action irréversible.`)) return;
+  const { error } = await sb.from('messages').delete().eq('username', username);
+  if(error){ alert("Erreur : " + error.message); return; }
+  state.messages = state.messages.filter(m => m.username !== username);
+  state.messagesMobileOpen = false;
+  render();
+};
 window.onGestionFilter = (v) => { state.gestionFilter = v; refreshGestionView(); };
 window.onGestionSort = (field) => {
   if(state.gestionSort.field === field) state.gestionSort.dir = state.gestionSort.dir === 'asc' ? 'desc' : 'asc';
