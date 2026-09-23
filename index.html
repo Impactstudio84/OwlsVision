@@ -663,7 +663,99 @@
     .chat-back-btn{display:flex;}
     .chat-bubble{max-width:86%;}
     .chat-bubble-del{display:flex;width:22px;height:22px;}
+
+    /* ---------- Finances (Lot 19) ---------- */
+    .fin-2col{grid-template-columns:1fr;}
+    .fin-entry-form{grid-template-columns:1fr 1fr;}
+    .fin-remu-grid{grid-template-columns:1fr 1fr;}
+    .fin-params-grid{grid-template-columns:1fr 1fr;}
+    .fin-period-tabs{flex-wrap:wrap;}
+    .fin-period-sep{display:none;}
+    .fin-chart-card{padding:16px 14px 12px;}
+    .fin-chart-legend{gap:10px 16px;}
   }
+
+  /* ---------- Finances (Lot 19) ---------- */
+  .fin-2col{display:grid;grid-template-columns:1fr 1fr;gap:18px;align-items:start;margin-bottom:18px;}
+  .fin-2col > .panel + .panel{margin-top:0;}
+  .fin-entry-form{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;}
+  .fin-entry-form .fin-span2{grid-column:1 / -1;}
+  .fin-tbl-wrap{max-height:280px;overflow-y:auto;border:1px solid var(--border-soft);border-radius: var(--r-sm);}
+  .tag.fin-vente{background:var(--blue-soft);color:var(--blue);}
+  .tag.fin-location{background:var(--violet-soft);color:var(--violet);}
+
+  .fin-period-bar{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;padding:14px 18px;margin-bottom:18px;}
+  .fin-period-tabs{display:flex;gap:4px;background:rgba(255,255,255,0.05);border:1px solid var(--border-soft);border-radius: var(--r-pill);padding:4px;flex-wrap:wrap;}
+  .fin-period-tabs button{background:none;border:none;color:var(--text-dim);font-size:12.5px;font-weight:600;padding:8px 14px;border-radius: var(--r-pill);transition:all .18s var(--ease);width:auto;}
+  .fin-period-tabs button:hover{color:var(--text);background:rgba(255,255,255,0.06);}
+  .fin-period-tabs button.active{background:var(--accent);color:var(--accent-ink);}
+  .fin-period-sep{width:1px;align-self:stretch;background:var(--border-soft);margin:3px 2px;}
+  .fin-period-range{display:flex;align-items:center;gap:8px;}
+  .fin-period-range input{background:rgba(255,255,255,0.055);border:1px solid var(--border-soft);color:var(--text);padding:8px 10px;border-radius: var(--r-sm);font-size:13px;color-scheme:dark;}
+  .fin-period-label{font-size:12.5px;color:var(--text-faint);font-weight:500;}
+
+  .fin-mini-stats{display:grid;grid-template-columns:repeat(6,1fr);gap:10px;margin:16px 0 18px;}
+  .fin-mini-stat{background:rgba(255,255,255,0.03);border:1px solid var(--border-soft);border-radius: var(--r-sm);padding:11px 13px;}
+  .fin-mini-stat .ms-label{font-size:10.5px;color:var(--text-faint);font-weight:600;text-transform:uppercase;letter-spacing:0.03em;}
+  .fin-mini-stat .ms-value{font-size:15.5px;font-weight:700;font-variant-numeric:tabular-nums;margin-top:4px;}
+
+  .fin-remu-grid{display:grid;grid-template-columns:220px repeat(4,1fr);gap:14px;align-items:end;}
+  .fin-remu-out{background:rgba(255,255,255,0.03);border:1px solid var(--border-soft);border-radius: var(--r-sm);padding:10px 13px;}
+  .fin-remu-out .ro-label{font-size:10.5px;color:var(--text-faint);font-weight:600;text-transform:uppercase;letter-spacing:0.03em;}
+  .fin-remu-out .ro-value{font-size:16px;font-weight:700;margin-top:4px;font-variant-numeric:tabular-nums;}
+
+  .fin-cascade{display:flex;flex-direction:column;}
+  .fin-cascade-row{display:flex;align-items:center;gap:12px;padding:10px 4px;border-bottom:1px dashed var(--border-soft);}
+  .fin-cascade-row:last-child{border-bottom:none;}
+  .fin-cascade-op{width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;flex-shrink:0;}
+  .fin-cascade-op.plus{background:var(--accent-soft);color:var(--accent);}
+  .fin-cascade-op.minus{background:var(--danger-soft);color:#FFB3A6;}
+  .fin-cascade-op.eq{background:rgba(255,255,255,0.08);color:var(--text-dim);}
+  .fin-cascade-label{flex:1;font-size:13.5px;color:var(--text-dim);}
+  .fin-cascade-value{font-variant-numeric:tabular-nums;font-weight:700;font-size:14.5px;white-space:nowrap;}
+  .fin-cascade-row.total .fin-cascade-label{color:var(--text);font-weight:700;}
+  .fin-cascade-row.total .fin-cascade-value{font-size:19px;}
+  .fin-cascade-row.final{margin-top:6px;padding-top:16px;border-top:1px solid var(--border);border-bottom:none;}
+  .fin-cascade-row.final .fin-cascade-value{font-size:23px;color:var(--accent);}
+  .fin-cascade-row.final .fin-cascade-value.neg{color:var(--danger);}
+  .fin-cascade-note{font-size:11.5px;color:var(--text-faint);margin-left:34px;margin-top:-4px;margin-bottom:2px;}
+
+  details.fin-details summary{cursor:pointer;font-family:var(--font-disp);font-size:16.5px;font-weight:700;list-style:none;display:flex;align-items:center;gap:8px;}
+  details.fin-details summary::-webkit-details-marker{display:none;}
+  details.fin-details summary .chev{transition:transform .18s var(--ease);color:var(--text-faint);}
+  details.fin-details[open] summary .chev{transform:rotate(90deg);}
+  .fin-params-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-top:16px;}
+
+  .fin-disclaimer{display:flex;gap:10px;align-items:flex-start;font-size:12px;color:var(--text-faint);line-height:1.55;margin-top:18px;padding:14px 16px;border:1px dashed var(--border);border-radius: var(--r-sm);}
+  .fin-disclaimer svg{flex-shrink:0;margin-top:1px;color:var(--amber);}
+
+  /* ---------- Finances : graphiques (Statistiques) — .chart-card/.chart-card-head réutilisent
+     les classes déjà définies pour le tableau de bord (mêmes cartes, même look) ---------- */
+  .fin-chart-holder{overflow-x:auto;}
+  .fin-chart-holder svg{display:block;overflow:visible;}
+  .fin-chart-svg-label{font-family:'Inter',sans-serif;font-size:10.5px;fill:var(--text-faint);}
+  .fin-chart-svg-value{font-family:'Inter',sans-serif;font-size:11px;font-weight:700;fill:var(--text);font-variant-numeric:tabular-nums;}
+  .fin-chart-svg-axis{stroke:var(--border-soft);stroke-width:1;}
+  .fin-chart-mark{transition:opacity .12s var(--ease);cursor:default;}
+  .fin-chart-mark:hover{opacity:0.82;}
+  .fin-chart-legend{display:flex;flex-wrap:wrap;gap:14px;margin-top:12px;padding-top:12px;border-top:1px solid var(--border-soft);}
+  .fin-chart-legend:empty{display:none;}
+  .fin-chart-legend-item{display:flex;align-items:center;gap:7px;font-size:12px;color:var(--text-dim);}
+  .fin-chart-legend-swatch{width:10px;height:10px;border-radius:3px;flex-shrink:0;}
+  .fin-table-toggle{background:rgba(255,255,255,0.055);border:1px solid var(--border-soft);color:var(--text-dim);font-size:11.5px;font-weight:600;padding:6px 12px;border-radius: var(--r-pill);transition:all .15s var(--ease);flex-shrink:0;width:auto;}
+  .fin-table-toggle:hover{background:rgba(255,255,255,0.09);color:var(--text);}
+  .fin-table-toggle.active{background:var(--accent-soft);color:var(--accent);border-color:var(--accent-soft-2);}
+  .fin-chart-table{overflow-x:auto;}
+  .fin-chart-table table{font-size:12.5px;}
+
+  .fin-tooltip{position:fixed;z-index:60;pointer-events:none;background:#0c0f0c;border:1px solid var(--border);border-radius: var(--r-sm);padding:9px 12px;font-size:12px;box-shadow: var(--shadow-2);opacity:0;transform:translateY(4px);transition:opacity .1s var(--ease), transform .1s var(--ease);max-width:230px;}
+  .fin-tooltip.visible{opacity:1;transform:translateY(0);}
+  .fin-tooltip .ctt-title{font-weight:700;color:var(--text);margin-bottom:5px;font-family:var(--font-disp);letter-spacing:0.01em;}
+  .fin-tooltip .ctt-row{display:flex;align-items:center;gap:8px;justify-content:space-between;}
+  .fin-tooltip .ctt-row + .ctt-row{margin-top:2px;}
+  .fin-tooltip .ctt-dot{width:8px;height:8px;border-radius:2px;flex-shrink:0;}
+  .fin-tooltip .ctt-label{flex:1;color:var(--text-dim);}
+  .fin-tooltip .ctt-val{font-weight:700;color:var(--text);font-variant-numeric:tabular-nums;white-space:nowrap;}
 </style>
 </head>
 <body>
@@ -765,6 +857,10 @@ let state = {
   fatalError: null,
   session: null, // {username(=email pour les clients), isMaster}
   profiles: [], items: [], bookings: [], tasks: [], completions: [], contracts: [], mission_groups: [], rewards: [], redemptions: [], rank_config: [], messages: [],
+  financeSales: [], financeCharges: [], financeSettings: null,
+  financePeriod: null, // {mode,start,end} — initialisé au premier affichage de l'onglet (finEnsurePeriod)
+  financeStatsOpen: false,
+  financeTableView: { A: false, B: false, C: false },
   view: "accueil",
   messagesSelectedUser: null, // (master) conversation actuellement ouverte dans le volet de droite
   messagesMobileOpen: false,  // (master, mobile uniquement) bascule liste <-> conversation
@@ -823,7 +919,7 @@ function currentProfile(){ return state.profiles.find(p => p.username === state.
 
 /* ---------- Boot & data ---------- */
 async function fetchAll(){
-  const [profiles, items, bookings, tasks, completions, contracts, groups, rewards, redemptions, ownerContracts, platformDocs, rankConfig, messages] = await Promise.all([
+  const [profiles, items, bookings, tasks, completions, contracts, groups, rewards, redemptions, ownerContracts, platformDocs, rankConfig, messages, financeSales, financeCharges, financeSettings] = await Promise.all([
     sb.from('profiles').select('*'),
     sb.from('items').select('*').order('sort_order', { ascending: true, nullsFirst: false }).order('created_at', { ascending: true }),
     sb.from('bookings').select('*'),
@@ -837,6 +933,9 @@ async function fetchAll(){
     sb.from('platform_docs').select('*').eq('id', 'main').maybeSingle(),
     sb.from('rank_config').select('*').order('rank_index', { ascending: true }),
     sb.from('messages').select('*').order('created_at', { ascending: true }),
+    sb.from('finance_sales').select('*').order('date', { ascending: true }),
+    sb.from('finance_charges').select('*').order('date', { ascending: true }),
+    sb.from('finance_settings').select('*').eq('id', 1).maybeSingle(),
   ]);
   state.profiles = profiles.data || [];
   state.items = items.data || [];
@@ -855,6 +954,13 @@ async function fetchAll(){
   // Idem messagerie : tant que migration_lot18_messagerie.sql n'a pas été exécutée, messages.data
   // est undefined -> l'onglet Messages reste vide au lieu de planter le reste de l'appli.
   state.messages = messages.data || [];
+  // Idem Lot 19 (Finances) : tant que migration_lot19_finances.sql n'a pas été exécutée, ces
+  // trois lectures échouent silencieusement -> l'onglet Finances reste vide/à zéro au lieu de
+  // planter le reste de l'appli. financeSettings retombe sur des valeurs par défaut locales
+  // (mêmes taux que la migration) tant que la ligne n'existe pas encore côté base.
+  state.financeSales = financeSales.data || [];
+  state.financeCharges = financeCharges.data || [];
+  state.financeSettings = financeSettings.data || null;
 }
 
 async function boot(){
@@ -927,7 +1033,7 @@ function renderUnlessTyping(){
 }
 function subscribeRealtime(){
   const channel = sb.channel('ov-sync');
-  ['items','bookings','tasks','task_completions','contracts','profiles','mission_groups','rewards','reward_redemptions','messages'].forEach(table => {
+  ['items','bookings','tasks','task_completions','contracts','profiles','mission_groups','rewards','reward_redemptions','messages','finance_sales','finance_charges','finance_settings'].forEach(table => {
     channel.on('postgres_changes', { event:'*', schema:'public', table }, () => {
       clearTimeout(window.__ovSyncTimer);
       window.__ovSyncTimer = setTimeout(async () => {
@@ -3142,6 +3248,7 @@ function iconFor(name){
     stock: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-5 9 5-9 5-9-5Z"/><path d="M3 9v6l9 5 9-5V9"/><path d="M12 14v6"/></svg>',
     recompenses: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12v9H4v-9"/><path d="M2 7h20v5H2z"/><path d="M12 22V7"/><path d="M12 7C10 3 5 3 5 6.5S9 9 12 7Z"/><path d="M12 7c2-4 7-4 7-.5S15 9 12 7Z"/></svg>',
     messages: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5.5h16a1 1 0 0 1 1 1V16a1 1 0 0 1-1 1H9l-4.6 3.4A.6.6 0 0 1 3.5 20V17H4a1 1 0 0 1-1-1V6.5a1 1 0 0 1 1-1Z"/><path d="M7.5 9.5h9M7.5 13h6"/></svg>',
+    finances: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2.5v19"/><path d="M17 6.8c0-2.1-2.4-3.3-5-3.3s-5 1.2-5 3.3 2.4 3 5 3 5 .9 5 3-2.4 3.3-5 3.3-5-1.2-5-3.3"/></svg>',
   };
   return icons[name] || "";
 }
@@ -3341,6 +3448,7 @@ function masterNavDef(){
         { id: "catalogue", label: "Catalogue" },
       ] },
     { id: "utilisateurs", label: "Utilisateurs", shortLabel: "Clients" },
+    { id: "finances", label: "Finances", icon: "finances" },
     { id: "messages", label: "Messages", icon: "messages",
       badge: () => state.messages.filter(m => !m.sender_is_master && !m.seen_by_master).length },
     { id: "missions-group", label: "Missions", icon: "missions",
@@ -4740,6 +4848,692 @@ function scrollChatToBottom(){
   if(el) el.scrollTop = el.scrollHeight;
 }
 
+/* ==========================================================================
+   Finances (Lot 19) — master uniquement. Saisie ventes/charges jour par jour,
+   cascade SASU (CA -> TVA -> marge -> charges -> IS -> résultat net), et un
+   panneau Statistiques (3 graphiques SVG faits main, palette validée contre
+   le fond de l'appli #050605). Persisté via Supabase (finance_sales,
+   finance_charges, finance_settings — voir migration_lot19_finances.sql),
+   jamais dans le navigateur : les chiffres suivent Luka d'un appareil à l'autre.
+
+   Comme le reste de l'appli, render() reconstruit tout le HTML à chaque
+   changement d'état — mais ici certains champs (taux, salaire brut) sont
+   tapés caractère par caractère : les réécrire à chaque frappe ferait perdre
+   le focus. finRefreshCalc() ne touche donc que les zones de résultats
+   calculés (jamais un <input>), tandis que finRefreshInner() reconstruit tout
+   l'onglet pour les changements structurels (période, bascules, ajout/suppr).
+   ========================================================================== */
+function finSettings(){
+  return state.financeSettings || { id:1, tva:20, is_reduit:15, seuil_reduit:42500, is_normal:25, charges_salariales:22, charges_patronales:45, pfu:31.4, remuneration_brut_mensuel:0 };
+}
+function finFmtEUR(n){
+  if(!isFinite(n)) n = 0;
+  return n.toLocaleString('fr-FR', { style:'currency', currency:'EUR', maximumFractionDigits:0 });
+}
+function finFmtPct(n){ return (n*100).toLocaleString('fr-FR', { maximumFractionDigits:1 }) + ' %'; }
+function finStartOfMonth(d){ return new Date(d.getFullYear(), d.getMonth(), 1); }
+function finEndOfMonth(d){ return new Date(d.getFullYear(), d.getMonth()+1, 0); }
+function finIso(d){ return d.toISOString().slice(0,10); }
+
+function finEnsurePeriod(){
+  if(state.financePeriod) return;
+  const now = new Date();
+  state.financePeriod = { mode:'month', start: finIso(finStartOfMonth(now)), end: finIso(finEndOfMonth(now)) };
+}
+function finApplyPeriodPreset(mode){
+  finEnsurePeriod();
+  const now = new Date();
+  const p = state.financePeriod;
+  if(mode === 'month'){ p.start = finIso(finStartOfMonth(now)); p.end = finIso(finEndOfMonth(now)); }
+  else if(mode === 'prevmonth'){
+    const prev = new Date(now.getFullYear(), now.getMonth()-1, 1);
+    p.start = finIso(finStartOfMonth(prev)); p.end = finIso(finEndOfMonth(prev));
+  } else if(mode === 'year'){
+    p.start = now.getFullYear()+'-01-01'; p.end = now.getFullYear()+'-12-31';
+  }
+  p.mode = mode;
+}
+function finInRange(dateStr){ const p = state.financePeriod; return dateStr >= p.start && dateStr <= p.end; }
+function finMonthsElapsed(startStr, endStr){
+  const start = new Date(startStr + 'T00:00:00');
+  let end = new Date(endStr + 'T00:00:00');
+  const today = new Date(); today.setHours(0,0,0,0);
+  if(end > today) end = today;
+  if(end < start) return 0;
+  const months = {};
+  const cur = new Date(start.getFullYear(), start.getMonth(), 1);
+  const endMonth = new Date(end.getFullYear(), end.getMonth(), 1);
+  while(cur <= endMonth){ months[cur.getFullYear() + '-' + cur.getMonth()] = true; cur.setMonth(cur.getMonth()+1); }
+  return Object.keys(months).length;
+}
+
+function finComputeAll(){
+  finEnsurePeriod();
+  const p = finSettings();
+  const tvaRate = p.tva/100, isReduitRate = p.is_reduit/100, isNormalRate = p.is_normal/100;
+  const salRate = p.charges_salariales/100, patRate = p.charges_patronales/100, pfuRate = p.pfu/100;
+
+  const sales = state.financeSales.filter(s => finInRange(s.date));
+  const charges = state.financeCharges.filter(c => finInRange(c.date));
+
+  let caTTC=0, caHT=0, tvaCollectee=0, coutMarch=0;
+  sales.forEach(s => {
+    const ttc = Number(s.ttc)||0;
+    const ht = ttc / (1+tvaRate);
+    caTTC += ttc; caHT += ht; tvaCollectee += (ttc - ht); coutMarch += Number(s.cout_ht||0);
+  });
+  const margeBrute = caHT - coutMarch;
+  const margePct = caHT > 0 ? margeBrute / caHT : 0;
+
+  let chargesHT=0, tvaDeductible=0;
+  charges.forEach(c => {
+    const m = Number(c.montant_ht||0);
+    chargesHT += m;
+    if(c.tva_deductible) tvaDeductible += m * tvaRate;
+  });
+  const tvaNette = tvaCollectee - tvaDeductible;
+
+  const nbMois = finMonthsElapsed(state.financePeriod.start, state.financePeriod.end);
+  const brut = Number(p.remuneration_brut_mensuel||0) * nbMois;
+  const chargesSalariales = brut * salRate;
+  const netAvantImpot = brut - chargesSalariales;
+  const chargesPatronales = brut * patRate;
+  const coutEmployeur = brut + chargesPatronales;
+
+  const resultatAvantIS = margeBrute - chargesHT - coutEmployeur;
+  let isEstime = 0;
+  if(resultatAvantIS > 0){
+    const trancheReduite = Math.min(resultatAvantIS, p.seuil_reduit);
+    const trancheNormale = Math.max(0, resultatAvantIS - p.seuil_reduit);
+    isEstime = trancheReduite*isReduitRate + trancheNormale*isNormalRate;
+  }
+  const resultatNet = resultatAvantIS - isEstime;
+  const dividendesDispo = Math.max(0, resultatNet);
+  const dividendesApresPfu = dividendesDispo * (1 - pfuRate);
+
+  return {
+    caTTC, caHT, tvaCollectee, coutMarch, margeBrute, margePct,
+    chargesHT, tvaDeductible, tvaNette,
+    nbMois, brut, chargesSalariales, netAvantImpot, chargesPatronales, coutEmployeur,
+    resultatAvantIS, isEstime, resultatNet, dividendesDispo, dividendesApresPfu,
+    salesCount: sales.length,
+  };
+}
+
+/* ---------- Rendu : en-tête période ---------- */
+function finPeriodBarHtml(){
+  finEnsurePeriod();
+  const p = state.financePeriod;
+  const f = d => d.toLocaleDateString('fr-FR', { day:'numeric', month:'short', year:'numeric' });
+  const label = f(new Date(p.start+'T00:00:00')) + ' → ' + f(new Date(p.end+'T00:00:00'));
+  const tab = (mode,lbl) => `<button type="button" class="${p.mode===mode?'active':''}" onclick="finSetPeriod('${mode}')">${lbl}</button>`;
+  return `
+    <div class="panel fin-period-bar">
+      <div class="fin-period-tabs">
+        ${tab('month','Ce mois-ci')}
+        ${tab('prevmonth','Mois dernier')}
+        ${tab('year','Cette année')}
+        <button type="button" class="${p.mode==='custom'?'active':''}" onclick="finSetPeriod('custom')">Période…</button>
+        <span class="fin-period-sep"></span>
+        <button type="button" class="${state.financeStatsOpen?'active':''}" onclick="finToggleStats()">${tacticalIconSvg('trending-up',{size:13,style:'margin-right:5px;vertical-align:-2px;'})}Statistiques</button>
+      </div>
+      ${p.mode==='custom' ? `<div class="fin-period-range">
+        <input type="date" value="${esc(p.start)}" onchange="finSetCustomRange('start', this.value)">
+        <span style="color:var(--text-faint);">→</span>
+        <input type="date" value="${esc(p.end)}" onchange="finSetCustomRange('end', this.value)">
+      </div>` : ''}
+      <div class="fin-period-label">${esc(label)}</div>
+    </div>`;
+}
+
+/* ---------- Rendu : KPI + mini-stats ---------- */
+function finKpisHtml(t){
+  const salesLabel = t.salesCount + (t.salesCount>1 ? ' ventes' : ' vente');
+  const margeColor = t.margeBrute>=0 ? 'var(--accent)' : 'var(--danger)';
+  const netColor = t.resultatNet>=0 ? 'var(--accent)' : 'var(--danger)';
+  return `
+    <div class="stat-grid">
+      <div class="stat-card">
+        <div class="stat-card-top">
+          <div class="stat-icon" style="background:var(--blue-soft);color:var(--blue);">${tacticalIconSvg('coins',{size:19})}</div>
+          <span class="stat-delta" style="background:var(--blue-soft);color:var(--blue);">${esc(salesLabel)}</span>
+        </div>
+        <div class="stat-value">${finFmtEUR(t.caTTC)}</div>
+        <div class="stat-label">CA encaissé (TTC)</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-card-top">
+          <div class="stat-icon" style="background:var(--accent-soft);color:var(--accent);">${tacticalIconSvg('trending-up',{size:19})}</div>
+          <span class="stat-delta" style="background:var(--accent-soft);color:var(--accent);">${finFmtPct(t.margePct)}</span>
+        </div>
+        <div class="stat-value" style="color:${margeColor};">${finFmtEUR(t.margeBrute)}</div>
+        <div class="stat-label">Marge brute (du CA HT)</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-card-top">
+          <div class="stat-icon" style="background:var(--amber-soft);color:var(--amber);">${tacticalIconSvg('doc',{size:19})}</div>
+        </div>
+        <div class="stat-value">${finFmtEUR(t.tvaNette)}</div>
+        <div class="stat-label">TVA nette à décaisser</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-card-top">
+          <div class="stat-icon" style="background:${t.resultatNet>=0?'var(--accent-soft)':'var(--danger-soft)'};color:${netColor};">${tacticalIconSvg('reticle',{size:19})}</div>
+        </div>
+        <div class="stat-value" style="color:${netColor};">${finFmtEUR(t.resultatNet)}</div>
+        <div class="stat-label">Résultat net (période, après IS estimé)</div>
+      </div>
+    </div>`;
+}
+function finMiniStatHtml(label,value){ return `<div class="fin-mini-stat"><div class="ms-label">${esc(label)}</div><div class="ms-value">${value}</div></div>`; }
+function finMiniStatsHtml(t){
+  return `<div class="fin-mini-stats">
+    ${finMiniStatHtml('CA HT', finFmtEUR(t.caHT))}
+    ${finMiniStatHtml('Coût marchandises', finFmtEUR(t.coutMarch))}
+    ${finMiniStatHtml('Charges', finFmtEUR(t.chargesHT))}
+    ${finMiniStatHtml('Rémunération (coût total)', finFmtEUR(t.coutEmployeur))}
+    ${finMiniStatHtml('Résultat avant IS', finFmtEUR(t.resultatAvantIS))}
+    ${finMiniStatHtml('IS estimé', finFmtEUR(t.isEstime))}
+  </div>`;
+}
+
+/* ---------- Rendu : ventes / charges (saisie + tableaux) ---------- */
+function finSalesTbodyHtml(){
+  const rows = state.financeSales.filter(s => finInRange(s.date)).slice().sort((a,b) => a.date < b.date ? 1 : -1);
+  if(!rows.length) return `<tr><td colspan="5"><div class="empty">Aucune vente sur cette période.</div></td></tr>`;
+  const tvaRate = finSettings().tva/100;
+  return rows.map(s => {
+    const ht = Number(s.ttc)/(1+tvaRate);
+    const marge = ht - Number(s.cout_ht||0);
+    const dt = new Date(s.date+'T00:00:00').toLocaleDateString('fr-FR', { day:'2-digit', month:'2-digit' });
+    return `<tr>
+      <td>${dt}</td>
+      <td><span class="tag ${s.type==='vente'?'fin-vente':'fin-location'}">${s.type==='vente'?'Vente':'Location'}</span> ${esc(s.label)}</td>
+      <td style="text-align:right;font-variant-numeric:tabular-nums;">${finFmtEUR(s.ttc)}</td>
+      <td style="text-align:right;font-variant-numeric:tabular-nums;">${finFmtEUR(marge)}</td>
+      <td><div style="display:flex;"><button class="btn btn-danger btn-sm" onclick="finDeleteSale('${s.id}')">Suppr.</button></div></td>
+    </tr>`;
+  }).join('');
+}
+function finChargesTbodyHtml(){
+  const rows = state.financeCharges.filter(c => finInRange(c.date)).slice().sort((a,b) => a.date < b.date ? 1 : -1);
+  if(!rows.length) return `<tr><td colspan="4"><div class="empty">Aucune charge sur cette période.</div></td></tr>`;
+  return rows.map(c => {
+    const dt = new Date(c.date+'T00:00:00').toLocaleDateString('fr-FR', { day:'2-digit', month:'2-digit' });
+    return `<tr>
+      <td>${dt}</td>
+      <td>${esc(c.label)}<div style="font-size:11px;color:var(--text-faint);margin-top:2px;">${esc(c.category)}</div></td>
+      <td style="text-align:right;font-variant-numeric:tabular-nums;">${finFmtEUR(c.montant_ht)}</td>
+      <td><div style="display:flex;"><button class="btn btn-danger btn-sm" onclick="finDeleteCharge('${c.id}')">Suppr.</button></div></td>
+    </tr>`;
+  }).join('');
+}
+function finVentesPanelHtml(){
+  return `
+    <div class="panel">
+      <h2>Ventes — saisie jour par jour</h2>
+      <div style="font-size:12.5px;color:var(--text-faint);margin-bottom:16px;line-height:1.5;">Une ligne par vente ou location encaissée. La marge et la TVA sont calculées automatiquement à partir du montant TTC et du coût d'achat.</div>
+      <form class="fin-entry-form" onsubmit="return finAddSale(event)">
+        <div class="field"><label for="fin-s-date">Date</label><input type="date" id="fin-s-date" value="${todayStr()}" required></div>
+        <div class="field"><label for="fin-s-type">Type</label><select id="fin-s-type"><option value="vente">Vente</option><option value="location">Location</option></select></div>
+        <div class="field fin-span2"><label for="fin-s-label">Désignation</label><input type="text" id="fin-s-label" placeholder="Ex. Argus 1431 Gen2+ complet" required></div>
+        <div class="field"><label for="fin-s-ttc">Montant encaissé TTC (€)</label><input type="number" id="fin-s-ttc" min="0" step="0.01" required></div>
+        <div class="field"><label for="fin-s-cout">Coût d'achat HT (€)</label><input type="number" id="fin-s-cout" min="0" step="0.01" required></div>
+        <div class="fin-span2"><button type="submit" class="btn btn-primary btn-sm">+ Ajouter la vente</button></div>
+      </form>
+      <div class="fin-tbl-wrap"><table><thead><tr><th>Date</th><th>Désignation</th><th style="text-align:right;">TTC</th><th style="text-align:right;">Marge</th><th></th></tr></thead>
+      <tbody id="fin-sales-tbody">${finSalesTbodyHtml()}</tbody></table></div>
+    </div>`;
+}
+function finChargesPanelHtml(){
+  const cats = ['Loyer','Assurance','Comptable','Abonnements & logiciels','Communication','Véhicule','Prestataires (Lamar / Le H)','Frais bancaires','Autre'];
+  return `
+    <div class="panel">
+      <h2>Charges</h2>
+      <div style="font-size:12.5px;color:var(--text-faint);margin-bottom:16px;line-height:1.5;">Loyer, assurances, abonnements, prestataires… La rémunération du président se règle plus bas et s'ajoute automatiquement ici.</div>
+      <form class="fin-entry-form" onsubmit="return finAddCharge(event)">
+        <div class="field"><label for="fin-c-date">Date</label><input type="date" id="fin-c-date" value="${todayStr()}" required></div>
+        <div class="field"><label for="fin-c-cat">Catégorie</label><select id="fin-c-cat">${cats.map(c => `<option>${esc(c)}</option>`).join('')}</select></div>
+        <div class="field fin-span2"><label for="fin-c-label">Libellé</label><input type="text" id="fin-c-label" placeholder="Ex. Loyer local Puget-sur-Argens" required></div>
+        <div class="field"><label for="fin-c-montant">Montant HT (€)</label><input type="number" id="fin-c-montant" min="0" step="0.01" required></div>
+        <div class="field"><label for="fin-c-tva">TVA récupérable</label><select id="fin-c-tva"><option value="1">Oui</option><option value="0">Non</option></select></div>
+        <div class="fin-span2"><button type="submit" class="btn btn-primary btn-sm">+ Ajouter la charge</button></div>
+      </form>
+      <div class="fin-tbl-wrap"><table><thead><tr><th>Date</th><th>Charge</th><th style="text-align:right;">HT</th><th></th></tr></thead>
+      <tbody id="fin-charges-tbody">${finChargesTbodyHtml()}</tbody></table></div>
+    </div>`;
+}
+
+/* ---------- Rendu : rémunération + cascade ---------- */
+function finRemuOutputsHtml(t){
+  return `
+    <div class="fin-remu-out"><div class="ro-label">Cotisations salariales</div><div class="ro-value">− ${finFmtEUR(t.chargesSalariales)}</div></div>
+    <div class="fin-remu-out"><div class="ro-label">Net avant impôt (perçu)</div><div class="ro-value">${finFmtEUR(t.netAvantImpot)}</div></div>
+    <div class="fin-remu-out"><div class="ro-label">Cotisations patronales</div><div class="ro-value">+ ${finFmtEUR(t.chargesPatronales)}</div></div>
+    <div class="fin-remu-out"><div class="ro-label">Coût total employeur</div><div class="ro-value">${finFmtEUR(t.coutEmployeur)}</div></div>`;
+}
+function finRemunerationPanelHtml(t){
+  const p = finSettings();
+  return `
+    <div class="panel">
+      <h2>Rémunération du président</h2>
+      <div style="font-size:12.5px;color:var(--text-faint);margin-bottom:16px;line-height:1.5;">Assimilé salarié : les cotisations patronales s'ajoutent au brut (coût réel pour la société), les cotisations salariales se déduisent du brut (ce que vous touchez avant impôt sur le revenu personnel). Ce coût total est injecté automatiquement dans les charges de la période affichée.</div>
+      <div class="fin-remu-grid">
+        <div class="field"><label for="fin-r-brut">Salaire brut mensuel (€)</label><input type="number" id="fin-r-brut" min="0" step="10" value="${p.remuneration_brut_mensuel||0}" oninput="finOnBrutInput(this.value)" onchange="finPersistBrut(this.value)"></div>
+        <div id="fin-remu-outputs" style="display:contents;">${finRemuOutputsHtml(t)}</div>
+      </div>
+    </div>`;
+}
+function finCascadeHtml(t){
+  const rows = [];
+  const row = (op,label,value,extra,note) => {
+    rows.push(`<div class="fin-cascade-row ${extra||''}"><div class="fin-cascade-op ${op}">${op==='plus'?'+':op==='minus'?'−':'='}</div><div class="fin-cascade-label">${esc(label)}</div><div class="fin-cascade-value">${finFmtEUR(value)}</div></div>${note?`<div class="fin-cascade-note">${esc(note)}</div>`:''}`);
+  };
+  row('plus', "Chiffre d'affaires encaissé (TTC)", t.caTTC);
+  row('minus', 'TVA collectée', t.tvaCollectee);
+  row('eq', "Chiffre d'affaires net de taxe (HT)", t.caHT, 'total');
+  row('minus', "Coût d'achat des ventes de la période", t.coutMarch);
+  row('eq', 'Marge brute', t.margeBrute, 'total');
+  row('minus', "Charges d'exploitation", t.chargesHT);
+  row('minus', 'Rémunération président — coût total employeur', t.coutEmployeur, '', `${t.nbMois} mois × ${finFmtEUR(finSettings().remuneration_brut_mensuel||0)} brut`);
+  row('eq', "Résultat avant impôt sur les sociétés", t.resultatAvantIS, 'total');
+  row('minus', 'Impôt sur les sociétés (estimé)', t.isEstime);
+  rows.push(`<div class="fin-cascade-row final"><div class="fin-cascade-op eq">=</div><div class="fin-cascade-label">Résultat net</div><div class="fin-cascade-value${t.resultatNet<0?' neg':''}">${finFmtEUR(t.resultatNet)}</div></div>`);
+  rows.push(`<div class="fin-cascade-row" style="margin-top:4px;"><div class="fin-cascade-op eq" style="background:var(--blue-soft);color:var(--blue);">≈</div><div class="fin-cascade-label">Dividendes envisageables (avant réserve légale)</div><div class="fin-cascade-value">${finFmtEUR(t.dividendesDispo)}</div></div>`);
+  rows.push(`<div class="fin-cascade-row"><div class="fin-cascade-op eq" style="background:var(--blue-soft);color:var(--blue);">≈</div><div class="fin-cascade-label">… soit net perçu après flat tax (${finSettings().pfu} %)</div><div class="fin-cascade-value">${finFmtEUR(t.dividendesApresPfu)}</div></div>`);
+  return rows.join('');
+}
+
+/* ---------- Rendu : Statistiques (3 graphiques SVG) ---------- */
+let finTipData = {};
+const FIN_COLORS = { blue:'#3987e5', amber:'#c98500', violet:'#9085e9', red:'#e66767', green:'#008300', statusGood:'#0ca30c', statusCritical:'#d03b3b', neutral:'rgba(255,255,255,0.22)' };
+const FIN_MONTHS = ['janv.','févr.','mars','avr.','mai','juin','juil.','août','sept.','oct.','nov.','déc.'];
+function finLegendItem(color,label){ return `<div class="fin-chart-legend-item"><span class="fin-chart-legend-swatch" style="background:${color};"></span>${esc(label)}</div>`; }
+function finTruncate(s, maxChars){ s = String(s); return s.length<=maxChars ? s : s.slice(0,maxChars-1).replace(/\s+$/,'')+'…'; }
+function finAxisLabel(cx,yBase,text){
+  const words = text.split(' ');
+  if(words.length<=1 || text.length<=10) return `<text x="${cx}" y="${yBase}" text-anchor="middle" class="fin-chart-svg-label">${esc(text)}</text>`;
+  const mid = Math.ceil(words.length/2);
+  const l1 = words.slice(0,mid).join(' '), l2 = words.slice(mid).join(' ');
+  return `<text x="${cx}" y="${yBase-11}" text-anchor="middle" class="fin-chart-svg-label">${esc(l1)}</text><text x="${cx}" y="${yBase}" text-anchor="middle" class="fin-chart-svg-label">${esc(l2)}</text>`;
+}
+
+function finMonthlyAggregates(){
+  const tvaRate = finSettings().tva/100;
+  const y = new Date().getFullYear();
+  const months = [];
+  for(let m=0;m<12;m++) months.push({ m, caHT:0, cout:0, marge:0 });
+  state.financeSales.forEach(s => {
+    const dt = new Date(s.date+'T00:00:00');
+    if(dt.getFullYear() !== y) return;
+    const ht = Number(s.ttc)/(1+tvaRate);
+    const row = months[dt.getMonth()];
+    row.caHT += ht; row.cout += Number(s.cout_ht||0);
+  });
+  months.forEach(r => { r.marge = r.caHT - r.cout; });
+  return months;
+}
+function finChartAHtml(){
+  const data = finMonthlyAggregates();
+  const maxVal = Math.max(10, Math.max(...data.map(r => Math.max(r.caHT, r.cout + Math.max(0,r.marge)))));
+  const padL=52, padB=28, padT=10, plotH=180;
+  const W = Math.max(560, data.length*46 + padL + 20);
+  const H = padT+plotH+padB;
+  const groupW = (W-padL-12)/data.length;
+  const barW = Math.min(20, groupW-8);
+  const y = v => padT+plotH-(v/maxVal)*plotH;
+  let gridlines = '';
+  for(let i=0;i<=4;i++){
+    const v = maxVal*i/4, yy = y(v);
+    gridlines += `<line x1="${padL}" y1="${yy}" x2="${W}" y2="${yy}" class="fin-chart-svg-axis"></line><text x="${padL-8}" y="${yy+3}" text-anchor="end" class="fin-chart-svg-label">${finFmtEUR(v)}</text>`;
+  }
+  let bars = '';
+  data.forEach((r,idx) => {
+    const cx = padL + idx*groupW + groupW/2;
+    const x0 = cx - barW/2;
+    const baseY = padT+plotH;
+    const coutH = plotH*(Math.min(r.cout,maxVal)/maxVal);
+    const margeH = plotH*(Math.max(0,r.marge)/maxVal);
+    const coutY = baseY - coutH;
+    const gap = (r.cout>0 && r.marge>0) ? 2 : 0;
+    const margeY = coutY - gap - margeH;
+    const tipKey = 'A-'+idx;
+    finTipData[tipKey] = { title: FIN_MONTHS[r.m].replace('.','') + ' ' + new Date().getFullYear(), rows: [
+      { label:"Coût d'achat", value:finFmtEUR(r.cout), color:FIN_COLORS.blue },
+      { label:'Marge brute', value:finFmtEUR(r.marge), color:FIN_COLORS.green },
+      { label:'CA HT', value:finFmtEUR(r.caHT) },
+    ] };
+    if(r.cout>0) bars += `<rect class="fin-chart-mark" data-tip="${tipKey}" onmousemove="finTip(event,this)" onmouseleave="finTipHide()" x="${x0}" y="${coutY}" width="${barW}" height="${Math.max(0,coutH)}" rx="3" fill="${FIN_COLORS.blue}"></rect>`;
+    if(r.marge>0) bars += `<rect class="fin-chart-mark" data-tip="${tipKey}" onmousemove="finTip(event,this)" onmouseleave="finTipHide()" x="${x0}" y="${margeY}" width="${barW}" height="${Math.max(0,margeH)}" rx="3" fill="${FIN_COLORS.green}"></rect>`;
+    if(r.cout===0 && r.marge<=0) bars += `<rect x="${x0}" y="${baseY-2}" width="${barW}" height="2" rx="1" fill="var(--border-soft)"></rect>`;
+    bars += `<text x="${cx}" y="${H-8}" text-anchor="middle" class="fin-chart-svg-label">${FIN_MONTHS[r.m]}</text>`;
+  });
+  const svg = `<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" role="img" aria-label="Évolution mensuelle, coût contre marge">${gridlines}<line x1="${padL}" y1="${padT+plotH}" x2="${W}" y2="${padT+plotH}" class="fin-chart-svg-axis" stroke-width="1.4"></line>${bars}</svg>`;
+  const legend = finLegendItem(FIN_COLORS.blue,"Coût d'achat") + finLegendItem(FIN_COLORS.green,'Marge brute');
+  return { svg, legend, data };
+}
+function finChartATableHtml(data){
+  const rows = data.map(r => `<tr><td>${FIN_MONTHS[r.m].replace('.','')}</td><td style="text-align:right;">${finFmtEUR(r.cout)}</td><td style="text-align:right;">${finFmtEUR(r.marge)}</td><td style="text-align:right;">${finFmtEUR(r.caHT)}</td></tr>`).join('');
+  return `<div class="fin-tbl-wrap"><table><thead><tr><th>Mois</th><th style="text-align:right;">Coût d'achat</th><th style="text-align:right;">Marge brute</th><th style="text-align:right;">CA HT</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+}
+function finChargesByCategory(){
+  const charges = state.financeCharges.filter(c => finInRange(c.date));
+  const map = {}; let total = 0;
+  charges.forEach(c => { const cat = c.category || 'Autre'; const m = Number(c.montant_ht||0); map[cat] = (map[cat]||0) + m; total += m; });
+  const rows = Object.keys(map).map(cat => ({ cat, value: map[cat] }));
+  rows.sort((a,b) => b.value - a.value);
+  return { rows, total };
+}
+function finChartBHtml(){
+  const agg = finChargesByCategory();
+  if(!agg.rows.length) return { svg: `<div style="padding:28px 6px;text-align:center;color:var(--text-faint);font-size:13px;">Aucune charge sur cette période.</div>`, legend:'', agg };
+  const maxVal = Math.max(...agg.rows.map(r=>r.value));
+  const barH=20, gap=10, rowH=barH+gap;
+  const W=560, padR=90, labelW=168;
+  const plotW = W-labelW-padR;
+  const H = agg.rows.length*rowH + 10;
+  const x = v => (v/maxVal)*plotW;
+  let bars = '';
+  agg.rows.forEach((r,idx) => {
+    const yy = 6+idx*rowH;
+    const w = Math.max(2, x(r.value));
+    const tipKey = 'B-'+idx;
+    const pct = agg.total>0 ? r.value/agg.total : 0;
+    finTipData[tipKey] = { title: r.cat, rows: [
+      { label:'Montant HT', value:finFmtEUR(r.value), color:FIN_COLORS.blue },
+      { label:'Part des charges', value:finFmtPct(pct) },
+    ] };
+    bars += `<text x="6" y="${yy+barH/2+4}" class="fin-chart-svg-label" style="fill:var(--text-dim);">${esc(finTruncate(r.cat,24))}</text>`;
+    bars += `<rect class="fin-chart-mark" data-tip="${tipKey}" onmousemove="finTip(event,this)" onmouseleave="finTipHide()" x="${labelW}" y="${yy}" width="${w}" height="${barH}" rx="4" fill="${FIN_COLORS.blue}"></rect>`;
+    bars += `<text x="${labelW+w+8}" y="${yy+barH/2+4}" class="fin-chart-svg-value">${finFmtEUR(r.value)}</text>`;
+  });
+  const svg = `<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" role="img" aria-label="Charges par catégorie">${bars}</svg>`;
+  return { svg, legend:'', agg };
+}
+function finChartBTableHtml(agg){
+  if(!agg.rows.length) return `<div class="empty">Aucune charge sur cette période.</div>`;
+  const rows = agg.rows.map(r => { const pct = agg.total>0? r.value/agg.total:0; return `<tr><td>${esc(r.cat)}</td><td style="text-align:right;">${finFmtEUR(r.value)}</td><td style="text-align:right;">${finFmtPct(pct)}</td></tr>`; }).join('');
+  return `<div class="fin-tbl-wrap"><table><thead><tr><th>Catégorie</th><th style="text-align:right;">Montant HT</th><th style="text-align:right;">Part</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+}
+function finWaterfallSteps(t){
+  return [
+    { key:'marge', label:'Marge brute', short:'Marge brute', type:'anchor', value:t.margeBrute },
+    { key:'charges', label:'Charges', short:'Charges', type:'float', delta:-t.chargesHT, color:FIN_COLORS.amber },
+    { key:'remu', label:'Rémunération (coût total)', short:'Rémun.', type:'float', delta:-t.coutEmployeur, color:FIN_COLORS.violet },
+    { key:'is', label:'IS estimé', short:'IS', type:'float', delta:-t.isEstime, color:FIN_COLORS.red },
+    { key:'net', label:'Résultat net', short:'Résultat net', type:'anchor', value:t.resultatNet },
+  ];
+}
+function finChartCHtml(t){
+  const steps = finWaterfallSteps(t);
+  let running = 0;
+  const bars = steps.map(s => {
+    let start,end;
+    if(s.type==='anchor'){ start=0; end=s.value; running=s.value; }
+    else { start=running; end=running+s.delta; running=end; }
+    return { key:s.key, label:s.label, short:s.short, type:s.type, top:Math.max(start,end), bottom:Math.min(start,end), start, end, color:s.color, finalValue: s.type==='anchor'?s.value:s.delta };
+  });
+  const allVals = [0]; bars.forEach(b => allVals.push(b.top,b.bottom));
+  let minV = Math.min(...allVals), maxV = Math.max(...allVals);
+  if(maxV===minV) maxV += 10;
+  const range = maxV-minV;
+  const barW=22, gap=30;
+  const padL=60, padR=14, padT=26, padB=40, plotH=200;
+  const W = padL+padR+bars.length*(barW+gap)-gap;
+  const H = padT+plotH+padB;
+  const y = v => padT+plotH-((v-minV)/range)*plotH;
+  const zeroY = y(0);
+  let gridlines = `<line x1="${padL}" y1="${zeroY}" x2="${W}" y2="${zeroY}" class="fin-chart-svg-axis" stroke-width="1.4"></line>`;
+  [0.25,0.5,0.75,1].forEach(f => {
+    const v = minV+range*f, yy = y(v);
+    gridlines += `<line x1="${padL}" y1="${yy}" x2="${W}" y2="${yy}" class="fin-chart-svg-axis"></line><text x="${padL-8}" y="${yy+3}" text-anchor="end" class="fin-chart-svg-label">${finFmtEUR(v)}</text>`;
+  });
+  let marks='', connectors='';
+  bars.forEach((b,idx) => {
+    const cx = padL+idx*(barW+gap);
+    const yTop=y(b.top), yBot=y(b.bottom);
+    const h = Math.max(2, yBot-yTop);
+    let fill;
+    if(b.key==='marge') fill = FIN_COLORS.neutral;
+    else if(b.key==='net') fill = b.finalValue>=0 ? FIN_COLORS.statusGood : FIN_COLORS.statusCritical;
+    else fill = b.color;
+    const tipKey = 'C-'+idx;
+    const dotColor = b.key==='marge' ? 'rgba(255,255,255,0.4)' : (b.key==='net' ? fill : b.color);
+    finTipData[tipKey] = { title: b.label, rows: [ { label: b.type==='anchor'?'Montant':'Variation', value:finFmtEUR(b.finalValue), color:dotColor } ] };
+    marks += `<rect class="fin-chart-mark" data-tip="${tipKey}" onmousemove="finTip(event,this)" onmouseleave="finTipHide()" x="${cx}" y="${yTop}" width="${barW}" height="${h}" rx="4" fill="${fill}"></rect>`;
+    const labelY = (b.finalValue>=0 || b.type==='anchor') ? (yTop-8) : (yBot+16);
+    marks += `<text x="${cx+barW/2}" y="${labelY}" text-anchor="middle" class="fin-chart-svg-value">${finFmtEUR(b.finalValue)}</text>`;
+    marks += finAxisLabel(cx+barW/2, H-8, b.short);
+    if(idx < bars.length-1){
+      const nextCx = padL+(idx+1)*(barW+gap);
+      const connY = y(b.end);
+      connectors += `<line x1="${cx+barW}" y1="${connY}" x2="${nextCx}" y2="${connY}" stroke="var(--border-soft)" stroke-width="1"></line>`;
+    }
+  });
+  const svg = `<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" role="img" aria-label="De la marge brute au résultat net">${gridlines}${connectors}${marks}</svg>`;
+  const legend = finLegendItem(FIN_COLORS.neutral,'Marge brute (départ)') + finLegendItem(FIN_COLORS.amber,'Charges') + finLegendItem(FIN_COLORS.violet,'Rémunération (coût total)') + finLegendItem(FIN_COLORS.red,'IS estimé') + finLegendItem(FIN_COLORS.statusGood,'Résultat net positif') + finLegendItem(FIN_COLORS.statusCritical,'Résultat net négatif');
+  return { svg, legend, bars };
+}
+function finChartCTableHtml(bars){
+  const rows = bars.map(b => `<tr><td>${esc(b.label)}</td><td style="text-align:right;">${finFmtEUR(b.finalValue)}</td></tr>`).join('');
+  return `<div class="fin-tbl-wrap"><table><thead><tr><th>Étape</th><th style="text-align:right;">Montant</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+}
+function finChartCardHtml(key, title, bodyHtml, legendHtml, tableHtml){
+  const showTable = !!state.financeTableView[key];
+  return `
+    <div class="chart-card">
+      <div class="chart-card-head">
+        <h3>${esc(title)}</h3>
+        <button type="button" class="fin-table-toggle ${showTable?'active':''}" onclick="finToggleTable('${key}')">${showTable?'Voir le graphique':'Voir en tableau'}</button>
+      </div>
+      <div class="fin-chart-holder" id="fin-chart${key}-viz" ${showTable?'hidden':''}>${bodyHtml}</div>
+      ${legendHtml ? `<div class="fin-chart-legend" id="fin-chart${key}-legend" ${showTable?'hidden':''}>${legendHtml}</div>` : ''}
+      <div class="fin-chart-table" id="fin-chart${key}-table" ${showTable?'':'hidden'}>${tableHtml}</div>
+    </div>`;
+}
+function finStatsPanelHtml(t){
+  if(!state.financeStatsOpen) return '';
+  finTipData = {};
+  const a = finChartAHtml();
+  const b = finChartBHtml();
+  const c = finChartCHtml(t);
+  return `
+    <div class="panel" id="fin-stats-panel">
+      <h2>Statistiques</h2>
+      <div style="font-size:12.5px;color:var(--text-faint);margin-bottom:16px;line-height:1.5;">Vue graphique de vos chiffres — la répartition des charges et de la marge suit la période sélectionnée ci-dessus ; l'évolution mensuelle couvre l'année en cours.</div>
+      ${finChartCardHtml('A', 'Évolution mensuelle — coût vs marge', a.svg, a.legend, finChartATableHtml(a.data))}
+      ${finChartCardHtml('B', 'Charges par catégorie', b.svg, b.legend, finChartBTableHtml(b.agg))}
+      ${finChartCardHtml('C', 'De la marge brute au résultat net', c.svg, c.legend, finChartCTableHtml(c.bars))}
+    </div>`;
+}
+
+/* ---------- Rendu : hypothèses éditables + disclaimer ---------- */
+function finParamsPanelHtml(){
+  const p = finSettings();
+  const field = (id,label,val,step) => `<div class="field"><label for="${id}">${esc(label)}</label><input type="number" id="${id}" min="0" max="100" step="${step||0.1}" value="${val}" oninput="finOnParamInput('${id}', this.value)" onchange="finPersistParam('${id}', this.value)"></div>`;
+  return `
+    <details class="panel fin-details" id="fin-params-details">
+      <summary><svg class="chev" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9.5 5 16 12l-6.5 7"/></svg>Hypothèses de calcul</summary>
+      <div style="font-size:12.5px;color:var(--text-faint);margin:10px 0 0;line-height:1.5;">Taux appliqués par l'outil — TVA, IS et PFU sont les taux légaux 2026 en vigueur (déjà à jour), les cotisations sur la rémunération du président restent des estimations à confirmer avec votre expert-comptable.</div>
+      <div class="fin-params-grid">
+        ${field('p-tva','Taux de TVA', p.tva)}
+        ${field('p-isr',"IS taux réduit (jusqu'au seuil)", p.is_reduit)}
+        ${field('p-seuil','Seuil du taux réduit (€/an)', p.seuil_reduit, 100)}
+        ${field('p-isn','IS taux normal (au-delà)', p.is_normal)}
+        ${field('p-sal','Cotisations salariales (% du brut)', p.charges_salariales)}
+        ${field('p-pat','Cotisations patronales (% du brut)', p.charges_patronales)}
+        ${field('p-pfu','Flat tax dividendes (PFU)', p.pfu)}
+      </div>
+    </details>`;
+}
+function finDisclaimerHtml(){
+  return `<div class="fin-disclaimer">
+    ${tacticalIconSvg('warning',{size:16})}
+    <div>Estimation indicative à partir des taux légaux en vigueur (TVA 20 %, IS 15 % / 25 %, PFU 31,4 % depuis le 1ᵉʳ janvier 2026) et des hypothèses saisies ci-dessus — la réserve légale (5 % du résultat net, obligatoire jusqu'à 10 % du capital social) n'est pas déduite du disponible aux dividendes. Ceci ne remplace pas les calculs de votre expert-comptable, en particulier pour les cotisations sociales sur la rémunération du président.</div>
+  </div>`;
+}
+
+/* ---------- Assemblage + rafraîchissements ciblés ---------- */
+function finRootHtml(){
+  finEnsurePeriod();
+  const t = finComputeAll();
+  return `
+    ${finPeriodBarHtml()}
+    <div id="fin-kpis">${finKpisHtml(t)}</div>
+    <div id="fin-ministats">${finMiniStatsHtml(t)}</div>
+    <div class="fin-2col">
+      ${finVentesPanelHtml()}
+      ${finChargesPanelHtml()}
+    </div>
+    ${finRemunerationPanelHtml(t)}
+    <div class="panel">
+      <h2>Cascade — de l'encaissé au disponible</h2>
+      <div style="font-size:12.5px;color:var(--text-faint);margin-bottom:16px;line-height:1.5;">Lecture directe de ce qui reste réellement, étape par étape, pour la période sélectionnée.</div>
+      <div class="fin-cascade" id="fin-cascade">${finCascadeHtml(t)}</div>
+    </div>
+    ${finStatsPanelHtml(t)}
+    ${finParamsPanelHtml()}
+    ${finDisclaimerHtml()}
+    <div id="fin-tooltip" class="fin-tooltip" role="tooltip"></div>`;
+}
+function renderFinances(){
+  return `
+    <div class="topbar"><div><h1>Finances</h1><div class="desc">Vue d'ensemble SASU — ventes, charges, cascade CA → TVA → marge → IS → net, et statistiques.</div></div></div>
+    <div id="fin-root">${finRootHtml()}</div>`;
+}
+function finRefreshInner(){
+  const el = document.getElementById('fin-root');
+  if(el) el.innerHTML = finRootHtml();
+}
+function finRefreshCalc(){
+  const t = finComputeAll();
+  const set = (id, html) => { const el = document.getElementById(id); if(el) el.innerHTML = html; };
+  set('fin-kpis', finKpisHtml(t));
+  set('fin-ministats', finMiniStatsHtml(t));
+  set('fin-cascade', finCascadeHtml(t));
+  set('fin-remu-outputs', finRemuOutputsHtml(t));
+  set('fin-sales-tbody', finSalesTbodyHtml());
+  set('fin-charges-tbody', finChargesTbodyHtml());
+  if(state.financeStatsOpen){
+    finTipData = {};
+    const a = finChartAHtml(), b = finChartBHtml(), c = finChartCHtml(t);
+    if(!state.financeTableView.A){ set('fin-chartA-viz', a.svg); set('fin-chartA-legend', a.legend); }
+    set('fin-chartA-table', finChartATableHtml(a.data));
+    if(!state.financeTableView.B){ set('fin-chartB-viz', b.svg); }
+    set('fin-chartB-table', finChartBTableHtml(b.agg));
+    if(!state.financeTableView.C){ set('fin-chartC-viz', c.svg); set('fin-chartC-legend', c.legend); }
+    set('fin-chartC-table', finChartCTableHtml(c.bars));
+  }
+}
+
+/* ---------- Handlers (window.*) ---------- */
+window.finSetPeriod = (mode) => {
+  if(mode === 'custom'){ finEnsurePeriod(); state.financePeriod.mode = 'custom'; finRefreshInner(); return; }
+  finApplyPeriodPreset(mode);
+  finRefreshInner();
+};
+window.finSetCustomRange = (which, v) => {
+  finEnsurePeriod();
+  if(which === 'start') state.financePeriod.start = v; else state.financePeriod.end = v;
+  state.financePeriod.mode = 'custom';
+  finRefreshInner();
+};
+window.finToggleStats = () => { state.financeStatsOpen = !state.financeStatsOpen; finRefreshInner(); };
+window.finToggleTable = (key) => { state.financeTableView[key] = !state.financeTableView[key]; finRefreshInner(); };
+
+async function doFinAddSale(){
+  const ttc = parseFloat(document.getElementById('fin-s-ttc').value);
+  const cout = parseFloat(document.getElementById('fin-s-cout').value);
+  if(!isFinite(ttc) || ttc < 0 || !isFinite(cout) || cout < 0) return;
+  const payload = {
+    date: document.getElementById('fin-s-date').value || todayStr(),
+    type: document.getElementById('fin-s-type').value,
+    label: document.getElementById('fin-s-label').value.trim() || 'Vente',
+    ttc, cout_ht: cout,
+  };
+  const { data, error } = await sb.from('finance_sales').insert(payload).select().single();
+  if(!error && data) state.financeSales.push(data);
+  finRefreshInner();
+}
+window.finAddSale = (e) => { e.preventDefault(); doFinAddSale(); return false; };
+window.finDeleteSale = async (id) => {
+  if(!confirm('Supprimer cette vente ?')) return;
+  await sb.from('finance_sales').delete().eq('id', id);
+  state.financeSales = state.financeSales.filter(s => s.id !== id);
+  finRefreshInner();
+};
+
+async function doFinAddCharge(){
+  const montant = parseFloat(document.getElementById('fin-c-montant').value);
+  if(!isFinite(montant) || montant < 0) return;
+  const payload = {
+    date: document.getElementById('fin-c-date').value || todayStr(),
+    category: document.getElementById('fin-c-cat').value,
+    label: document.getElementById('fin-c-label').value.trim() || document.getElementById('fin-c-cat').value,
+    montant_ht: montant,
+    tva_deductible: document.getElementById('fin-c-tva').value === '1',
+  };
+  const { data, error } = await sb.from('finance_charges').insert(payload).select().single();
+  if(!error && data) state.financeCharges.push(data);
+  finRefreshInner();
+}
+window.finAddCharge = (e) => { e.preventDefault(); doFinAddCharge(); return false; };
+window.finDeleteCharge = async (id) => {
+  if(!confirm('Supprimer cette charge ?')) return;
+  await sb.from('finance_charges').delete().eq('id', id);
+  state.financeCharges = state.financeCharges.filter(c => c.id !== id);
+  finRefreshInner();
+};
+
+window.finOnBrutInput = (v) => {
+  const num = parseFloat(v);
+  if(!state.financeSettings) state.financeSettings = finSettings();
+  state.financeSettings.remuneration_brut_mensuel = isFinite(num) && num >= 0 ? num : 0;
+  finRefreshCalc();
+};
+window.finPersistBrut = async (v) => {
+  const num = parseFloat(v);
+  const val = isFinite(num) && num >= 0 ? num : 0;
+  try{ await sb.from('finance_settings').update({ remuneration_brut_mensuel: val }).eq('id', 1); }catch(e){}
+};
+
+const FIN_PARAM_MAP = { 'p-tva':'tva', 'p-isr':'is_reduit', 'p-seuil':'seuil_reduit', 'p-isn':'is_normal', 'p-sal':'charges_salariales', 'p-pat':'charges_patronales', 'p-pfu':'pfu' };
+window.finOnParamInput = (id, v) => {
+  const col = FIN_PARAM_MAP[id]; if(!col) return;
+  const num = parseFloat(v);
+  if(!state.financeSettings) state.financeSettings = finSettings();
+  state.financeSettings[col] = isFinite(num) && num >= 0 ? num : 0;
+  finRefreshCalc();
+};
+window.finPersistParam = async (id, v) => {
+  const col = FIN_PARAM_MAP[id]; if(!col) return;
+  const num = parseFloat(v);
+  const val = isFinite(num) && num >= 0 ? num : 0;
+  try{ await sb.from('finance_settings').update({ [col]: val }).eq('id', 1); }catch(e){}
+};
+
+window.finTip = (evt, el) => {
+  const d = finTipData[el.dataset.tip];
+  if(!d) return;
+  const box = document.getElementById('fin-tooltip');
+  if(!box) return;
+  box.innerHTML = `<div class="ctt-title">${esc(d.title)}</div>` + d.rows.map(r =>
+    `<div class="ctt-row">${r.color ? `<span class="ctt-dot" style="background:${r.color};"></span>` : ''}<span class="ctt-label">${esc(r.label)}</span><span class="ctt-val">${esc(r.value)}</span></div>`
+  ).join('');
+  const pad = 14;
+  const left = evt.clientX + pad, top = evt.clientY + pad;
+  box.style.left = left + 'px'; box.style.top = top + 'px';
+  box.classList.add('visible');
+  requestAnimationFrame(() => {
+    const r = box.getBoundingClientRect();
+    let l2 = left, t2 = top;
+    if(l2 + r.width > window.innerWidth - 10) l2 = evt.clientX - r.width - pad;
+    if(t2 + r.height > window.innerHeight - 10) t2 = evt.clientY - r.height - pad;
+    box.style.left = Math.max(8,l2) + 'px'; box.style.top = Math.max(8,t2) + 'px';
+  });
+};
+window.finTipHide = () => { const box = document.getElementById('fin-tooltip'); if(box) box.classList.remove('visible'); };
+
 /* ---------- Contrats (équipe) ---------- */
 function contratStatusRank(c){
   if(!c) return 0; // Aucun contrat
@@ -5413,6 +6207,7 @@ function render(){
   else if(state.view === "missions-validation") content = renderMissionsValidation();
   else if(state.view === "missions-creation") content = renderMissionsCreation();
   else if(state.view === "utilisateurs") content = renderUtilisateurs();
+  else if(state.view === "finances") content = renderFinances();
   else if(state.view === "messages") content = u.is_master ? renderMessagesMaster() : renderMessagesClient();
   else if(state.view === "contrats") content = renderContratsAdmin();
   else if(state.view === "contrat") content = renderContratClient();
