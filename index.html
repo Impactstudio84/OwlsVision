@@ -78,8 +78,13 @@
      on tire au-delà du bas de la page. Sans ça, ce rebond peut brièvement révéler, sous la barre de
      navigation fixe en bas de l'écran, un bout du contenu suivant (ex. le panneau Notifications sous
      l'écran Profil) — un défaut d'affichage purement lié au rendu iOS pendant le rebond, pas un bug
-     de mise en page. */
-  html,body{overscroll-behavior-y: contain;}
+     de mise en page.
+     Volontairement limité à iOS (classe .ios-oscroll-fix posée par JS, voir isIOS() dans boot()) :
+     ce problème n'existe que sur le moteur de rendu de Safari. Certaines versions de WebView/Chrome
+     Android ont un bug documenté où cette même propriété, posée sur html/body, peut bloquer le
+     défilement de la page entière au lieu de se limiter à l'effet de rebond — on ne prend pas ce
+     risque sur Android où le correctif n'a jamais été nécessaire. */
+  html.ios-oscroll-fix,body.ios-oscroll-fix{overscroll-behavior-y: contain;}
   body{
     background: var(--bg-glow), var(--bg);
     background-attachment: fixed;
@@ -999,6 +1004,13 @@ function isIOS(){
 function isStandaloneDisplay(){
   return (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) || window.navigator.standalone === true;
 }
+// Voir le commentaire sur la règle CSS .ios-oscroll-fix (rebond élastique iOS) : on ne pose cette
+// classe que sur iOS, jamais sur Android, pour ne prendre aucun risque avec le bug WebView Android
+// connu où overscroll-behavior-y:contain peut bloquer le défilement de toute la page.
+if(isIOS()){
+  document.documentElement.classList.add('ios-oscroll-fix');
+  document.body.classList.add('ios-oscroll-fix');
+}
 function pushSupported(){
   return 'serviceWorker' in navigator && 'PushManager' in window && typeof Notification !== 'undefined';
 }
@@ -1042,8 +1054,13 @@ async function savePushSubscription(subscription, username){
   const { error } = await sb.from('push_subscriptions').insert(row);
   if(error){
     // Conflit probable sur endpoint (déjà enregistré pour cet appareil) : on rafraîchit la ligne
-    // existante plutôt que d'échouer.
-    await sb.from('push_subscriptions').update(row).eq('endpoint', json.endpoint);
+    // existante plutôt que d'échouer. Mais si CETTE tentative échoue aussi (vraie erreur RLS/réseau/
+    // contrainte, pas un simple conflit), il ne faut plus rester silencieux comme avant : sinon
+    // l'app affichait "notifications activées" côté client alors qu'aucune ligne n'avait été
+    // enregistrée en base, et rien ne permettait de comprendre pourquoi il ne recevait jamais rien
+    // (cas remonté : permission acceptée sur Android, mais aucune notification n'arrive jamais).
+    const { error: updateError } = await sb.from('push_subscriptions').update(row).eq('endpoint', json.endpoint);
+    if(updateError) throw updateError;
   }
 }
 window.enableNotifications = async () => {
@@ -1054,7 +1071,11 @@ window.enableNotifications = async () => {
   // ci-dessous), on la referme systématiquement une fois la demande traitée — qu'elle ait abouti ou
   // non, le client aura de toute façon le détail (activé / bloqué / non supporté) dans son Profil.
   const fromPrompt = !!(state.modal && state.modal.type === 'notifPrompt');
-  const finish = () => { if(fromPrompt) state.modal = null; render(); };
+  // showErrorToast en plus du state.notifError : ce dernier ne s'affiche que sur la page Profil, or
+  // ici la fenêtre automatique de connexion peut se fermer sur N'IMPORTE QUELLE page. Sans le toast,
+  // une erreur technique (ex. l'enregistrement en base qui échoue silencieusement) ne serait jamais
+  // vue par le client, qui croirait que tout s'est bien passé.
+  const finish = () => { if(fromPrompt) state.modal = null; if(state.notifError) showErrorToast(state.notifError); render(); };
   if(!pushSupported()){
     state.notifError = t('profil.notif.err.unsupported'); finish(); return;
   }
