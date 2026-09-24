@@ -1037,16 +1037,25 @@ window.enableNotifications = async () => {
   const u = currentProfile();
   if(!u || u.is_master) return;
   state.notifError = ""; state.notifJustEnabled = false;
+  // Si ce clic vient de la fenêtre automatique proposée à la connexion (voir maybeShowNotifPrompt
+  // ci-dessous), on la referme systématiquement une fois la demande traitée — qu'elle ait abouti ou
+  // non, le client aura de toute façon le détail (activé / bloqué / non supporté) dans son Profil.
+  const fromPrompt = !!(state.modal && state.modal.type === 'notifPrompt');
+  const finish = () => { if(fromPrompt) state.modal = null; render(); };
   if(!pushSupported()){
-    state.notifError = t('profil.notif.err.unsupported'); render(); return;
+    state.notifError = t('profil.notif.err.unsupported'); finish(); return;
   }
   if(isIOS() && !isStandaloneDisplay()){
-    state.notifError = t('profil.notif.err.iosInstall'); render(); return;
+    state.notifError = t('profil.notif.err.iosInstall'); finish(); return;
   }
   try{
+    // C'est cet appel — déclenché par le clic sur le bouton — qui fait apparaître la vraie demande
+    // d'autorisation du téléphone/navigateur (Autoriser / Bloquer). Impossible de la déclencher sans
+    // un clic explicite (règle de sécurité imposée par tous les navigateurs), et impossible de
+    // répondre "Autoriser" à la place du client : c'est son choix, jamais le nôtre.
     const permission = await Notification.requestPermission();
     if(permission !== 'granted'){
-      state.notifError = t('profil.notif.err.denied'); render(); return;
+      state.notifError = t('profil.notif.err.denied'); finish(); return;
     }
     if(!swRegistration){
       swRegistration = await navigator.serviceWorker.register('sw.js');
@@ -1060,12 +1069,34 @@ window.enableNotifications = async () => {
     }
     await savePushSubscription(subscription, u.username);
     state.notifJustEnabled = true;
-    render();
+    finish();
   }catch(e){
     state.notifError = t('common.error_prefix', { msg: e.message || String(e) });
-    render();
+    finish();
   }
 };
+// Propose automatiquement l'activation des notifications à la connexion d'un client, plutôt que
+// d'attendre qu'il tombe dessus dans son Profil. Ne fait rien si : ce n'est pas un client (équipe
+// exclue), le navigateur ne supporte pas les notifications, la permission a déjà été demandée (déjà
+// "granted" ou "denied" — dans ce cas rien à re-proposer, voir Profil pour le détail), on est sur
+// iPhone/iPad sans que l'app ait été ajoutée à l'écran d'accueil (rien d'activable pour l'instant),
+// ou si le client a déjà refermé cette fenêtre une fois par le passé sur cet appareil (pour ne pas le
+// relancer à chaque connexion).
+function maybeShowNotifPrompt(){
+  const u = currentProfile();
+  if(!u || u.is_master) return;
+  if(!pushSupported()) return;
+  if(typeof Notification === 'undefined' || Notification.permission !== 'default') return;
+  if(isIOS() && !isStandaloneDisplay()) return;
+  try{ if(localStorage.getItem('ov_notif_auto_prompt_dismissed') === '1') return; }catch(e){}
+  if(state.modal) return; // ne pas couper une autre fenêtre déjà ouverte (ex. lien de notification)
+  state.modal = { type: 'notifPrompt' };
+}
+function dismissNotifPrompt(){
+  try{ localStorage.setItem('ov_notif_auto_prompt_dismissed', '1'); }catch(e){}
+  state.modal = null;
+  render();
+}
 registerServiceWorker();
 
 // Traduit (Lot 20) : STATUS_LABELS reste utilisable comme avant (STATUS_LABELS[status]) grâce à ce
@@ -1177,6 +1208,7 @@ async function boot(){
     if(requestedView && state.session && !state.session.isMaster) state.view = requestedView;
     if(requestedView) history.replaceState(null, '', location.pathname);
   }catch(e){}
+  maybeShowNotifPrompt();
   render();
   subscribeRealtime();
   bootDone = true;
@@ -1189,6 +1221,7 @@ sb.auth.onAuthStateChange((event, session) => {
       await fetchAll();
       const prof = await ensureClientProfile(session.user.email.toLowerCase());
       state.session = { username: prof.username, isMaster: !!prof.is_master };
+      maybeShowNotifPrompt();
       render();
     })();
   }
@@ -1256,6 +1289,7 @@ async function doClientLogin(email, password){
   state.session = { username: prof.username, isMaster: !!prof.is_master };
   state.authError = ""; state.authNotice = ""; state.profileNotice = ""; state.docError = "";
   state.view = state.session.isMaster ? "dashboard" : "accueil";
+  maybeShowNotifPrompt();
   render();
 }
 
@@ -1282,6 +1316,7 @@ async function doClientRegister(email, password, password2){
     const prof = await ensureClientProfile(email);
     state.session = { username: prof.username, isMaster: !!prof.is_master };
     state.view = state.session.isMaster ? "dashboard" : "accueil";
+    maybeShowNotifPrompt();
     render();
     return;
   }
@@ -3420,6 +3455,7 @@ function tacticalIconSvg(name, opts){
     'chevron-left': '<path d="M14.5 5 8 12l6.5 7"/>',
     'chevron-right': '<path d="M9.5 5 16 12l-6.5 7"/>',
     'trending-up': '<path d="M3 17l6-6 4 4 8-9"/><path d="M15 6h6v6"/>',
+    bell: '<path d="M12 3a5 5 0 0 0-5 5v3.4c0 .9-.35 1.75-1 2.4L4.5 15.3c-.6.6-.2 1.7.7 1.7h13.6c.9 0 1.3-1.1.7-1.7l-1.5-1.5c-.65-.65-1-1.5-1-2.4V8a5 5 0 0 0-5-5Z"/><path d="M9.5 19a2.5 2.5 0 0 0 5 0"/>',
   };
   return `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;${opts.style||''}">${paths[name] || ''}</svg>`;
 }
@@ -6008,6 +6044,15 @@ function renderModal(){
   if(m.type === "bookingCalendar"){
     return bookingCalendarModalHtml();
   }
+  if(m.type === "notifPrompt"){
+    return `
+    <div class="modal-bg"><div class="modal" style="text-align:center;">
+      <div style="display:flex;justify-content:center;color:var(--accent);margin-bottom:8px;">${tacticalIconSvg('bell',{size:36})}</div>
+      <h3>${esc(t('notifPrompt.title'))}</h3>
+      <p style="font-size:14px;color:var(--text-dim);line-height:1.6;margin:0 0 16px;">${esc(t('notifPrompt.body'))}</p>
+      <div class="modal-actions"><button class="btn btn-ghost" onclick="dismissNotifPrompt()">${esc(t('notifPrompt.later'))}</button><button class="btn btn-primary" onclick="window.enableNotifications()">${esc(t('notifPrompt.enable'))}</button></div>
+    </div></div>`;
+  }
   if(m.type === "moreGear"){
     return `
     <div class="modal-bg" onclick="closeModalBg(event)"><div class="modal" style="text-align:center;">
@@ -7149,6 +7194,10 @@ fr: {
   'profil.notif.err.unsupported': "Les notifications ne sont pas prises en charge par ce navigateur.",
   'profil.notif.err.denied': "Les notifications sont bloquées pour ce site. Autorisez-les dans les réglages de votre navigateur ou de votre téléphone.",
   'profil.notif.err.iosInstall': "Sur iPhone/iPad, ajoutez d'abord l'app à votre écran d'accueil (icône de partage puis « Sur l'écran d'accueil ») avant d'activer les notifications.",
+  'notifPrompt.title': "Activer les notifications ?",
+  'notifPrompt.body': "Recevez une alerte dès qu'un message, un document ou un contrat vous concerne — même quand l'app est fermée.",
+  'notifPrompt.later': "Plus tard",
+  'notifPrompt.enable': "Activer",
   'profil.section.extra': "Informations complémentaires",
   'profil.title': "Mon profil",
   'recompenses.addressPlaceholder': "Votre adresse de livraison",
@@ -7370,6 +7419,10 @@ en: {
   'profil.notif.err.unsupported': "Notifications are not supported by this browser.",
   'profil.notif.err.denied': "Notifications are blocked for this site. Allow them in your browser or phone settings.",
   'profil.notif.err.iosInstall': "On iPhone/iPad, first add the app to your home screen (Share icon, then \"Add to Home Screen\") before enabling notifications.",
+  'notifPrompt.title': "Enable notifications?",
+  'notifPrompt.body': "Get an alert as soon as a message, document or contract concerns you — even when the app is closed.",
+  'notifPrompt.later': "Later",
+  'notifPrompt.enable': "Enable",
   'profil.section.extra': "Additional information",
   'profil.title': "My profile",
   'recompenses.addressPlaceholder': "Your shipping address",
@@ -7591,6 +7644,10 @@ es: {
   'profil.notif.err.unsupported': "Este navegador no admite las notificaciones.",
   'profil.notif.err.denied': "Las notificaciones están bloqueadas para este sitio. Actívelas en los ajustes de su navegador o teléfono.",
   'profil.notif.err.iosInstall': "En iPhone/iPad, añada primero la app a la pantalla de inicio (icono Compartir, luego «Añadir a pantalla de inicio») antes de activar las notificaciones.",
+  'notifPrompt.title': "¿Activar las notificaciones?",
+  'notifPrompt.body': "Reciba un aviso en cuanto un mensaje, documento o contrato le concierna, incluso con la app cerrada.",
+  'notifPrompt.later': "Más tarde",
+  'notifPrompt.enable': "Activar",
   'profil.section.extra': "Información adicional",
   'profil.title': "Mi perfil",
   'recompenses.addressPlaceholder': "Su dirección de envío",
@@ -7812,6 +7869,10 @@ it: {
   'profil.notif.err.unsupported': "Questo browser non supporta le notifiche.",
   'profil.notif.err.denied': "Le notifiche sono bloccate per questo sito. Attivale nelle impostazioni del browser o del telefono.",
   'profil.notif.err.iosInstall': "Su iPhone/iPad, aggiungi prima l'app alla schermata Home (icona Condividi, poi «Aggiungi a Home») prima di attivare le notifiche.",
+  'notifPrompt.title': "Attivare le notifiche?",
+  'notifPrompt.body': "Ricevi un avviso non appena un messaggio, un documento o un contratto ti riguarda, anche ad app chiusa.",
+  'notifPrompt.later': "Più tardi",
+  'notifPrompt.enable': "Attiva",
   'profil.section.extra': "Informazioni aggiuntive",
   'profil.title': "Il mio profilo",
   'recompenses.addressPlaceholder': "Il tuo indirizzo di spedizione",
@@ -8033,6 +8094,10 @@ de: {
   'profil.notif.err.unsupported': "Dieser Browser unterstützt keine Benachrichtigungen.",
   'profil.notif.err.denied': "Benachrichtigungen sind für diese Website blockiert. Aktivieren Sie sie in den Einstellungen Ihres Browsers oder Telefons.",
   'profil.notif.err.iosInstall': "Fügen Sie die App auf dem iPhone/iPad zuerst zum Home-Bildschirm hinzu (Teilen-Symbol, dann „Zum Home-Bildschirm“), bevor Sie Benachrichtigungen aktivieren.",
+  'notifPrompt.title': "Benachrichtigungen aktivieren?",
+  'notifPrompt.body': "Erhalten Sie eine Benachrichtigung, sobald eine Nachricht, ein Dokument oder ein Vertrag Sie betrifft — auch wenn die App geschlossen ist.",
+  'notifPrompt.later': "Später",
+  'notifPrompt.enable': "Aktivieren",
   'profil.section.extra': "Zusätzliche Informationen",
   'profil.title': "Mein Profil",
   'recompenses.addressPlaceholder': "Ihre Lieferadresse",
