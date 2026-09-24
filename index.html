@@ -797,11 +797,18 @@ const SITE_URL = "https://impactstudio84.github.io/OwlsVision/";
 // et le guide de déploiement pour la mise en place complète.
 const VAPID_PUBLIC_KEY = "BOnlnkXdfHyutnlRIF_MW2s61Pl9C2gvA19XaBZWjeBcPPsNtRxyzfXp4g6mesD3JgFmXpmwM1QgAxgjcZ5PW7s";
 
-// storage: sessionStorage plutôt que localStorage -> chaque onglet garde sa propre session.
-// Se déconnecter (ou se connecter) dans un onglet n'affecte plus les autres onglets ouverts.
-// Contrepartie : fermer complètement l'onglet déconnecte (un simple rechargement/F5 ne déconnecte pas).
+// storage: localStorage (changé du sessionStorage d'origine) -> la session survit à la fermeture
+// de l'onglet/l'app, aux changements d'app sur mobile et aux redémarrages du téléphone : le client
+// reste connecté indéfiniment, jusqu'à ce qu'il se déconnecte lui-même. C'était auparavant en
+// sessionStorage pour que plusieurs onglets gardent chacun leur propre session (pratique pour toi,
+// pour tester un compte master et un compte client en parallèle) — mais sur mobile, le navigateur
+// (surtout iOS) recycle souvent l'onglet en arrière-plan après un changement d'app, ce qui
+// effaçait sessionStorage et déconnectait le client sans prévenir. Contrepartie du changement : se
+// connecter dans un onglet connecte désormais tous les onglets du même navigateur au même compte —
+// pour tester deux comptes en parallèle de ton côté, utilise une fenêtre de navigation privée pour
+// le second.
 const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-  auth: { storage: window.sessionStorage, persistSession: true, autoRefreshToken: true }
+  auth: { storage: window.localStorage, persistSession: true, autoRefreshToken: true }
 });
 let bootDone = false;
 
