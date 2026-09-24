@@ -3687,7 +3687,7 @@ function renderAccueil(){
             return `
             <div class="mission-spotlight-row">
               <div><div class="msr-title">${esc(t2.title)}${t2.is_recurring ? ` <span class="tag" style="margin-left:4px;">${esc(t('missions.recurring'))}</span>` : ''}</div><span class="task-xp">+${t2.xp_reward} XP</span></div>
-              ${(t2.requires_answer || t2.requires_date) ? `<button class="btn btn-primary btn-sm" onclick="openAnswerModal('${t2.id}')">${esc(label)}</button>` : `<button class="btn btn-primary btn-sm" onclick="completeTask('${t2.id}')">${esc(label)}</button>`}
+              ${t2.requires_booking ? `<span style="font-size:11px;color:var(--text-faint);text-align:right;max-width:120px;">${esc(t('missions.autoBookingCredit'))}</span>` : ((t2.requires_answer || t2.requires_date) ? `<button class="btn btn-primary btn-sm" onclick="openAnswerModal('${t2.id}')">${esc(label)}</button>` : `<button class="btn btn-primary btn-sm" onclick="completeTask('${t2.id}')">${esc(label)}</button>`)}
             </div>`;
           }).join('')}
           ${pending.length > 3 ? `<div class="card-desc" style="text-align:center;">${esc(tn('accueil.missions.more', pending.length - 3))}</div>` : ''}
@@ -4426,8 +4426,17 @@ function missionCardHtml(task, isMaster, u){
   else if(status === 'refusee') clientStatusLine = `<div class="card-desc" style="color:#FFB3A6;flex:0;">${esc(t('missions.refused'))}</div>`;
   let clientAction = '';
   if(!isMaster && (!mine || status === 'refusee' || canRedo)){
-    const label = status === 'refusee' ? t('missions.action.retry') : canRedo ? t('missions.action.redo') : ((task.requires_answer || task.requires_date) ? t('missions.action.complete') : t('missions.action.markDone'));
-    clientAction = `<div class="card-foot" style="border-top:none;padding-top:0;">${(task.requires_answer || task.requires_date) ? `<button class="btn btn-primary btn-sm" style="width:100%;" onclick="openAnswerModal('${task.id}')">${esc(label)}</button>` : `<button class="btn btn-primary btn-sm" style="width:100%;" onclick="completeTask('${task.id}')">${esc(label)}</button>`}</div>`;
+    if(task.requires_booking){
+      // Lot 20bis : une mission "plafonnée aux locations confirmées" est désormais entièrement
+      // créditée par le déclencheur automatique de la réservation (bookings_grant_xp_on_confirm,
+      // migration_lot17) — proposer en plus un bouton de soumission manuelle ici créerait une
+      // XP en double pour la même location. Le client n'a donc plus aucune action à faire : on
+      // l'informe simplement que le crédit est automatique.
+      clientAction = `<div class="card-desc" style="flex:0;color:var(--text-faint);font-size:12px;">${esc(t('missions.autoBookingCredit'))}</div>`;
+    } else {
+      const label = status === 'refusee' ? t('missions.action.retry') : canRedo ? t('missions.action.redo') : ((task.requires_answer || task.requires_date) ? t('missions.action.complete') : t('missions.action.markDone'));
+      clientAction = `<div class="card-foot" style="border-top:none;padding-top:0;">${(task.requires_answer || task.requires_date) ? `<button class="btn btn-primary btn-sm" style="width:100%;" onclick="openAnswerModal('${task.id}')">${esc(label)}</button>` : `<button class="btn btn-primary btn-sm" style="width:100%;" onclick="completeTask('${task.id}')">${esc(label)}</button>`}</div>`;
+    }
   }
   return `
     <div class="card mission-card ${status==='validee' && !canRedo?'done':''}">
@@ -6920,6 +6929,7 @@ fr: {
   'missions.action.markDone': "Marquer comme fait",
   'missions.action.redo': "Refaire",
   'missions.action.retry': "Réessayer",
+  'missions.autoBookingCredit': "XP crédité automatiquement après validation de votre demande de location.",
   'missions.answer.dateLabel': "Date",
   'missions.answer.defaultLabel': "Votre réponse",
   'missions.answer.placeholder': "Saisissez votre réponse...",
@@ -7133,6 +7143,7 @@ en: {
   'missions.action.markDone': "Mark as done",
   'missions.action.redo': "Do again",
   'missions.action.retry': "Retry",
+  'missions.autoBookingCredit': "XP is credited automatically once your rental request is approved.",
   'missions.answer.dateLabel': "Date",
   'missions.answer.defaultLabel': "Your answer",
   'missions.answer.placeholder': "Enter your answer...",
@@ -7346,6 +7357,7 @@ es: {
   'missions.action.markDone': "Marcar como hecho",
   'missions.action.redo': "Repetir",
   'missions.action.retry': "Reintentar",
+  'missions.autoBookingCredit': "El XP se acredita automáticamente en cuanto se aprueba tu solicitud de alquiler.",
   'missions.answer.dateLabel': "Fecha",
   'missions.answer.defaultLabel': "Su respuesta",
   'missions.answer.placeholder': "Escriba su respuesta...",
@@ -7559,6 +7571,7 @@ it: {
   'missions.action.markDone': "Segna come fatto",
   'missions.action.redo': "Ripeti",
   'missions.action.retry': "Riprova",
+  'missions.autoBookingCredit': "L'XP viene accreditato automaticamente non appena la tua richiesta di noleggio viene approvata.",
   'missions.answer.dateLabel': "Data",
   'missions.answer.defaultLabel': "La tua risposta",
   'missions.answer.placeholder': "Inserisci la tua risposta...",
@@ -7772,6 +7785,7 @@ de: {
   'missions.action.markDone': "Als erledigt markieren",
   'missions.action.redo': "Erneut ausführen",
   'missions.action.retry': "Erneut versuchen",
+  'missions.autoBookingCredit': "XP wird automatisch gutgeschrieben, sobald Ihre Mietanfrage genehmigt wurde.",
   'missions.answer.dateLabel': "Datum",
   'missions.answer.defaultLabel': "Ihre Antwort",
   'missions.answer.placeholder': "Antwort eingeben...",
@@ -7985,6 +7999,7 @@ lb: {
   'missions.action.markDone': "Als erledegt markéieren",
   'missions.action.redo': "Nach eng Kéier maachen",
   'missions.action.retry': "Nach eng Kéier probéieren",
+  'missions.autoBookingCredit': "XP gëtt automatesch krediert, soubal Är Locatiounsufro genehmegt gouf.",
   'missions.answer.dateLabel': "Datum",
   'missions.answer.defaultLabel': "Är Äntwert",
   'missions.answer.placeholder': "Är Äntwert aginn...",
