@@ -25,13 +25,15 @@ self.addEventListener('push', (event) => {
 
   event.waitUntil((async () => {
     await self.registration.showNotification(title, options);
-    try {
-      if (typeof self.setAppBadge === 'function') {
-        await self.setAppBadge();
-      } else if (self.navigator && typeof self.navigator.setAppBadge === 'function') {
-        await self.navigator.setAppBadge();
-      }
-    } catch (e) {}
+    if (typeof data.badge === 'number') {
+      try {
+        if (typeof self.setAppBadge === 'function') {
+          await self.setAppBadge(data.badge);
+        } else if (self.navigator && typeof self.navigator.setAppBadge === 'function') {
+          await self.navigator.setAppBadge(data.badge);
+        }
+      } catch (e) {}
+    }
   })());
 });
 
