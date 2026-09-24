@@ -785,6 +785,12 @@ const SUPABASE_URL = "https://zopnuziuhmnkezyisoex.supabase.co";
 const SUPABASE_ANON_KEY = "sb_publishable_EJtogFic_Yu5eO9n1u2s0Q_LH4KbTVe";
 const SITE_URL = "https://impactstudio84.github.io/OwlsVision/";
 
+// Notifications push (Lot 21) — clé PUBLIQUE VAPID uniquement (sans danger à exposer côté client,
+// c'est tout son rôle). La clé privée correspondante ne vit QUE côté serveur (secret de l'Edge
+// Function Supabase "send-notification"), jamais ici. Voir migration_lot21_push_notifications.sql
+// et le guide de déploiement pour la mise en place complète.
+const VAPID_PUBLIC_KEY = "BOnlnkXdfHyutnlRIF_MW2s61Pl9C2gvA19XaBZWjeBcPPsNtRxyzfXp4g6mesD3JgFmXpmwM1QgAxgjcZ5PW7s";
+
 // storage: sessionStorage plutôt que localStorage -> chaque onglet garde sa propre session.
 // Se déconnecter (ou se connecter) dans un onglet n'affecte plus les autres onglets ouverts.
 // Contrepartie : fermer complètement l'onglet déconnecte (un simple rechargement/F5 ne déconnecte pas).
@@ -957,7 +963,110 @@ let state = {
   contratsSort: "client_asc",
   contratsSearch: "",
   calendarMonth: null, // {year, month} — initialisé au mois courant à la première ouverture du calendrier
+  notifError: "",
+  notifJustEnabled: false,
 };
+
+/* ---------- Notifications push (Lot 21) ---------- */
+// Convertit la clé publique VAPID (texte) au format brut attendu par pushManager.subscribe().
+function urlBase64ToUint8Array(base64String){
+  const padding = '='.repeat((4 - base64String.length % 4) % 4);
+  const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+  const raw = atob(base64);
+  const arr = new Uint8Array(raw.length);
+  for(let i = 0; i < raw.length; i++) arr[i] = raw.charCodeAt(i);
+  return arr;
+}
+function isIOS(){
+  return /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+}
+// Sur iPhone/iPad, Safari ne permet les notifications push que si l'app a été ajoutée à l'écran
+// d'accueil (mode "standalone") — impossible de contourner, c'est une règle d'Apple, pas un choix
+// technique de notre côté. On le détecte pour afficher le bon message plutôt qu'un échec silencieux.
+function isStandaloneDisplay(){
+  return (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) || window.navigator.standalone === true;
+}
+function pushSupported(){
+  return 'serviceWorker' in navigator && 'PushManager' in window && typeof Notification !== 'undefined';
+}
+let swRegistration = null;
+function registerServiceWorker(){
+  if(!('serviceWorker' in navigator)) return;
+  navigator.serviceWorker.register('sw.js').then(reg => { swRegistration = reg; }).catch(()=>{});
+  // Notification tapée alors qu'un onglet/l'app est déjà ouvert(e) : le service worker nous
+  // demande de naviguer directement vers le bon onglet plutôt que de recharger la page.
+  navigator.serviceWorker.addEventListener('message', (event) => {
+    if(event.data && event.data.type === 'ov-navigate' && event.data.view && typeof window.goto === 'function'){
+      window.goto(event.data.view);
+    }
+  });
+}
+// Reprend exactement les compteurs déjà utilisés pour les pastilles de la barre de navigation
+// (clientNavDef) : le badge rouge sur l'icône de l'app additionne ces mêmes compteurs, pour rester
+// cohérent avec ce que le client voit déjà dans l'app une fois ouverte.
+function totalUnreadBadgeCount(u){
+  if(!u || u.is_master) return 0;
+  return clientNavDef().reduce((sum, item) => sum + (typeof item.badge === 'function' ? (item.badge(u) || 0) : 0), 0);
+}
+function updateAppBadge(u){
+  if(!('setAppBadge' in navigator)) return;
+  try{
+    const n = totalUnreadBadgeCount(u);
+    const p = n > 0 ? navigator.setAppBadge(n) : ('clearAppBadge' in navigator ? navigator.clearAppBadge() : navigator.setAppBadge(0));
+    if(p && typeof p.catch === 'function') p.catch(()=>{});
+  }catch(e){ /* Badging API non supportée sur ce navigateur : pas grave, silencieux. */ }
+}
+async function savePushSubscription(subscription, username){
+  const json = subscription.toJSON();
+  const row = {
+    username,
+    endpoint: json.endpoint,
+    p256dh: json.keys && json.keys.p256dh,
+    auth: json.keys && json.keys.auth,
+    user_agent: navigator.userAgent,
+    last_seen_at: new Date().toISOString(),
+  };
+  const { error } = await sb.from('push_subscriptions').insert(row);
+  if(error){
+    // Conflit probable sur endpoint (déjà enregistré pour cet appareil) : on rafraîchit la ligne
+    // existante plutôt que d'échouer.
+    await sb.from('push_subscriptions').update(row).eq('endpoint', json.endpoint);
+  }
+}
+window.enableNotifications = async () => {
+  const u = currentProfile();
+  if(!u || u.is_master) return;
+  state.notifError = ""; state.notifJustEnabled = false;
+  if(!pushSupported()){
+    state.notifError = t('profil.notif.err.unsupported'); render(); return;
+  }
+  if(isIOS() && !isStandaloneDisplay()){
+    state.notifError = t('profil.notif.err.iosInstall'); render(); return;
+  }
+  try{
+    const permission = await Notification.requestPermission();
+    if(permission !== 'granted'){
+      state.notifError = t('profil.notif.err.denied'); render(); return;
+    }
+    if(!swRegistration){
+      swRegistration = await navigator.serviceWorker.register('sw.js');
+    }
+    let subscription = await swRegistration.pushManager.getSubscription();
+    if(!subscription){
+      subscription = await swRegistration.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
+      });
+    }
+    await savePushSubscription(subscription, u.username);
+    state.notifJustEnabled = true;
+    render();
+  }catch(e){
+    state.notifError = t('common.error_prefix', { msg: e.message || String(e) });
+    render();
+  }
+};
+registerServiceWorker();
 
 // Traduit (Lot 20) : STATUS_LABELS reste utilisable comme avant (STATUS_LABELS[status]) grâce à ce
 // proxy — mais lit désormais t('status.<code>') à chaque accès plutôt qu'une chaîne figée en français,
@@ -1059,6 +1168,15 @@ async function boot(){
 
   state.loading = false;
   state.view = state.session?.isMaster ? "dashboard" : "accueil";
+  // Ouverture depuis une notification push (sw.js ouvre index.html?n=<onglet> quand aucune fenêtre
+  // n'était déjà ouverte) : on route directement vers l'onglet visé. render() revalide de toute
+  // façon cette valeur contre la liste des onglets autorisés pour ce compte (voir navFor), donc un
+  // paramètre invalide ou absent ne casse rien — il retombe simplement sur la vue par défaut.
+  try{
+    const requestedView = new URLSearchParams(location.search).get('n');
+    if(requestedView && state.session && !state.session.isMaster) state.view = requestedView;
+    if(requestedView) history.replaceState(null, '', location.pathname);
+  }catch(e){}
   render();
   subscribeRealtime();
   bootDone = true;
@@ -5768,6 +5886,32 @@ function renderContratClient(){
 }
 
 /* ---------- Mon profil (client) ---------- */
+function notificationsPanelHtml(){
+  const supported = pushSupported();
+  const needsIosInstall = supported && isIOS() && !isStandaloneDisplay();
+  const permission = supported ? Notification.permission : null;
+  let statusLine = '';
+  let showButton = false;
+  if(!supported){
+    statusLine = t('profil.notif.err.unsupported');
+  } else if(needsIosInstall){
+    statusLine = t('profil.notif.err.iosInstall');
+  } else if(permission === 'denied'){
+    statusLine = t('profil.notif.err.denied');
+  } else if(permission === 'granted'){
+    statusLine = t('profil.notif.enabled');
+  } else {
+    showButton = true;
+  }
+  return `
+    <div class="panel">
+      <div class="section-title">${esc(t('profil.notif.title'))}</div>
+      <div class="card-desc">${esc(t('profil.notif.desc'))}</div>
+      ${state.notifError ? `<div class="msg msg-error">${esc(state.notifError)}</div>` : ''}
+      ${state.notifJustEnabled ? `<div class="msg msg-ok">${esc(t('profil.notif.enabled'))}</div>` : (statusLine ? `<div style="font-size:12.5px;color:var(--text-dim);margin-top:8px;">${esc(statusLine)}</div>` : '')}
+      ${showButton ? `<button class="btn btn-primary btn-sm" style="margin-top:10px;" onclick="window.enableNotifications()">${esc(t('profil.notif.enable'))}</button>` : ''}
+    </div>`;
+}
 function renderProfilClient(){
   const u = currentProfile();
   const complete = isProfileComplete(u);
@@ -5798,6 +5942,7 @@ function renderProfilClient(){
       ${u.is_owner ? `<div class="field"><label>${esc(t('profil.field.iban'))}</label><input id="pf-iban" value="${esc(u.iban||'')}"></div>` : ''}
       <button class="btn btn-primary" onclick="saveProfile()">${esc(t('profil.save'))}</button>
     </div>
+    ${notificationsPanelHtml()}
     ${MEMBER_DOC_UPLOAD_ENABLED ? `
     <div class="panel">
       <div class="section-title">${esc(t('profil.docs.title'))}</div>
@@ -6275,6 +6420,7 @@ function render(){
 
   const u = currentProfile();
   if(!u){ logout(); return; }
+  updateAppBadge(u);
   const allowed = navFor(u.is_master).flatMap(item => item.sub ? item.sub.map(s => s.id) : [item.id]);
   if(!allowed.includes(state.view)) state.view = allowed[0];
 
@@ -6996,6 +7142,13 @@ fr: {
   'profil.incomplete': "Merci de compléter votre profil.",
   'profil.save': "Enregistrer",
   'profil.saved': "Profil enregistré.",
+  'profil.notif.title': "Notifications",
+  'profil.notif.desc': "Recevez une alerte sur votre téléphone dès qu'un message, un document ou un contrat vous concerne.",
+  'profil.notif.enable': "Activer les notifications",
+  'profil.notif.enabled': "Notifications activées sur cet appareil.",
+  'profil.notif.err.unsupported': "Les notifications ne sont pas prises en charge par ce navigateur.",
+  'profil.notif.err.denied': "Les notifications sont bloquées pour ce site. Autorisez-les dans les réglages de votre navigateur ou de votre téléphone.",
+  'profil.notif.err.iosInstall': "Sur iPhone/iPad, ajoutez d'abord l'app à votre écran d'accueil (icône de partage puis « Sur l'écran d'accueil ») avant d'activer les notifications.",
   'profil.section.extra': "Informations complémentaires",
   'profil.title': "Mon profil",
   'recompenses.addressPlaceholder': "Votre adresse de livraison",
@@ -7210,6 +7363,13 @@ en: {
   'profil.incomplete': "Please complete your profile.",
   'profil.save': "Save",
   'profil.saved': "Profile saved.",
+  'profil.notif.title': "Notifications",
+  'profil.notif.desc': "Get an alert on your phone as soon as a message, document or contract concerns you.",
+  'profil.notif.enable': "Enable notifications",
+  'profil.notif.enabled': "Notifications enabled on this device.",
+  'profil.notif.err.unsupported': "Notifications are not supported by this browser.",
+  'profil.notif.err.denied': "Notifications are blocked for this site. Allow them in your browser or phone settings.",
+  'profil.notif.err.iosInstall': "On iPhone/iPad, first add the app to your home screen (Share icon, then \"Add to Home Screen\") before enabling notifications.",
   'profil.section.extra': "Additional information",
   'profil.title': "My profile",
   'recompenses.addressPlaceholder': "Your shipping address",
@@ -7424,6 +7584,13 @@ es: {
   'profil.incomplete': "Complete su perfil.",
   'profil.save': "Guardar",
   'profil.saved': "Perfil guardado.",
+  'profil.notif.title': "Notificaciones",
+  'profil.notif.desc': "Reciba un aviso en su teléfono en cuanto un mensaje, documento o contrato le concierna.",
+  'profil.notif.enable': "Activar las notificaciones",
+  'profil.notif.enabled': "Notificaciones activadas en este dispositivo.",
+  'profil.notif.err.unsupported': "Este navegador no admite las notificaciones.",
+  'profil.notif.err.denied': "Las notificaciones están bloqueadas para este sitio. Actívelas en los ajustes de su navegador o teléfono.",
+  'profil.notif.err.iosInstall': "En iPhone/iPad, añada primero la app a la pantalla de inicio (icono Compartir, luego «Añadir a pantalla de inicio») antes de activar las notificaciones.",
   'profil.section.extra': "Información adicional",
   'profil.title': "Mi perfil",
   'recompenses.addressPlaceholder': "Su dirección de envío",
@@ -7638,6 +7805,13 @@ it: {
   'profil.incomplete': "Completa il tuo profilo.",
   'profil.save': "Salva",
   'profil.saved': "Profilo salvato.",
+  'profil.notif.title': "Notifiche",
+  'profil.notif.desc': "Ricevi un avviso sul tuo telefono non appena un messaggio, un documento o un contratto ti riguarda.",
+  'profil.notif.enable': "Attiva le notifiche",
+  'profil.notif.enabled': "Notifiche attivate su questo dispositivo.",
+  'profil.notif.err.unsupported': "Questo browser non supporta le notifiche.",
+  'profil.notif.err.denied': "Le notifiche sono bloccate per questo sito. Attivale nelle impostazioni del browser o del telefono.",
+  'profil.notif.err.iosInstall': "Su iPhone/iPad, aggiungi prima l'app alla schermata Home (icona Condividi, poi «Aggiungi a Home») prima di attivare le notifiche.",
   'profil.section.extra': "Informazioni aggiuntive",
   'profil.title': "Il mio profilo",
   'recompenses.addressPlaceholder': "Il tuo indirizzo di spedizione",
@@ -7852,6 +8026,13 @@ de: {
   'profil.incomplete': "Bitte vervollständigen Sie Ihr Profil.",
   'profil.save': "Speichern",
   'profil.saved': "Profil gespeichert.",
+  'profil.notif.title': "Benachrichtigungen",
+  'profil.notif.desc': "Erhalten Sie eine Benachrichtigung auf Ihrem Telefon, sobald eine Nachricht, ein Dokument oder ein Vertrag Sie betrifft.",
+  'profil.notif.enable': "Benachrichtigungen aktivieren",
+  'profil.notif.enabled': "Benachrichtigungen auf diesem Gerät aktiviert.",
+  'profil.notif.err.unsupported': "Dieser Browser unterstützt keine Benachrichtigungen.",
+  'profil.notif.err.denied': "Benachrichtigungen sind für diese Website blockiert. Aktivieren Sie sie in den Einstellungen Ihres Browsers oder Telefons.",
+  'profil.notif.err.iosInstall': "Fügen Sie die App auf dem iPhone/iPad zuerst zum Home-Bildschirm hinzu (Teilen-Symbol, dann „Zum Home-Bildschirm“), bevor Sie Benachrichtigungen aktivieren.",
   'profil.section.extra': "Zusätzliche Informationen",
   'profil.title': "Mein Profil",
   'recompenses.addressPlaceholder': "Ihre Lieferadresse",
@@ -8066,6 +8247,13 @@ lb: {
   'profil.incomplete': "Vervollstännegt w.e.g. Äre Profil.",
   'profil.save': "Späicheren",
   'profil.saved': "Profil gespäichert.",
+  'profil.notif.title': "Notifikatiounen",
+  'profil.notif.desc': "Kritt eng Notifikatioun op Ärem Telefon soubal e Message, en Dokument oder e Kontrakt Iech ugeet.",
+  'profil.notif.enable': "Notifikatioune aktivéieren",
+  'profil.notif.enabled': "Notifikatioune sinn op dësem Apparat aktivéiert.",
+  'profil.notif.err.unsupported': "Dëse Browser ënnerstëtzt keng Notifikatiounen.",
+  'profil.notif.err.denied': "D'Notifikatioune si fir dës Websäit blockéiert. Aktivéiert se an den Astellungen vun Ärem Browser oder Telefon.",
+  'profil.notif.err.iosInstall': "Op iPhone/iPad, füügt d'App fir d'éischt op Äre Home-Screen bäi (Deele-Symbol, dann „Op den Home-Screen“) ier Dir d'Notifikatioune aktivéiert.",
   'profil.section.extra': "Zousätzlech Informatiounen",
   'profil.title': "Mäin Profil",
   'recompenses.addressPlaceholder': "Är Liwweradress",
