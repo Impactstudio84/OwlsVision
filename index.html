@@ -74,6 +74,12 @@
      côté (le bug remonté sur mobile — nav/entêtes coupés au bord). Chaque élément large gère son
      propre défilement horizontal en interne (voir la règle "table" plus bas). */
   html{overflow-x:hidden;}
+  /* overscroll-behavior-y:contain sur html/body : empêche le "rebond élastique" de Safari iOS quand
+     on tire au-delà du bas de la page. Sans ça, ce rebond peut brièvement révéler, sous la barre de
+     navigation fixe en bas de l'écran, un bout du contenu suivant (ex. le panneau Notifications sous
+     l'écran Profil) — un défaut d'affichage purement lié au rendu iOS pendant le rebond, pas un bug
+     de mise en page. */
+  html,body{overscroll-behavior-y: contain;}
   body{
     background: var(--bg-glow), var(--bg);
     background-attachment: fixed;
@@ -5034,7 +5040,7 @@ function renderMessagesClient(){
   const msgs = state.messages.filter(m => m.username === u.username);
   return `
     <div class="topbar"><div><h1>${esc(t('messages.title'))}</h1><div class="desc">${esc(t('messages.desc'))}</div></div></div>
-    <div class="chat-wrap">
+    <div class="chat-wrap thread-open">
       <div class="chat-thread-pane">
         <div class="chat-thread-header"><div class="t-title">${esc(t('messages.teamName'))}</div></div>
         <div class="chat-messages" id="chat-messages">${msgs.length ? msgs.map(m => chatBubbleHtml(m, false)).join('') : `<div class="chat-empty-thread"><div class="empty">${esc(t('messages.empty'))}</div></div>`}</div>
