@@ -977,6 +977,7 @@ let state = {
   gestionFilter: "all",
   validationSearch: "",
   usersSearch: "",
+  usersSort: { field: "xp", dir: "desc" },
   gestionSort: { field: "start_date", dir: "asc" },
   contratsSort: "client_asc",
   contratsSearch: "",
@@ -5033,12 +5034,39 @@ function usersMatchesSearch(p, q){
   }
   return false;
 }
+// Valeur comparable pour un champ de tri donné (voir usersFilteredSorted) — les dates restent de
+// simples chaînes ISO (comparables telles quelles) comme le fait déjà gestionFilteredSorted ; un
+// compte jamais connecté (last_login vide) est traité comme la date la plus ancienne possible.
+function usersSortValue(p, field){
+  if(field === 'name') return (clientDisplayName(p) || p.username || '').toLowerCase();
+  if(field === 'xp') return p.xp || 0;
+  if(field === 'created') return p.created_at || '';
+  if(field === 'last_login') return p.last_login || '';
+  return 0;
+}
 function usersFilteredSorted(){
   const q = (state.usersSearch||'').trim().toLowerCase();
+  const { field, dir } = state.usersSort;
+  const mult = dir === 'asc' ? 1 : -1;
   return state.profiles.slice().filter(p => usersMatchesSearch(p, q)).sort((a,b) => {
+    // Le(s) compte(s) équipe restent toujours en tête de liste, quel que soit le tri choisi —
+    // comportement déjà en place avant l'ajout du tri par colonne, conservé tel quel.
     if(!!a.is_master !== !!b.is_master) return a.is_master ? -1 : 1;
-    return b.xp - a.xp;
+    const av = usersSortValue(a, field), bv = usersSortValue(b, field);
+    if(av < bv) return -1 * mult;
+    if(av > bv) return 1 * mult;
+    return 0;
   });
+}
+function usersTheadHtml(){
+  const arrow = (f) => state.usersSort.field === f ? `<span class="sort-arrow">${state.usersSort.dir === 'asc' ? '▲' : '▼'}</span>` : '';
+  return `<tr>
+    <th class="sortable" onclick="onUsersSort('name')">Compte ${arrow('name')}</th>
+    <th class="sortable" onclick="onUsersSort('xp')">XP ${arrow('xp')}</th>
+    <th class="sortable" onclick="onUsersSort('created')">Inscrit le ${arrow('created')}</th>
+    <th class="sortable" onclick="onUsersSort('last_login')">Dernière connexion ${arrow('last_login')}</th>
+    <th></th>
+  </tr>`;
 }
 function usersRowHtml(p){
   return `
@@ -5059,8 +5087,10 @@ function usersRowHtml(p){
 function refreshUsersView(){
   const list = usersFilteredSorted();
   const tbody = document.getElementById('users-tbody');
+  const thead = document.getElementById('users-thead');
   const count = document.getElementById('users-count');
   if(!tbody) return;
+  if(thead) thead.innerHTML = usersTheadHtml();
   tbody.innerHTML = list.length ? list.map(usersRowHtml).join('') : `<tr><td colspan="5"><div class="empty">Aucun compte ne correspond à cette recherche.</div></td></tr>`;
   if(count) count.textContent = `${list.length} compte${list.length>1?'s':''}`;
 }
@@ -5074,7 +5104,7 @@ function renderUtilisateurs(){
     <div class="filter-bar">
       <input type="text" placeholder="Nom, pseudo... ou tapez « propriétaire » pour filtrer les comptes Propriétaire" value="${esc(state.usersSearch)}" oninput="onUsersSearch(this.value)">
     </div>
-    <div class="panel"><table class="tbl-compact"><thead><tr><th>Compte</th><th>XP</th><th>Inscrit le</th><th>Dernière connexion</th><th></th></tr></thead><tbody id="users-tbody">${list.length ? list.map(usersRowHtml).join('') : `<tr><td colspan="5"><div class="empty">Aucun compte ne correspond à cette recherche.</div></td></tr>`}</tbody></table></div>
+    <div class="panel"><table class="tbl-compact"><thead id="users-thead">${usersTheadHtml()}</thead><tbody id="users-tbody">${list.length ? list.map(usersRowHtml).join('') : `<tr><td colspan="5"><div class="empty">Aucun compte ne correspond à cette recherche.</div></td></tr>`}</tbody></table></div>
   `;
 }
 
@@ -6816,6 +6846,11 @@ window.saveProfile = saveProfile;
 window.setBookingStatus = setBookingStatus;
 window.onGestionSearch = (v) => { state.gestionSearch = v; refreshGestionView(); };
 window.onUsersSearch = (v) => { state.usersSearch = v; refreshUsersView(); };
+window.onUsersSort = (field) => {
+  if(state.usersSort.field === field) state.usersSort.dir = state.usersSort.dir === 'asc' ? 'desc' : 'asc';
+  else state.usersSort = { field, dir: 'asc' };
+  refreshUsersView();
+};
 window.onMessagesSearch = (v) => { state.messagesSearch = v; refreshMessagesListPane(); };
 window.openConversation = (username) => {
   state.messagesSelectedUser = username;
