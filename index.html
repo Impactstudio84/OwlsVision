@@ -1270,6 +1270,17 @@ function subscribeRealtime(){
       }, 500);
     });
   });
+  // Bandeau in-app (voir clientRealtimeNotifPlan) : abonnement séparé, en plus de la synchronisation
+  // générale ci-dessus, sur les mêmes tables que celles surveillées côté serveur pour les vraies
+  // notifications push — 'owner_contracts' n'était pas dans la liste de synchro générale, ajoutée ici.
+  ['messages','contracts','owner_contracts','task_completions','bookings','reward_redemptions'].forEach(table => {
+    channel.on('postgres_changes', { event:'*', schema:'public', table }, (payload) => {
+      try{
+        const plan = clientRealtimeNotifPlan(table, payload);
+        if(plan) showNotifBanner(plan.title, plan.sub, plan.view);
+      }catch(e){}
+    });
+  });
   channel.subscribe();
 }
 
@@ -1438,6 +1449,64 @@ function showErrorToast(message){
   document.body.appendChild(el);
   requestAnimationFrame(() => el.classList.add('show'));
   setTimeout(() => { el.classList.remove('show'); setTimeout(() => el.remove(), 400); }, 5000);
+}
+// Bandeau in-app (Lot 21bis) : contrairement à la vraie notification push (OS, app fermée/en
+// arrière-plan) et au badge rouge, celui-ci s'affiche PENDANT que l'app est ouverte, via l'abonnement
+// temps réel déjà en place (subscribeRealtime) — sans lui, un client avec l'app ouverte voyait ses
+// compteurs se mettre à jour silencieusement mais rien ne l'annonçait à l'écran. Cliquer dessus
+// ouvre directement l'onglet concerné, comme un tap sur la vraie notification.
+function showNotifBanner(title, sub, view){
+  const el = document.createElement('div');
+  el.className = 'levelup-toast';
+  el.style.cursor = 'pointer';
+  el.innerHTML = `<div class="levelup-badge">${tacticalIconSvg('bell',{size:22})}</div><div><div class="levelup-title">${esc(title)}</div><div class="levelup-sub">${esc(sub)}</div></div>`;
+  const dismiss = () => { el.classList.remove('show'); setTimeout(() => el.remove(), 400); };
+  el.onclick = () => { dismiss(); if(view && typeof window.goto === 'function') window.goto(view); };
+  document.body.appendChild(el);
+  requestAnimationFrame(() => el.classList.add('show'));
+  setTimeout(dismiss, 4500);
+}
+// Construit le bandeau à afficher (ou null) pour un événement temps réel reçu sur une table
+// surveillée — reprend exactement les mêmes règles que planNotification() côté Edge Function
+// (send-notification), pour que le bandeau in-app et la vraie notification push annoncent
+// toujours les mêmes événements. Ne concerne que le client actuellement connecté sur CET
+// appareil (l'équipe a déjà ses propres listes en direct, pas besoin de bandeau en plus).
+function clientRealtimeNotifPlan(table, payload){
+  const u = currentProfile();
+  if(!u || u.is_master) return null;
+  const r = payload.new || {};
+  const old = payload.old || {};
+  if(!r.username || String(r.username).toLowerCase() !== u.username.toLowerCase()) return null;
+  const tap = t('notifBanner.tapToView');
+  if(table === 'messages' && payload.eventType === 'INSERT'){
+    if(!r.sender_is_master) return null;
+    return { title: t('notifBanner.newMessage'), sub: String(r.body || '').slice(0, 90), view: 'messages' };
+  }
+  if(table === 'contracts' && payload.eventType === 'INSERT'){
+    return { title: t('notifBanner.newContract'), sub: tap, view: 'contrat' };
+  }
+  if(table === 'owner_contracts' && payload.eventType === 'INSERT'){
+    return { title: t('notifBanner.newOwnerContract'), sub: tap, view: 'contrat' };
+  }
+  if(table === 'task_completions' && payload.eventType === 'UPDATE'){
+    if(!r.status || r.status === old.status) return null;
+    if(r.status === 'validee') return { title: t('notifBanner.missionValidated'), sub: tap, view: 'missions' };
+    if(r.status === 'refusee') return { title: t('notifBanner.missionRefused'), sub: tap, view: 'missions' };
+    return null;
+  }
+  if(table === 'bookings' && payload.eventType === 'UPDATE'){
+    if(!r.status || r.status === old.status) return null;
+    if(r.status === 'accepte') return { title: t('notifBanner.bookingAccepted'), sub: tap, view: 'planning' };
+    if(r.status === 'refuse') return { title: t('notifBanner.bookingRefused'), sub: tap, view: 'planning' };
+    return null;
+  }
+  if(table === 'reward_redemptions' && payload.eventType === 'UPDATE'){
+    if(!r.status || r.status === old.status) return null;
+    if(r.status === 'validee') return { title: t('notifBanner.rewardValidated'), sub: tap, view: 'recompenses' };
+    if(r.status === 'refusee') return { title: t('notifBanner.rewardRefused'), sub: tap, view: 'recompenses' };
+    return null;
+  }
+  return null;
 }
 async function grantXp(username, amount){
   const prof = state.profiles.find(p => p.username === username);
@@ -7211,6 +7280,16 @@ fr: {
   'notifPrompt.body': "Recevez une alerte dès qu'un message, un document ou un contrat vous concerne — même quand l'app est fermée.",
   'notifPrompt.later': "Plus tard",
   'notifPrompt.enable': "Activer",
+  'notifBanner.newMessage': "Nouveau message",
+  'notifBanner.newContract': "Contrat disponible",
+  'notifBanner.newOwnerContract': "Contrat propriétaire disponible",
+  'notifBanner.missionValidated': "Mission validée",
+  'notifBanner.missionRefused': "Mission refusée",
+  'notifBanner.bookingAccepted': "Réservation acceptée",
+  'notifBanner.bookingRefused': "Réservation refusée",
+  'notifBanner.rewardValidated': "Récompense validée",
+  'notifBanner.rewardRefused': "Récompense refusée",
+  'notifBanner.tapToView': "Appuyez pour voir",
   'profil.section.extra': "Informations complémentaires",
   'profil.title': "Mon profil",
   'recompenses.addressPlaceholder': "Votre adresse de livraison",
@@ -7436,6 +7515,16 @@ en: {
   'notifPrompt.body': "Get an alert as soon as a message, document or contract concerns you — even when the app is closed.",
   'notifPrompt.later': "Later",
   'notifPrompt.enable': "Enable",
+  'notifBanner.newMessage': "New message",
+  'notifBanner.newContract': "Contract available",
+  'notifBanner.newOwnerContract': "Owner contract available",
+  'notifBanner.missionValidated': "Mission approved",
+  'notifBanner.missionRefused': "Mission declined",
+  'notifBanner.bookingAccepted': "Booking accepted",
+  'notifBanner.bookingRefused': "Booking declined",
+  'notifBanner.rewardValidated': "Reward approved",
+  'notifBanner.rewardRefused': "Reward declined",
+  'notifBanner.tapToView': "Tap to view",
   'profil.section.extra': "Additional information",
   'profil.title': "My profile",
   'recompenses.addressPlaceholder': "Your shipping address",
@@ -7661,6 +7750,16 @@ es: {
   'notifPrompt.body': "Reciba un aviso en cuanto un mensaje, documento o contrato le concierna, incluso con la app cerrada.",
   'notifPrompt.later': "Más tarde",
   'notifPrompt.enable': "Activar",
+  'notifBanner.newMessage': "Nuevo mensaje",
+  'notifBanner.newContract': "Contrato disponible",
+  'notifBanner.newOwnerContract': "Contrato de propietario disponible",
+  'notifBanner.missionValidated': "Misión validada",
+  'notifBanner.missionRefused': "Misión rechazada",
+  'notifBanner.bookingAccepted': "Reserva aceptada",
+  'notifBanner.bookingRefused': "Reserva rechazada",
+  'notifBanner.rewardValidated': "Recompensa validada",
+  'notifBanner.rewardRefused': "Recompensa rechazada",
+  'notifBanner.tapToView': "Toque para ver",
   'profil.section.extra': "Información adicional",
   'profil.title': "Mi perfil",
   'recompenses.addressPlaceholder': "Su dirección de envío",
@@ -7886,6 +7985,16 @@ it: {
   'notifPrompt.body': "Ricevi un avviso non appena un messaggio, un documento o un contratto ti riguarda, anche ad app chiusa.",
   'notifPrompt.later': "Più tardi",
   'notifPrompt.enable': "Attiva",
+  'notifBanner.newMessage': "Nuovo messaggio",
+  'notifBanner.newContract': "Contratto disponibile",
+  'notifBanner.newOwnerContract': "Contratto proprietario disponibile",
+  'notifBanner.missionValidated': "Missione convalidata",
+  'notifBanner.missionRefused': "Missione rifiutata",
+  'notifBanner.bookingAccepted': "Prenotazione accettata",
+  'notifBanner.bookingRefused': "Prenotazione rifiutata",
+  'notifBanner.rewardValidated': "Ricompensa convalidata",
+  'notifBanner.rewardRefused': "Ricompensa rifiutata",
+  'notifBanner.tapToView': "Tocca per vedere",
   'profil.section.extra': "Informazioni aggiuntive",
   'profil.title': "Il mio profilo",
   'recompenses.addressPlaceholder': "Il tuo indirizzo di spedizione",
@@ -8111,6 +8220,16 @@ de: {
   'notifPrompt.body': "Erhalten Sie eine Benachrichtigung, sobald eine Nachricht, ein Dokument oder ein Vertrag Sie betrifft — auch wenn die App geschlossen ist.",
   'notifPrompt.later': "Später",
   'notifPrompt.enable': "Aktivieren",
+  'notifBanner.newMessage': "Neue Nachricht",
+  'notifBanner.newContract': "Vertrag verfügbar",
+  'notifBanner.newOwnerContract': "Eigentümervertrag verfügbar",
+  'notifBanner.missionValidated': "Mission bestätigt",
+  'notifBanner.missionRefused': "Mission abgelehnt",
+  'notifBanner.bookingAccepted': "Buchung angenommen",
+  'notifBanner.bookingRefused': "Buchung abgelehnt",
+  'notifBanner.rewardValidated': "Prämie bestätigt",
+  'notifBanner.rewardRefused': "Prämie abgelehnt",
+  'notifBanner.tapToView': "Zum Anzeigen tippen",
   'profil.section.extra': "Zusätzliche Informationen",
   'profil.title': "Mein Profil",
   'recompenses.addressPlaceholder': "Ihre Lieferadresse",
@@ -8332,6 +8451,20 @@ lb: {
   'profil.notif.err.unsupported': "Dëse Browser ënnerstëtzt keng Notifikatiounen.",
   'profil.notif.err.denied': "D'Notifikatioune si fir dës Websäit blockéiert. Aktivéiert se an den Astellungen vun Ärem Browser oder Telefon.",
   'profil.notif.err.iosInstall': "Op iPhone/iPad, füügt d'App fir d'éischt op Äre Home-Screen bäi (Deele-Symbol, dann „Op den Home-Screen“) ier Dir d'Notifikatioune aktivéiert.",
+  'notifPrompt.title': "Notifikatiounen aktivéieren?",
+  'notifPrompt.body': "Kritt eng Notifikatioun soubal e Message, en Dokument oder e Kontrakt Iech ugeet — och wann d'App zou ass.",
+  'notifPrompt.later': "Méi spéit",
+  'notifPrompt.enable': "Aktivéieren",
+  'notifBanner.newMessage': "Neie Message",
+  'notifBanner.newContract': "Kontrakt disponibel",
+  'notifBanner.newOwnerContract': "Proprietärskontrakt disponibel",
+  'notifBanner.missionValidated': "Missioun validéiert",
+  'notifBanner.missionRefused': "Missioun refuséiert",
+  'notifBanner.bookingAccepted': "Reservatioun ugeholl",
+  'notifBanner.bookingRefused': "Reservatioun refuséiert",
+  'notifBanner.rewardValidated': "Belounung validéiert",
+  'notifBanner.rewardRefused': "Belounung refuséiert",
+  'notifBanner.tapToView': "Klick fir ze kucken",
   'profil.section.extra': "Zousätzlech Informatiounen",
   'profil.title': "Mäin Profil",
   'recompenses.addressPlaceholder': "Är Liwweradress",
