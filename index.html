@@ -198,6 +198,11 @@
   .side-foot{padding:16px;border-top:1px solid var(--border-soft);}
   .side-user{display:flex;align-items:center;gap:10px;margin-bottom:12px;}
   .avatar{width:34px;height:34px;border-radius:11px;background:var(--accent-soft);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:var(--accent);flex-shrink:0;}
+  /* Pastille icône ronde/carrée réutilisée dans le CRM (tâches + historique de contact) pour que
+     chaque ligne se distingue d'un coup d'œil par sa couleur/icône, plutôt qu'une simple liste de
+     texte — inspiré du rendu "par carte" d'une timeline HubSpot. */
+  .crm-item-ic{width:27px;height:27px;border-radius:9px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+  .crm-item-ic svg{width:14px;height:14px;}
   .side-user .u-name{font-size:13.5px;font-weight:600;word-break:break-all;}
   .side-user .u-rank{font-size:11.5px;color:var(--text-faint);}
 
@@ -5955,6 +5960,20 @@ window.finTipHide = () => { const box = document.getElementById('fin-tooltip'); 
 const CRM_STATUS_LABELS = { nouveau:'Nouveau', contacte:'Contacté', en_negociation:'En négociation', client:'Client', perdu:'Perdu' };
 const CRM_STATUS_PILL_CLASS = { nouveau:'pending', contacte:'info', en_negociation:'active', client:'ok', perdu:'danger' };
 const CRM_TYPE_LABELS = { email:'Email', appel:'Appel', autre:'Autre' };
+// Couleur + icône par type de contact, pour la pastille ronde de chaque ligne d'historique
+// (même logique de couleur que les statuts/status-pill ci-dessus, mais appliquée à un rond plein).
+const CRM_TYPE_COLOR = {
+  email: { bg:'var(--blue-soft)', fg:'var(--blue)' },
+  appel: { bg:'var(--violet-soft)', fg:'var(--violet)' },
+  autre: { bg:'rgba(255,255,255,0.07)', fg:'var(--text-dim)' },
+};
+const CRM_TYPE_ICON = {
+  email: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16v12H4z"/><path d="M4 7l8 6 8-6"/></svg>',
+  appel: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h3l2 5-2.5 2a11 11 0 0 0 5.5 5.5l2-2.5 5 2v3a2 2 0 0 1-2 2C8.6 20.9 3.1 15.4 4 5a2 2 0 0 1 2-2Z"/></svg>',
+  autre: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M8 4h8l4 4v12H4V4Z"/><path d="M8 10h8M8 14h5"/></svg>',
+};
+const CRM_TASK_ICON_CLOCK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>';
+const CRM_TASK_ICON_CHECK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L19 7"/></svg>';
 function crmStatusPillHtml(status){
   return `<span class="status-pill ${CRM_STATUS_PILL_CLASS[status] || 'none'}">${esc(CRM_STATUS_LABELS[status] || status)}</span>`;
 }
@@ -6072,31 +6091,47 @@ function renderCommercial(){
     <div class="panel"><table class="tbl-compact"><thead id="crm-thead">${crmTheadHtml()}</thead><tbody id="crm-tbody">${list.length ? list.map(crmCompanyRowHtml).join('') : `<tr><td colspan="6"><div class="empty">Aucune entreprise pour le moment — ajoutez la première ci-dessus.</div></td></tr>`}</tbody></table></div>
   `;
 }
+// Une pastille ronde colorée par ligne (en retard = rouge, aujourd'hui = orange, faite = vert,
+// sinon neutre) plutôt qu'un simple texte — pour repérer l'urgence d'un coup d'œil, comme sur
+// une carte de tâche HubSpot, sans avoir à lire la date.
 function crmTaskRowHtml(tk){
   const today = todayStr();
   const overdue = !tk.done && tk.due_date && tk.due_date < today;
   const dueToday = !tk.done && tk.due_date === today;
+  const c = tk.done ? { bg:'var(--accent-soft)', fg:'var(--accent)', icon: CRM_TASK_ICON_CHECK }
+    : overdue ? { bg:'var(--danger-soft)', fg:'#FFB3A6', icon: CRM_TASK_ICON_CLOCK }
+    : dueToday ? { bg:'var(--amber-soft)', fg:'var(--amber)', icon: CRM_TASK_ICON_CLOCK }
+    : { bg:'rgba(255,255,255,0.07)', fg:'var(--text-dim)', icon: CRM_TASK_ICON_CLOCK };
   return `
     <div style="display:flex;align-items:center;gap:10px;padding:8px 10px;background:rgba(255,255,255,0.03);border-radius:var(--r-sm);${tk.done?'opacity:0.55;':''}">
       <input type="checkbox" ${tk.done?'checked':''} onchange="crmToggleTaskDone('${tk.id}')" style="width:17px;height:17px;flex-shrink:0;cursor:pointer;">
+      <div class="crm-item-ic" style="background:${c.bg};color:${c.fg};">${c.icon}</div>
       <div style="flex:1;min-width:0;">
         <div style="font-size:13.5px;${tk.done?'text-decoration:line-through;':''}">${esc(tk.title)}</div>
         ${tk.due_date ? `<div style="font-size:11.5px;color:${overdue?'#FFB3A6':dueToday?'var(--amber)':'var(--text-faint)'};font-weight:${overdue||dueToday?700:400};">${overdue?'En retard — ':dueToday?"Aujourd'hui — ":''}${fmtDate(tk.due_date)}</div>` : ''}
       </div>
-      <button class="btn btn-ghost btn-sm" onclick="crmDeleteTask('${tk.id}')" title="Supprimer" style="padding:5px 9px;">✕</button>
+      <button class="btn btn-ghost btn-sm" onclick="crmDeleteTask('${tk.id}')" title="Supprimer" style="padding:5px 9px;width:auto;">✕</button>
     </div>`;
 }
+// Idem pour l'historique de contact : une pastille ronde colorée par type (email/appel/autre)
+// avec son icône, au lieu du petit tag texte — chaque entrée se distingue immédiatement par sa
+// couleur, comme les icônes de la timeline HubSpot (enveloppe = email, combiné = appel).
 function crmActivityRowHtml(a){
+  const c = CRM_TYPE_COLOR[a.type] || CRM_TYPE_COLOR.autre;
+  const icon = CRM_TYPE_ICON[a.type] || CRM_TYPE_ICON.autre;
   return `
-    <div style="padding:8px 10px;background:rgba(255,255,255,0.03);border-radius:var(--r-sm);">
-      <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;">
-        <span class="tag">${esc(CRM_TYPE_LABELS[a.type]||a.type)}</span>
-        <div style="display:flex;align-items:center;gap:8px;">
-          <span style="font-size:11.5px;color:var(--text-faint);">${fmtDate(a.date)}</span>
-          <button class="btn btn-ghost btn-sm" onclick="crmDeleteActivity('${a.id}')" title="Supprimer" style="padding:3px 7px;">✕</button>
+    <div style="display:flex;gap:10px;padding:9px 10px;background:rgba(255,255,255,0.03);border-radius:var(--r-sm);">
+      <div class="crm-item-ic" style="background:${c.bg};color:${c.fg};">${icon}</div>
+      <div style="flex:1;min-width:0;">
+        <div style="display:flex;justify-content:space-between;align-items:baseline;gap:8px;">
+          <span style="font-size:12.5px;font-weight:700;color:var(--text);">${esc(CRM_TYPE_LABELS[a.type]||a.type)}</span>
+          <div style="display:flex;align-items:center;gap:6px;flex-shrink:0;">
+            <span style="font-size:11.5px;color:var(--text-faint);">${fmtDate(a.date)}</span>
+            <button class="btn btn-ghost btn-sm" onclick="crmDeleteActivity('${a.id}')" title="Supprimer" style="padding:3px 7px;width:auto;">✕</button>
+          </div>
         </div>
+        ${a.note ? `<div style="font-size:13px;color:var(--text-dim);margin-top:3px;line-height:1.5;">${esc(a.note)}</div>` : ''}
       </div>
-      ${a.note ? `<div style="font-size:13px;color:var(--text-dim);margin-top:4px;line-height:1.5;">${esc(a.note)}</div>` : ''}
     </div>`;
 }
 // La fiche détaillée (coordonnées + tâches + historique) s'ouvre dans une modale volontairement
@@ -6181,9 +6216,10 @@ function renderCommercialTaches(){
     const c = state.crmCompanies.find(x => x.id === tk.company_id);
     const overdue = !tk.done && tk.due_date && tk.due_date < today;
     const dueToday = !tk.done && tk.due_date === today;
+    const accent = tk.done ? 'var(--accent)' : overdue ? 'var(--danger)' : dueToday ? 'var(--amber)' : 'transparent';
     return `
     <tr>
-      <td style="width:36px;"><input type="checkbox" ${tk.done?'checked':''} onchange="crmToggleTaskDone('${tk.id}')" style="width:17px;height:17px;cursor:pointer;"></td>
+      <td style="width:36px;border-left:3px solid ${accent};"><input type="checkbox" ${tk.done?'checked':''} onchange="crmToggleTaskDone('${tk.id}')" style="width:17px;height:17px;cursor:pointer;"></td>
       <td><div class="t-title" style="${tk.done?'text-decoration:line-through;color:var(--text-faint);':''}">${esc(tk.title)}</div></td>
       <td>${c ? `<button class="btn btn-ghost btn-sm" onclick="openCompanyDetailModal('${c.id}')">${esc(c.name)}</button>` : '<span style="color:var(--text-faint);">Entreprise supprimée</span>'}</td>
       <td>${tk.due_date ? `<span style="color:${overdue?'#FFB3A6':dueToday?'var(--amber)':'var(--text)'};font-weight:${overdue||dueToday?700:400};">${fmtDate(tk.due_date)}${overdue?' · en retard':dueToday?" · aujourd'hui":''}</span>` : '<span style="color:var(--text-faint);">—</span>'}</td>
@@ -6192,8 +6228,8 @@ function renderCommercialTaches(){
   return `
     <div class="topbar"><div><h1>Tâches commerciales</h1><div class="desc">${!showDone ? `${overdueCount} en retard, ${todayCount} pour aujourd'hui.` : 'Tâches déjà marquées comme terminées.'}</div></div></div>
     <div style="display:flex;gap:6px;margin-bottom:16px;">
-      <button type="button" class="btn btn-sm ${!showDone?'btn-primary':'btn-ghost'}" onclick="onCrmTasksFilter('open')">À faire</button>
-      <button type="button" class="btn btn-sm ${showDone?'btn-primary':'btn-ghost'}" onclick="onCrmTasksFilter('done')">Terminées</button>
+      <button type="button" class="btn btn-sm ${!showDone?'btn-primary':'btn-ghost'}" style="width:auto;" onclick="onCrmTasksFilter('open')">À faire</button>
+      <button type="button" class="btn btn-sm ${showDone?'btn-primary':'btn-ghost'}" style="width:auto;" onclick="onCrmTasksFilter('done')">Terminées</button>
     </div>
     <div class="panel"><table class="tbl-compact"><thead><tr><th></th><th>Tâche</th><th>Entreprise</th><th>Échéance</th></tr></thead><tbody id="crm-tasks-tbody">${rows || `<tr><td colspan="4"><div class="empty">${showDone?'Aucune tâche terminée.':'Aucune tâche en attente — tout est à jour.'}</div></td></tr>`}</tbody></table></div>
   `;
