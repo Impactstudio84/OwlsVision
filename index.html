@@ -4398,28 +4398,58 @@ function revenueSince(dateStr){
     .filter(b => ['loue','retourne'].includes(b.status) && b.start_date >= dateStr)
     .reduce((sum, b) => sum + (estimatedBookingPrice(b) || 0), 0);
 }
-// Déplacé du Tableau de bord vers Finances (le tableau de bord ne garde que la gestion). Simplifié
-// (retour utilisateur : les 3 cartes façon "stat-card" du dessus faisaient doublon visuel avec les
-// cartes du système en dessous, illisible) : un seul chiffre, clairement nommé "Chiffre Location",
-// calculé automatiquement depuis le planning des locations (prix/jour ou /semaine de chaque
-// location) — le système en dessous (CA encaissé, marge, TVA...) reste la source de vérité et
-// garde la totalité (ventes + locations saisies à la main).
+// Déplacé du Tableau de bord vers Finances (le tableau de bord ne garde que la gestion). Renommé en
+// "Chiffre Location" (retour utilisateur : le nom d'origine "Estimé à partir des réservations" +
+// les libellés génériques "CA estimé"/"Atterrissage possible" ne disaient pas assez clairement que
+// ces 3 chiffres ne portent QUE sur les locations — d'où la confusion avec le système ci-dessous,
+// qui lui totalise ventes + locations saisies à la main). Les 3 chiffres sont conservés tels quels,
+// seul le nom du bloc et le libellé de chaque carte changent, pour lever l'ambiguïté sans rien
+// retirer.
 function bookingRevenueEstimateHtml(){
   const now = new Date();
   const monthStart = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-01`;
+  const yearStart = `${now.getFullYear()}-01-01`;
   const caMonth = revenueSince(monthStart);
+  const caYear = revenueSince(yearStart);
   const revenueDeltaPct = seriesDeltaPct(monthlyBookingSeries(6), 'revenue');
+  // Total estimé de toutes les locations déjà ACCEPTÉES par l'équipe (statuts accepte/loue/retourne),
+  // qu'elles soient déjà signées ou encore en attente de signature du client — indicateur "en direct"
+  // du revenu locatif déjà engagé, recalculé à chaque render() (synchro en direct dès qu'une
+  // réservation change de statut, voir subscribeRealtime).
+  const landingBookings = state.bookings.filter(b => ['accepte','loue','retourne'].includes(b.status));
+  const atterrissage = landingBookings.reduce((sum, b) => sum + (estimatedBookingPrice(b) || 0), 0);
+  const landingUnsignedCount = landingBookings.filter(b => {
+    const c = state.contracts.find(x => x.username === b.username);
+    return !(c && c.signed_at);
+  }).length;
   return `
     <div class="panel" style="margin-bottom:18px;">
       <h2>Chiffre Location</h2>
-      <div style="font-size:12.5px;color:var(--text-faint);margin-bottom:16px;line-height:1.5;">Estimé automatiquement depuis le planning des locations (prix/jour ou /semaine de chaque location) — uniquement les locations, distinct du système ci-dessous qui totalise ventes et locations saisies à la main.</div>
-      <div class="stat-card" style="max-width:260px;">
-        <div class="stat-card-top">
-          <div class="stat-icon" style="background:var(--accent-soft);color:var(--accent);">${tacticalIconSvg('coins',{size:19})}</div>
-          ${statDeltaHtml(revenueDeltaPct, {short:true})}
+      <div style="font-size:12.5px;color:var(--text-faint);margin-bottom:16px;line-height:1.5;">Calculé automatiquement depuis le planning des locations (prix/jour ou /semaine de chaque location) — uniquement les locations, distinct du CA encaissé ci-dessous, qui totalise ventes et locations saisies à la main.</div>
+      <div class="stat-grid">
+        <div class="stat-card">
+          <div class="stat-card-top">
+            <div class="stat-icon" style="background:var(--accent-soft);color:var(--accent);">${tacticalIconSvg('coins',{size:19})}</div>
+            ${statDeltaHtml(revenueDeltaPct, {short:true})}
+          </div>
+          <div class="stat-value">${fmtPrice(caMonth)}</div>
+          <div class="stat-label">Chiffre Location — ce mois-ci</div>
         </div>
-        <div class="stat-value">${fmtPrice(caMonth)}</div>
-        <div class="stat-label">Chiffre Location — ce mois-ci</div>
+        <div class="stat-card">
+          <div class="stat-card-top">
+            <div class="stat-icon" style="background:var(--accent-soft);color:var(--accent);">${tacticalIconSvg('trending-up',{size:19})}</div>
+            ${landingUnsignedCount>0 ? `<span class="stat-delta up" style="background:var(--accent-soft);color:var(--accent);">${landingUnsignedCount} à signer</span>` : ''}
+          </div>
+          <div class="stat-value">${fmtPrice(atterrissage)}</div>
+          <div class="stat-label">Chiffre Location — atterrissage possible (accepté + signé)</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-card-top">
+            <div class="stat-icon" style="background:var(--blue-soft);color:var(--blue);">${tacticalIconSvg('trending-up',{size:19})}</div>
+          </div>
+          <div class="stat-value">${fmtPrice(caYear)}</div>
+          <div class="stat-label">Chiffre Location — depuis le 1er janvier</div>
+        </div>
       </div>
     </div>`;
 }
