@@ -952,6 +952,14 @@ let state = {
   financePeriod: null, // {mode,start,end} — initialisé au premier affichage de l'onglet (finEnsurePeriod)
   financeStatsOpen: false,
   financeTableView: { A: false, B: false, C: false },
+  crmCompanies: [], crmActivities: [], crmTasks: [],
+  crmSearch: "",
+  crmStatusFilter: "all",
+  crmSort: { field: "name", dir: "asc" },
+  crmTasksFilter: "open", // "open" (à faire, triées par échéance) | "done" (terminées)
+  crmCompanyError: "",
+  crmActivityError: "",
+  crmTaskError: "",
   view: "accueil",
   messagesSelectedUser: null, // (master) conversation actuellement ouverte dans le volet de droite
   messagesMobileOpen: false,  // (master, mobile uniquement) bascule liste <-> conversation
@@ -964,7 +972,7 @@ let state = {
   authError: "",
   authNotice: "",
   sidebarOpen: false,
-  navOpenGroups: { 'gestion-group': false, 'missions-group': false },
+  navOpenGroups: { 'gestion-group': false, 'missions-group': false, 'commercial-group': false },
   modal: null,
   bookingError: "",
   answerError: "",
@@ -1159,7 +1167,7 @@ function currentProfile(){ return state.profiles.find(p => p.username === state.
 
 /* ---------- Boot & data ---------- */
 async function fetchAll(){
-  const [profiles, items, bookings, tasks, completions, contracts, groups, rewards, redemptions, ownerContracts, platformDocs, rankConfig, messages, financeSales, financeCharges, financeSettings] = await Promise.all([
+  const [profiles, items, bookings, tasks, completions, contracts, groups, rewards, redemptions, ownerContracts, platformDocs, rankConfig, messages, financeSales, financeCharges, financeSettings, crmCompanies, crmActivities, crmTasks] = await Promise.all([
     sb.from('profiles').select('*'),
     sb.from('items').select('*').order('sort_order', { ascending: true, nullsFirst: false }).order('created_at', { ascending: true }),
     sb.from('bookings').select('*'),
@@ -1176,6 +1184,9 @@ async function fetchAll(){
     sb.from('finance_sales').select('*').order('date', { ascending: true }),
     sb.from('finance_charges').select('*').order('date', { ascending: true }),
     sb.from('finance_settings').select('*').eq('id', 1).maybeSingle(),
+    sb.from('crm_companies').select('*').order('name', { ascending: true }),
+    sb.from('crm_activities').select('*').order('date', { ascending: false }),
+    sb.from('crm_tasks').select('*').order('due_date', { ascending: true, nullsFirst: false }),
   ]);
   state.profiles = profiles.data || [];
   state.items = items.data || [];
@@ -1201,6 +1212,12 @@ async function fetchAll(){
   state.financeSales = financeSales.data || [];
   state.financeCharges = financeCharges.data || [];
   state.financeSettings = financeSettings.data || null;
+  // Lot 22 (Gestion commerciale) : tant que migration_lot22_crm.sql n'a pas été exécutée, ces
+  // trois lectures échouent silencieusement -> l'onglet reste vide au lieu de planter le reste
+  // de l'appli (même principe que Finances au Lot 19).
+  state.crmCompanies = crmCompanies.data || [];
+  state.crmActivities = crmActivities.data || [];
+  state.crmTasks = crmTasks.data || [];
 }
 
 async function boot(){
@@ -3579,6 +3596,7 @@ function iconFor(name){
     recompenses: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12v9H4v-9"/><path d="M2 7h20v5H2z"/><path d="M12 22V7"/><path d="M12 7C10 3 5 3 5 6.5S9 9 12 7Z"/><path d="M12 7c2-4 7-4 7-.5S15 9 12 7Z"/></svg>',
     messages: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5.5h16a1 1 0 0 1 1 1V16a1 1 0 0 1-1 1H9l-4.6 3.4A.6.6 0 0 1 3.5 20V17H4a1 1 0 0 1-1-1V6.5a1 1 0 0 1 1-1Z"/><path d="M7.5 9.5h9M7.5 13h6"/></svg>',
     finances: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2.5v19"/><path d="M17 6.8c0-2.1-2.4-3.3-5-3.3s-5 1.2-5 3.3 2.4 3 5 3 5 .9 5 3-2.4 3.3-5 3.3-5-1.2-5-3.3"/></svg>',
+    commercial: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11V8a1 1 0 0 1 1-1h4l2-2h4l2 2h4a1 1 0 0 1 1 1v3"/><path d="M3 11h5l1.5 2h5L16 11h5"/><rect x="3" y="11" width="18" height="9" rx="1.5"/></svg>',
   };
   return icons[name] || "";
 }
@@ -3780,6 +3798,12 @@ function masterNavDef(){
       ] },
     { id: "utilisateurs", label: "Utilisateurs", shortLabel: "Clients" },
     { id: "finances", label: "Finances", icon: "finances" },
+    { id: "commercial-group", label: "Commercial", icon: "commercial",
+      badge: () => crmOpenTasksDueCount(),
+      sub: [
+        { id: "commercial", label: "Entreprises" },
+        { id: "commercial-taches", label: "Tâches", badge: () => crmOpenTasksDueCount() },
+      ] },
     { id: "messages", label: "Messages", icon: "messages",
       badge: () => state.messages.filter(m => !m.sender_is_master && !m.seen_by_master).length },
     { id: "missions-group", label: "Missions", icon: "missions",
@@ -4369,6 +4393,58 @@ function revenueSince(dateStr){
     .filter(b => ['loue','retourne'].includes(b.status) && b.start_date >= dateStr)
     .reduce((sum, b) => sum + (estimatedBookingPrice(b) || 0), 0);
 }
+// Déplacé du Tableau de bord vers Finances (le tableau de bord ne garde que la gestion) : ces
+// chiffres sont un ESTIMÉ calculé automatiquement à partir des réservations (prix/jour ou /semaine
+// de chaque location), à ne pas confondre avec le "CA encaissé (TTC)" ci-dessous qui vient des
+// ventes saisies à la main dans finance_sales — deux sources différentes, montrées côte à côte.
+function bookingRevenueEstimateHtml(){
+  const now = new Date();
+  const monthStart = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-01`;
+  const yearStart = `${now.getFullYear()}-01-01`;
+  const caMonth = revenueSince(monthStart);
+  const caYear = revenueSince(yearStart);
+  const revenueDeltaPct = seriesDeltaPct(monthlyBookingSeries(6), 'revenue');
+  // Lot 18 : "atterrissage possible" — total estimé de toutes les locations déjà ACCEPTÉES par
+  // l'équipe (statuts accepte/loue/retourne), qu'elles soient déjà signées ou encore en attente de
+  // signature du client — indicateur "en direct" du revenu déjà engagé, recalculé à chaque render()
+  // (synchro en direct dès qu'une réservation change de statut, voir subscribeRealtime).
+  const landingBookings = state.bookings.filter(b => ['accepte','loue','retourne'].includes(b.status));
+  const atterrissage = landingBookings.reduce((sum, b) => sum + (estimatedBookingPrice(b) || 0), 0);
+  const landingUnsignedCount = landingBookings.filter(b => {
+    const c = state.contracts.find(x => x.username === b.username);
+    return !(c && c.signed_at);
+  }).length;
+  return `
+    <div class="panel" style="margin-bottom:18px;">
+      <h2>Estimé à partir des réservations</h2>
+      <div style="font-size:12.5px;color:var(--text-faint);margin-bottom:16px;line-height:1.5;">Calculé automatiquement depuis le planning des locations (prix/jour ou /semaine de chaque location) — distinct du CA encaissé ci-dessous, qui vient des ventes que vous saisissez vous-même.</div>
+      <div class="stat-grid">
+        <div class="stat-card">
+          <div class="stat-card-top">
+            <div class="stat-icon" style="background:var(--accent-soft);color:var(--accent);">${tacticalIconSvg('coins',{size:19})}</div>
+            ${statDeltaHtml(revenueDeltaPct, {short:true})}
+          </div>
+          <div class="stat-value">${fmtPrice(caMonth)}</div>
+          <div class="stat-label">CA estimé — ce mois-ci</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-card-top">
+            <div class="stat-icon" style="background:var(--accent-soft);color:var(--accent);">${tacticalIconSvg('trending-up',{size:19})}</div>
+            ${landingUnsignedCount>0 ? `<span class="stat-delta up" style="background:var(--accent-soft);color:var(--accent);">${landingUnsignedCount} à signer</span>` : ''}
+          </div>
+          <div class="stat-value">${fmtPrice(atterrissage)}</div>
+          <div class="stat-label">Atterrissage possible (accepté + signé)</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-card-top">
+            <div class="stat-icon" style="background:var(--blue-soft);color:var(--blue);">${tacticalIconSvg('trending-up',{size:19})}</div>
+          </div>
+          <div class="stat-value">${fmtPrice(caYear)}</div>
+          <div class="stat-label">CA estimé depuis le 1er janvier</div>
+        </div>
+      </div>
+    </div>`;
+}
 /* ---------- Tableau de bord : graphiques SVG "maison" (Lot 11) ----------
    Aucune librairie externe : tout est calculé et dessiné à la main en SVG, pour rester dans un
    fichier unique et garder le contrôle total sur le style (thème tactique/night-vision). */
@@ -4534,32 +4610,14 @@ function renderDashboard(){
   const counts = { demande:0, accepte:0, loue:0, retourne:0, refuse:0 };
   state.bookings.forEach(b => { if(counts[b.status] !== undefined) counts[b.status]++; });
   const total = state.bookings.length;
-  const now = new Date();
-  const monthStart = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-01`;
-  const yearStart = `${now.getFullYear()}-01-01`;
-  const caMonth = revenueSince(monthStart);
-  const caYear = revenueSince(yearStart);
   const series = monthlyBookingSeries(6);
   const bookingsDeltaPct = seriesDeltaPct(series, 'count');
-  const revenueDeltaPct = seriesDeltaPct(series, 'revenue');
   const clients = state.profiles.filter(p => !p.is_master);
   const totalXp = clients.reduce((s, c) => s + (c.xp || 0), 0);
   const activeBookings = counts.accepte + counts.loue;
-  // Lot 18 : "atterrissage possible" — total estimé de toutes les locations déjà ACCEPTÉES par
-  // l'équipe (statuts accepte/loue/retourne), qu'elles soient déjà signées ou encore en attente de
-  // signature du client — demandé par Luka comme indicateur "en direct" du revenu déjà engagé.
-  // Recalculé à chaque render() : synchro en direct dès qu'une réservation change de statut
-  // (realtime, voir subscribeRealtime). Distinct du "CA estimé — ce mois-ci" ci-dessous, qui ne
-  // compte que les locations déjà louées/retournées, sur le mois en cours uniquement.
-  const landingBookings = state.bookings.filter(b => ['accepte','loue','retourne'].includes(b.status));
-  const atterrissage = landingBookings.reduce((sum, b) => sum + (estimatedBookingPrice(b) || 0), 0);
-  const landingUnsignedCount = landingBookings.filter(b => {
-    const c = state.contracts.find(x => x.username === b.username);
-    return !(c && c.signed_at);
-  }).length;
 
   return `
-    <div class="topbar"><div><h1>Tableau de bord</h1><div class="desc">Vue d'ensemble en temps réel de toutes les locations Owls Vision.</div></div></div>
+    <div class="topbar"><div><h1>Tableau de bord</h1><div class="desc">Vue d'ensemble en temps réel de la gestion des locations Owls Vision (les chiffres financiers sont dans l'onglet Finances).</div></div></div>
 
     <div class="stat-grid">
       <div class="stat-card">
@@ -4576,22 +4634,6 @@ function renderDashboard(){
         </div>
         <div class="stat-value">${activeBookings}</div>
         <div class="stat-label">Locations en cours / acceptées</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-card-top">
-          <div class="stat-icon" style="background:var(--accent-soft);color:var(--accent);">${tacticalIconSvg('coins',{size:19})}</div>
-          ${statDeltaHtml(revenueDeltaPct, {short:true})}
-        </div>
-        <div class="stat-value">${fmtPrice(caMonth)}</div>
-        <div class="stat-label">CA estimé — ce mois-ci</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-card-top">
-          <div class="stat-icon" style="background:var(--accent-soft);color:var(--accent);">${tacticalIconSvg('trending-up',{size:19})}</div>
-          ${landingUnsignedCount>0 ? `<span class="stat-delta up" style="background:var(--accent-soft);color:var(--accent);">${landingUnsignedCount} à signer</span>` : ''}
-        </div>
-        <div class="stat-value">${fmtPrice(atterrissage)}</div>
-        <div class="stat-label">Atterrissage possible (accepté + signé)</div>
       </div>
       <div class="stat-card">
         <div class="stat-card-top">
@@ -4641,7 +4683,6 @@ function renderDashboard(){
     <div class="panel" style="margin-top:18px;">
       <div class="section-title">Autres indicateurs</div>
       <div class="row">
-        <div><div style="font-size:12px;color:var(--text-faint);">CA estimé depuis le 1er janvier</div><div style="font-size:22px;font-weight:700;">${fmtPrice(caYear)}</div></div>
         <div><div style="font-size:12px;color:var(--text-faint);">Total locations (historique)</div><div style="font-size:22px;font-weight:700;">${total}</div></div>
         <div><div style="font-size:12px;color:var(--text-faint);">Demandes refusées</div><div style="font-size:22px;font-weight:700;">${counts.refuse}</div></div>
       </div>
@@ -5748,6 +5789,7 @@ function finRootHtml(){
   finEnsurePeriod();
   const t = finComputeAll();
   return `
+    ${bookingRevenueEstimateHtml()}
     ${finPeriodBarHtml()}
     <div id="fin-kpis">${finKpisHtml(t)}</div>
     <div id="fin-ministats">${finMiniStatsHtml(t)}</div>
@@ -5903,6 +5945,362 @@ window.finTip = (evt, el) => {
   });
 };
 window.finTipHide = () => { const box = document.getElementById('fin-tooltip'); if(box) box.classList.remove('visible'); };
+
+/* ---------- Gestion commerciale — mini-CRM (Lot 22, master uniquement) ----------
+   Deux écrans : la liste des entreprises (renderCommercial, avec recherche/filtre/tri comme les
+   autres tableaux équipe) et la liste de tâches façon HubSpot (renderCommercialTaches, toutes
+   entreprises confondues). Le détail d'une entreprise (coordonnées, historique de contact,
+   tâches) s'ouvre dans une modale large (companyDetail) plutôt qu'un écran dédié, pour rester
+   dans la même logique que le reste de l'appli (Fiche client, etc.). */
+const CRM_STATUS_LABELS = { nouveau:'Nouveau', contacte:'Contacté', en_negociation:'En négociation', client:'Client', perdu:'Perdu' };
+const CRM_STATUS_PILL_CLASS = { nouveau:'pending', contacte:'info', en_negociation:'active', client:'ok', perdu:'danger' };
+const CRM_TYPE_LABELS = { email:'Email', appel:'Appel', autre:'Autre' };
+function crmStatusPillHtml(status){
+  return `<span class="status-pill ${CRM_STATUS_PILL_CLASS[status] || 'none'}">${esc(CRM_STATUS_LABELS[status] || status)}</span>`;
+}
+function crmActivitiesFor(companyId){
+  return state.crmActivities.filter(a => a.company_id === companyId).slice().sort((a,b) => {
+    if(a.date !== b.date) return a.date < b.date ? 1 : -1;
+    return (b.created_at||'').localeCompare(a.created_at||'');
+  });
+}
+function crmTasksFor(companyId){
+  return state.crmTasks.filter(tk => tk.company_id === companyId);
+}
+function crmLastActivityFor(companyId){
+  const list = crmActivitiesFor(companyId);
+  return list.length ? list[0] : null;
+}
+function crmNextOpenTaskFor(companyId){
+  const open = crmTasksFor(companyId).filter(tk => !tk.done && tk.due_date).sort((a,b) => a.due_date < b.due_date ? -1 : 1);
+  return open.length ? open[0] : null;
+}
+// Alimente la pastille de notification sur l'onglet (comme "Demandes en attente" ailleurs) :
+// tâches non terminées dont l'échéance est aujourd'hui ou déjà passée.
+function crmOpenTasksDueCount(){
+  const today = todayStr();
+  return state.crmTasks.filter(tk => !tk.done && tk.due_date && tk.due_date <= today).length;
+}
+function crmMatchesSearch(c, q){
+  if(!q) return true;
+  const hay = [c.name, c.city, c.country, c.contact_name, c.email, c.phone].filter(Boolean).join(' ').toLowerCase();
+  return hay.includes(q);
+}
+// Champs de tri calculés (dernier contact / prochaine tâche) : sans activité ou sans tâche ouverte,
+// la ligne est classée en dernier plutôt que remontée en tête d'un tri croissant.
+function crmSortValue(c, field){
+  if(field === 'name') return (c.name||'').toLowerCase();
+  if(field === 'status') return c.status || '';
+  if(field === 'last_activity'){ const a = crmLastActivityFor(c.id); return a ? a.date : ''; }
+  if(field === 'next_task'){ const tk = crmNextOpenTaskFor(c.id); return tk && tk.due_date ? tk.due_date : '9999-99-99'; }
+  return '';
+}
+function crmFilteredSorted(){
+  const q = (state.crmSearch||'').trim().toLowerCase();
+  const { field, dir } = state.crmSort;
+  const mult = dir === 'asc' ? 1 : -1;
+  return state.crmCompanies.slice()
+    .filter(c => crmMatchesSearch(c, q))
+    .filter(c => state.crmStatusFilter === 'all' || c.status === state.crmStatusFilter)
+    .sort((a,b) => {
+      const av = crmSortValue(a, field), bv = crmSortValue(b, field);
+      if(av < bv) return -1 * mult;
+      if(av > bv) return 1 * mult;
+      return (a.name||'').localeCompare(b.name||'');
+    });
+}
+function crmTheadHtml(){
+  const arrow = (f) => state.crmSort.field === f ? `<span class="sort-arrow">${state.crmSort.dir === 'asc' ? '▲' : '▼'}</span>` : '';
+  return `<tr>
+    <th class="sortable" onclick="onCrmSort('name')">Entreprise ${arrow('name')}</th>
+    <th class="sortable" onclick="onCrmSort('status')">Statut ${arrow('status')}</th>
+    <th>Contact</th>
+    <th class="sortable" onclick="onCrmSort('last_activity')">Dernier contact ${arrow('last_activity')}</th>
+    <th class="sortable" onclick="onCrmSort('next_task')">Prochaine tâche ${arrow('next_task')}</th>
+    <th></th>
+  </tr>`;
+}
+function crmCompanyRowHtml(c){
+  const lastAct = crmLastActivityFor(c.id);
+  const nextTask = crmNextOpenTaskFor(c.id);
+  const today = todayStr();
+  const overdue = !!(nextTask && nextTask.due_date && nextTask.due_date < today);
+  const dueToday = !!(nextTask && nextTask.due_date === today);
+  const contactBits = [
+    c.contact_name ? `<div class="t-title" style="font-size:13px;">${esc(c.contact_name)}</div>` : '',
+    c.phone ? `<div class="t-desc">${esc(c.phone)}</div>` : '',
+    c.email ? `<div class="t-desc">${esc(c.email)}</div>` : '',
+  ].filter(Boolean).join('');
+  return `
+    <tr>
+      <td><button class="btn btn-ghost btn-sm" style="padding:0;background:none;border:none;text-align:left;" onclick="openCompanyDetailModal('${c.id}')"><div class="t-title">${esc(c.name)}</div></button>${(c.city||c.country) ? `<div class="t-desc">${esc([c.city,c.country].filter(Boolean).join(', '))}</div>` : ''}</td>
+      <td>${crmStatusPillHtml(c.status)}</td>
+      <td>${contactBits || '<span style="color:var(--text-faint);">—</span>'}</td>
+      <td>${lastAct ? `${fmtDate(lastAct.date)}<div class="t-desc">${esc(CRM_TYPE_LABELS[lastAct.type]||lastAct.type)}</div>` : '<span style="color:var(--text-faint);">Aucun contact</span>'}</td>
+      <td>${nextTask ? `<span style="color:${overdue?'#FFB3A6':dueToday?'var(--amber)':'var(--text)'};font-weight:${overdue||dueToday?700:400};">${fmtDate(nextTask.due_date)}</span><div class="t-desc">${esc(nextTask.title)}</div>` : '<span style="color:var(--text-faint);">—</span>'}</td>
+      <td><div style="display:flex;gap:5px;flex-wrap:wrap;">
+        <button class="btn btn-ghost btn-sm" onclick="openCompanyDetailModal('${c.id}')">Ouvrir</button>
+        <button class="btn btn-danger btn-sm" onclick="deleteCompany('${c.id}')">Supprimer</button>
+      </div></td>
+    </tr>`;
+}
+function refreshCommercialView(){
+  const list = crmFilteredSorted();
+  const tbody = document.getElementById('crm-tbody');
+  const thead = document.getElementById('crm-thead');
+  const count = document.getElementById('crm-count');
+  if(!tbody) return;
+  if(thead) thead.innerHTML = crmTheadHtml();
+  tbody.innerHTML = list.length ? list.map(crmCompanyRowHtml).join('') : `<tr><td colspan="6"><div class="empty">Aucune entreprise ne correspond à cette recherche.</div></td></tr>`;
+  if(count) count.textContent = `${list.length} entreprise${list.length>1?'s':''}`;
+}
+function renderCommercial(){
+  const list = crmFilteredSorted();
+  return `
+    <div class="topbar"><div><h1>Gestion commerciale</h1><div class="desc">Entreprises prospectées, coordonnées et historique de contact.</div></div></div>
+    <div style="display:flex;gap:10px;margin-bottom:18px;flex-wrap:wrap;">
+      <button class="btn btn-primary btn-sm" style="width:auto;" onclick="openNewCompanyModal()">+ Ajouter une entreprise</button>
+    </div>
+    <div class="filter-bar">
+      <input type="text" placeholder="Nom, ville, contact, email, téléphone..." value="${esc(state.crmSearch)}" oninput="onCrmSearch(this.value)">
+      <select onchange="onCrmStatusFilter(this.value)">
+        <option value="all" ${state.crmStatusFilter==='all'?'selected':''}>Tous les statuts</option>
+        ${Object.entries(CRM_STATUS_LABELS).map(([k,label]) => `<option value="${k}" ${state.crmStatusFilter===k?'selected':''}>${esc(label)}</option>`).join('')}
+      </select>
+    </div>
+    <div class="result-count" id="crm-count">${list.length} entreprise${list.length>1?'s':''}</div>
+    <div class="panel"><table class="tbl-compact"><thead id="crm-thead">${crmTheadHtml()}</thead><tbody id="crm-tbody">${list.length ? list.map(crmCompanyRowHtml).join('') : `<tr><td colspan="6"><div class="empty">Aucune entreprise pour le moment — ajoutez la première ci-dessus.</div></td></tr>`}</tbody></table></div>
+  `;
+}
+function crmTaskRowHtml(tk){
+  const today = todayStr();
+  const overdue = !tk.done && tk.due_date && tk.due_date < today;
+  const dueToday = !tk.done && tk.due_date === today;
+  return `
+    <div style="display:flex;align-items:center;gap:10px;padding:8px 10px;background:rgba(255,255,255,0.03);border-radius:var(--r-sm);${tk.done?'opacity:0.55;':''}">
+      <input type="checkbox" ${tk.done?'checked':''} onchange="crmToggleTaskDone('${tk.id}')" style="width:17px;height:17px;flex-shrink:0;cursor:pointer;">
+      <div style="flex:1;min-width:0;">
+        <div style="font-size:13.5px;${tk.done?'text-decoration:line-through;':''}">${esc(tk.title)}</div>
+        ${tk.due_date ? `<div style="font-size:11.5px;color:${overdue?'#FFB3A6':dueToday?'var(--amber)':'var(--text-faint)'};font-weight:${overdue||dueToday?700:400};">${overdue?'En retard — ':dueToday?"Aujourd'hui — ":''}${fmtDate(tk.due_date)}</div>` : ''}
+      </div>
+      <button class="btn btn-ghost btn-sm" onclick="crmDeleteTask('${tk.id}')" title="Supprimer" style="padding:5px 9px;">✕</button>
+    </div>`;
+}
+function crmActivityRowHtml(a){
+  return `
+    <div style="padding:8px 10px;background:rgba(255,255,255,0.03);border-radius:var(--r-sm);">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;">
+        <span class="tag">${esc(CRM_TYPE_LABELS[a.type]||a.type)}</span>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <span style="font-size:11.5px;color:var(--text-faint);">${fmtDate(a.date)}</span>
+          <button class="btn btn-ghost btn-sm" onclick="crmDeleteActivity('${a.id}')" title="Supprimer" style="padding:3px 7px;">✕</button>
+        </div>
+      </div>
+      ${a.note ? `<div style="font-size:13px;color:var(--text-dim);margin-top:4px;line-height:1.5;">${esc(a.note)}</div>` : ''}
+    </div>`;
+}
+// La fiche détaillée (coordonnées + tâches + historique) s'ouvre dans une modale volontairement
+// plus large que les autres (640px) : trois blocs de contenu à la fois, sur le modèle des cartes
+// de contact façon CRM plutôt qu'un simple formulaire.
+function crmCompanyDetailHtml(c){
+  const activities = crmActivitiesFor(c.id);
+  const tasks = crmTasksFor(c.id).slice().sort((a,b) => {
+    if(!!a.done !== !!b.done) return a.done ? 1 : -1;
+    const ad = a.due_date || '9999-99-99', bd = b.due_date || '9999-99-99';
+    return ad < bd ? -1 : ad > bd ? 1 : 0;
+  });
+  return `
+  <div class="modal-bg" onclick="closeModalBg(event)"><div class="modal" style="max-width:640px;text-align:left;">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;">
+      <div>
+        <h3 style="margin-bottom:2px;">${esc(c.name)}</h3>
+        <div style="font-size:12.5px;color:var(--text-faint);">${esc([c.city,c.country].filter(Boolean).join(', ') || '—')}</div>
+      </div>
+      ${crmStatusPillHtml(c.status)}
+    </div>
+    <div class="row" style="margin-top:14px;align-items:flex-start;">
+      <div style="flex:1;font-size:13px;color:var(--text-dim);line-height:1.7;">
+        ${c.contact_name ? `<div><strong style="color:var(--text);">${esc(c.contact_name)}</strong></div>` : ''}
+        ${c.phone ? `<div>${esc(c.phone)}</div>` : ''}
+        ${c.email ? `<div>${esc(c.email)}</div>` : ''}
+        ${c.address ? `<div>${esc(c.address)}</div>` : ''}
+        ${!c.contact_name && !c.phone && !c.email && !c.address ? '<div style="color:var(--text-faint);">Aucune coordonnée renseignée.</div>' : ''}
+      </div>
+      <button class="btn btn-ghost btn-sm" style="width:auto;flex-shrink:0;" onclick="openEditCompanyModal('${c.id}', true)">Modifier</button>
+    </div>
+    ${c.notes ? `<div class="msg" style="background:rgba(255,255,255,0.04);margin-top:12px;margin-bottom:0;font-size:12.5px;line-height:1.5;">${esc(c.notes)}</div>` : ''}
+
+    <div class="section-title" style="margin-top:20px;">Tâches / relances</div>
+    ${state.crmTaskError ? `<div class="msg msg-error">${esc(state.crmTaskError)}</div>` : ''}
+    <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:12px;">
+      ${tasks.length ? tasks.map(crmTaskRowHtml).join('') : `<div class="empty" style="padding:8px 0;">Aucune tâche pour cette entreprise.</div>`}
+    </div>
+    <div class="row" style="align-items:flex-end;">
+      <div class="field" style="flex:2;margin-bottom:0;"><label>Nouvelle tâche</label><input id="crm-task-title" placeholder="ex. Relancer par téléphone"></div>
+      <div class="field" style="flex:1;margin-bottom:0;"><label>Échéance</label><input id="crm-task-due" type="date" value="${esc(todayStr())}"></div>
+      <button class="btn btn-primary btn-sm" style="width:auto;" onclick="crmAddTask('${c.id}')">Ajouter</button>
+    </div>
+
+    <div class="section-title" style="margin-top:20px;">Historique de contact</div>
+    ${state.crmActivityError ? `<div class="msg msg-error">${esc(state.crmActivityError)}</div>` : ''}
+    <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:12px;max-height:220px;overflow-y:auto;">
+      ${activities.length ? activities.map(crmActivityRowHtml).join('') : `<div class="empty" style="padding:8px 0;">Aucun contact enregistré pour l'instant.</div>`}
+    </div>
+    <div class="row">
+      <div class="field" style="flex:1;"><label>Type</label>
+        <select id="crm-act-type">
+          <option value="email">Email envoyé</option>
+          <option value="appel">Appel téléphonique</option>
+          <option value="autre">Autre</option>
+        </select>
+      </div>
+      <div class="field" style="flex:1;"><label>Date</label><input id="crm-act-date" type="date" value="${esc(todayStr())}"></div>
+    </div>
+    <div class="field"><label>Commentaire — qu'est-ce qui s'est dit ou a été envoyé ?</label><textarea id="crm-act-note" rows="2" placeholder="ex. Envoyé le catalogue tarifs pro, en attente de retour"></textarea></div>
+    <div class="modal-actions" style="justify-content:flex-start;">
+      <button class="btn btn-primary btn-sm" style="width:auto;" onclick="crmAddActivity('${c.id}')">Enregistrer ce contact</button>
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn btn-danger" onclick="deleteCompany('${c.id}')">Supprimer l'entreprise</button>
+      <button class="btn btn-ghost" onclick="closeModal()">Fermer</button>
+    </div>
+  </div></div>`;
+}
+function renderCommercialTaches(){
+  const today = todayStr();
+  const showDone = state.crmTasksFilter === 'done';
+  const tasks = state.crmTasks.filter(tk => !!tk.done === showDone).slice().sort((a,b) => {
+    if(showDone) return (b.done_at||'').localeCompare(a.done_at||'');
+    const ad = a.due_date || '9999-99-99', bd = b.due_date || '9999-99-99';
+    return ad < bd ? -1 : ad > bd ? 1 : 0;
+  });
+  const overdueCount = state.crmTasks.filter(tk => !tk.done && tk.due_date && tk.due_date < today).length;
+  const todayCount = state.crmTasks.filter(tk => !tk.done && tk.due_date === today).length;
+  const rows = tasks.map(tk => {
+    const c = state.crmCompanies.find(x => x.id === tk.company_id);
+    const overdue = !tk.done && tk.due_date && tk.due_date < today;
+    const dueToday = !tk.done && tk.due_date === today;
+    return `
+    <tr>
+      <td style="width:36px;"><input type="checkbox" ${tk.done?'checked':''} onchange="crmToggleTaskDone('${tk.id}')" style="width:17px;height:17px;cursor:pointer;"></td>
+      <td><div class="t-title" style="${tk.done?'text-decoration:line-through;color:var(--text-faint);':''}">${esc(tk.title)}</div></td>
+      <td>${c ? `<button class="btn btn-ghost btn-sm" onclick="openCompanyDetailModal('${c.id}')">${esc(c.name)}</button>` : '<span style="color:var(--text-faint);">Entreprise supprimée</span>'}</td>
+      <td>${tk.due_date ? `<span style="color:${overdue?'#FFB3A6':dueToday?'var(--amber)':'var(--text)'};font-weight:${overdue||dueToday?700:400};">${fmtDate(tk.due_date)}${overdue?' · en retard':dueToday?" · aujourd'hui":''}</span>` : '<span style="color:var(--text-faint);">—</span>'}</td>
+    </tr>`;
+  }).join('');
+  return `
+    <div class="topbar"><div><h1>Tâches commerciales</h1><div class="desc">${!showDone ? `${overdueCount} en retard, ${todayCount} pour aujourd'hui.` : 'Tâches déjà marquées comme terminées.'}</div></div></div>
+    <div style="display:flex;gap:6px;margin-bottom:16px;">
+      <button type="button" class="btn btn-sm ${!showDone?'btn-primary':'btn-ghost'}" onclick="onCrmTasksFilter('open')">À faire</button>
+      <button type="button" class="btn btn-sm ${showDone?'btn-primary':'btn-ghost'}" onclick="onCrmTasksFilter('done')">Terminées</button>
+    </div>
+    <div class="panel"><table class="tbl-compact"><thead><tr><th></th><th>Tâche</th><th>Entreprise</th><th>Échéance</th></tr></thead><tbody id="crm-tasks-tbody">${rows || `<tr><td colspan="4"><div class="empty">${showDone?'Aucune tâche terminée.':'Aucune tâche en attente — tout est à jour.'}</div></td></tr>`}</tbody></table></div>
+  `;
+}
+/* ---------- Gestion commerciale : handlers (window.*) ---------- */
+window.openNewCompanyModal = () => { state.crmCompanyError = ""; state.modal = { type:"newCompany" }; render(); };
+window.openEditCompanyModal = (id, fromDetail) => { state.crmCompanyError = ""; state.modal = { type:"editCompany", companyId:id, fromDetail: !!fromDetail }; render(); };
+window.openCompanyDetailModal = (id) => { state.crmActivityError = ""; state.crmTaskError = ""; state.modal = { type:"companyDetail", companyId:id }; render(); };
+
+async function doSaveCompany(existingId){
+  const nameEl = document.getElementById('crm-c-name');
+  const name = nameEl.value.trim();
+  if(!name){ state.crmCompanyError = "Le nom de l'entreprise est obligatoire."; render(); return; }
+  const payload = {
+    name,
+    city: document.getElementById('crm-c-city').value.trim() || null,
+    country: document.getElementById('crm-c-country').value.trim() || null,
+    address: document.getElementById('crm-c-address').value.trim() || null,
+    phone: document.getElementById('crm-c-phone').value.trim() || null,
+    email: document.getElementById('crm-c-email').value.trim() || null,
+    contact_name: document.getElementById('crm-c-contact').value.trim() || null,
+    status: document.getElementById('crm-c-status').value,
+    notes: document.getElementById('crm-c-notes').value.trim() || null,
+  };
+  if(existingId){
+    const fromDetail = !!(state.modal && state.modal.fromDetail);
+    const { data, error } = await sb.from('crm_companies').update(payload).eq('id', existingId).select().single();
+    if(error){ state.crmCompanyError = "Erreur : " + error.message; render(); return; }
+    const idx = state.crmCompanies.findIndex(x => x.id === existingId);
+    if(idx > -1) state.crmCompanies[idx] = data;
+    state.modal = fromDetail ? { type:"companyDetail", companyId: existingId } : null;
+  } else {
+    const { data, error } = await sb.from('crm_companies').insert(payload).select().single();
+    if(error){ state.crmCompanyError = "Erreur : " + error.message; render(); return; }
+    state.crmCompanies.push(data);
+    state.modal = null;
+  }
+  render();
+}
+window.confirmNewCompany = () => doSaveCompany(null);
+window.confirmEditCompany = (id) => doSaveCompany(id);
+
+window.deleteCompany = async (id) => {
+  if(!confirm("Supprimer cette entreprise ? Son historique de contact et ses tâches seront supprimés avec elle.")) return;
+  const { error } = await sb.from('crm_companies').delete().eq('id', id);
+  if(error){ alert("Erreur : " + error.message); return; }
+  state.crmCompanies = state.crmCompanies.filter(x => x.id !== id);
+  state.crmActivities = state.crmActivities.filter(x => x.company_id !== id);
+  state.crmTasks = state.crmTasks.filter(x => x.company_id !== id);
+  state.modal = null;
+  render();
+};
+
+window.crmAddActivity = async (companyId) => {
+  const note = document.getElementById('crm-act-note').value.trim();
+  const type = document.getElementById('crm-act-type').value;
+  const date = document.getElementById('crm-act-date').value || todayStr();
+  const { data, error } = await sb.from('crm_activities').insert({ company_id: companyId, type, note, date }).select().single();
+  if(error){ state.crmActivityError = "Erreur : " + error.message; render(); return; }
+  state.crmActivities.push(data);
+  state.crmActivityError = "";
+  render();
+};
+window.crmDeleteActivity = async (id) => {
+  const { error } = await sb.from('crm_activities').delete().eq('id', id);
+  if(error){ alert("Erreur : " + error.message); return; }
+  state.crmActivities = state.crmActivities.filter(x => x.id !== id);
+  render();
+};
+
+window.crmAddTask = async (companyId) => {
+  const title = document.getElementById('crm-task-title').value.trim();
+  if(!title){ state.crmTaskError = "Le titre de la tâche est obligatoire."; render(); return; }
+  const due = document.getElementById('crm-task-due').value || null;
+  const { data, error } = await sb.from('crm_tasks').insert({ company_id: companyId, title, due_date: due }).select().single();
+  if(error){ state.crmTaskError = "Erreur : " + error.message; render(); return; }
+  state.crmTasks.push(data);
+  state.crmTaskError = "";
+  render();
+};
+// Optimiste (l'UI change avant la réponse serveur) : cocher/décocher une tâche doit être instantané,
+// comme sur HubSpot — reproduit le principe déjà utilisé pour updateAppBadge/le statut des missions.
+window.crmToggleTaskDone = async (id) => {
+  const tk = state.crmTasks.find(x => x.id === id);
+  if(!tk) return;
+  const done = !tk.done;
+  tk.done = done;
+  tk.done_at = done ? new Date().toISOString() : null;
+  render();
+  const { error } = await sb.from('crm_tasks').update({ done: tk.done, done_at: tk.done_at }).eq('id', id);
+  if(error) console.error('crmToggleTaskDone', error.message);
+};
+window.crmDeleteTask = async (id) => {
+  const { error } = await sb.from('crm_tasks').delete().eq('id', id);
+  if(error){ alert("Erreur : " + error.message); return; }
+  state.crmTasks = state.crmTasks.filter(x => x.id !== id);
+  render();
+};
+
+window.onCrmSearch = (v) => { state.crmSearch = v; refreshCommercialView(); };
+window.onCrmStatusFilter = (v) => { state.crmStatusFilter = v; refreshCommercialView(); };
+window.onCrmSort = (field) => {
+  if(state.crmSort.field === field) state.crmSort.dir = state.crmSort.dir === 'asc' ? 'desc' : 'asc';
+  else state.crmSort = { field, dir: 'asc' };
+  refreshCommercialView();
+};
+window.onCrmTasksFilter = (v) => { state.crmTasksFilter = v; render(); };
 
 /* ---------- Contrats (équipe) ---------- */
 function contratStatusRank(c){
@@ -6586,6 +6984,41 @@ function renderModal(){
       <div class="modal-actions"><button class="btn btn-ghost" onclick="closeModal()">Annuler</button><button class="btn btn-primary" onclick="confirmAddXp('${esc(p.username)}')">Créditer</button></div>
     </div></div>`;
   }
+  if(m.type === "newCompany" || m.type === "editCompany"){
+    const editing = m.type === "editCompany";
+    const c = editing ? state.crmCompanies.find(x => x.id === m.companyId) : null;
+    if(editing && !c) return "";
+    return `
+    <div class="modal-bg" onclick="closeModalBg(event)"><div class="modal" style="max-width:560px;">
+      <h3>${editing ? "Modifier l'entreprise" : "Ajouter une entreprise"}</h3>
+      ${state.crmCompanyError ? `<div class="msg msg-error">${esc(state.crmCompanyError)}</div>` : ''}
+      <div class="field"><label>Nom de l'entreprise *</label><input id="crm-c-name" value="${esc(c?.name||'')}" autofocus></div>
+      <div class="row">
+        <div class="field" style="flex:1;"><label>Ville</label><input id="crm-c-city" value="${esc(c?.city||'')}"></div>
+        <div class="field" style="flex:1;"><label>Pays</label><input id="crm-c-country" value="${esc(c?.country||'')}"></div>
+      </div>
+      <div class="field"><label>Adresse</label><input id="crm-c-address" value="${esc(c?.address||'')}"></div>
+      <div class="row">
+        <div class="field" style="flex:1;"><label>Téléphone</label><input id="crm-c-phone" value="${esc(c?.phone||'')}"></div>
+        <div class="field" style="flex:1;"><label>Email</label><input id="crm-c-email" type="email" value="${esc(c?.email||'')}"></div>
+      </div>
+      <div class="row">
+        <div class="field" style="flex:1;"><label>Contact (nom de la personne)</label><input id="crm-c-contact" value="${esc(c?.contact_name||'')}"></div>
+        <div class="field" style="flex:1;"><label>Statut</label>
+          <select id="crm-c-status">
+            ${Object.entries(CRM_STATUS_LABELS).map(([k,label]) => `<option value="${k}" ${(c?.status||'nouveau')===k?'selected':''}>${esc(label)}</option>`).join('')}
+          </select>
+        </div>
+      </div>
+      <div class="field"><label>Notes</label><textarea id="crm-c-notes" rows="3">${esc(c?.notes||'')}</textarea></div>
+      <div class="modal-actions"><button class="btn btn-ghost" onclick="closeModal()">Annuler</button><button class="btn btn-primary" onclick="${editing?`confirmEditCompany('${c.id}')`:'confirmNewCompany()'}">${editing?'Enregistrer':'Créer'}</button></div>
+    </div></div>`;
+  }
+  if(m.type === "companyDetail"){
+    const c = state.crmCompanies.find(x => x.id === m.companyId);
+    if(!c) return "";
+    return crmCompanyDetailHtml(c);
+  }
   return "";
 }
 
@@ -6615,6 +7048,8 @@ function render(){
   else if(state.view === "missions-creation") content = renderMissionsCreation();
   else if(state.view === "utilisateurs") content = renderUtilisateurs();
   else if(state.view === "finances") content = renderFinances();
+  else if(state.view === "commercial") content = renderCommercial();
+  else if(state.view === "commercial-taches") content = renderCommercialTaches();
   else if(state.view === "messages") content = u.is_master ? renderMessagesMaster() : renderMessagesClient();
   else if(state.view === "contrats") content = renderContratsAdmin();
   else if(state.view === "contrat") content = renderContratClient();
