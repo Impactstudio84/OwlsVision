@@ -952,6 +952,84 @@ function langSwitcherHtml(extraClass){
   return `<select class="lang-switch${extraClass?' '+extraClass:''}" aria-label="${esc(t('lang.switcher'))}" onchange="window.setLang(this.value)">${opts}</select>`;
 }
 
+/* =========================================================================
+   Traduction automatique du contenu rédigé par l'équipe (Lot 24).
+   Problème : t()/I18N ne couvre que les libellés fixes de l'interface — jamais le texte que
+   Luka rédige lui-même (titre/description de mission, nom/description de récompense ou d'article
+   du catalogue). Ce texte restait donc toujours affiché en français, quelle que soit la langue
+   choisie par le client.
+   Solution ("gratuit et simple") : à chaque création/modification d'un de ces 3 contenus, on
+   traduit automatiquement vers les 5 autres langues via l'API gratuite MyMemory (sans clé, pas
+   de coût), et on met le résultat en cache dans une colonne JSON "translations" (voir migration
+   Lot 24). trField() lit ce cache à l'affichage ; si une traduction manque (API indisponible,
+   quota dépassé...) on retombe silencieusement sur le texte français d'origine — jamais de champ
+   vide côté client. Le compte équipe (is_master) voit toujours le français, donc n'est jamais
+   concerné par ce mécanisme (voir effectiveLang()).
+   ========================================================= */
+const AUTO_TRANSLATE_LANGS = ['en','es','it','de','lb'];
+async function mmTranslate(text, targetLang){
+  const clean = (text == null ? '' : String(text)).trim();
+  if(!clean) return null;
+  let timer;
+  try{
+    const controller = new AbortController();
+    timer = setTimeout(() => controller.abort(), 8000);
+    const url = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(clean)}&langpair=fr|${targetLang}`;
+    const res = await fetch(url, { signal: controller.signal });
+    if(!res.ok) return null;
+    const json = await res.json();
+    const translated = json && json.responseData && json.responseData.translatedText;
+    if(!translated || typeof translated !== 'string') return null;
+    if(/^MYMEMORY WARNING/i.test(translated)) return null; // quota API dépassé
+    if(json.responseStatus != null && Number(json.responseStatus) !== 200) return null;
+    return translated;
+  }catch(e){
+    return null; // timeout, réseau indisponible, etc. — on retombera sur le français
+  }finally{
+    if(timer) clearTimeout(timer);
+  }
+}
+// table: 'tasks' | 'rewards' | 'items'. sourceFields: { title|name, description } (texte français
+// d'origine, déjà à jour en base — voir les appels dans createTask/updateTask, createItem/updateItem,
+// createReward/updateReward). Ne bloque jamais l'UI : à appeler sans "await" depuis ces fonctions.
+async function autoTranslateContent(table, id, sourceFields){
+  const fieldNames = Object.keys(sourceFields || {}).filter(f => (sourceFields[f] == null ? '' : String(sourceFields[f])).trim());
+  if(!fieldNames.length) return;
+  const jobs = [];
+  AUTO_TRANSLATE_LANGS.forEach(lang => {
+    fieldNames.forEach(field => {
+      jobs.push(mmTranslate(sourceFields[field], lang).then(result => ({ lang, field, result })));
+    });
+  });
+  const results = await Promise.all(jobs);
+  const translations = {};
+  results.forEach(({ lang, field, result }) => {
+    if(result){
+      if(!translations[lang]) translations[lang] = {};
+      translations[lang][field] = result;
+    }
+  });
+  if(!Object.keys(translations).length) return; // rien n'a pu être traduit (API indisponible...) — on laisse le français
+  const { data, error } = await sb.from(table).update({ translations }).eq('id', id).select().single();
+  if(error || !data) return;
+  const stateKey = table === 'tasks' ? 'tasks' : (table === 'rewards' ? 'rewards' : (table === 'items' ? 'items' : null));
+  if(stateKey){
+    const idx = state[stateKey].findIndex(x => x.id === id);
+    if(idx > -1) state[stateKey][idx] = data;
+    render();
+  }
+}
+// Lecture à l'affichage, côté client uniquement (le master reste toujours en français, voir
+// effectiveLang()). Retombe systématiquement sur le texte français si la traduction manque.
+function trField(obj, field){
+  const fr = (obj && obj[field] != null) ? obj[field] : '';
+  if(!obj) return fr;
+  const lang = effectiveLang();
+  if(lang === 'fr') return fr;
+  const tr = obj.translations && obj.translations[lang] && obj.translations[lang][field];
+  return (tr && String(tr).trim()) ? tr : fr;
+}
+
 let state = {
   loading: true,
   fatalError: null,
@@ -1685,6 +1763,7 @@ async function createItem(name, description, xpValue, qty, imageUrl, pricePerDay
   state.items.push(data);
   state.modal = null;
   render();
+  autoTranslateContent('items', data.id, { name: data.name, description: data.description });
 }
 async function deleteItem(id){
   if(!confirm("Supprimer ce matériel du catalogue ? Son historique de locations sera aussi supprimé.")) return;
@@ -1699,6 +1778,11 @@ async function updateItem(id, fields){
   const idx = state.items.findIndex(i => i.id === id);
   if(idx > -1) state.items[idx] = data;
   render();
+  // Ne retraduit que si le nom ou la description a changé — ne se déclenche jamais pour un
+  // simple ajustement de stock (adjustItemQty n'envoie que { qty }).
+  if('name' in fields || 'description' in fields){
+    autoTranslateContent('items', id, { name: data.name, description: data.description });
+  }
   return true;
 }
 async function adjustItemQty(id, delta){
@@ -1747,6 +1831,7 @@ async function createTask(title, description, xpReward, requiresAnswer, answerLa
   state.tasks.push(data);
   state.modal = null;
   render();
+  autoTranslateContent('tasks', data.id, { title: data.title, description: data.description });
 }
 async function deleteTask(id){
   if(!state.session.isMaster) return;
@@ -1762,6 +1847,9 @@ async function updateTask(id, fields){
   const idx = state.tasks.findIndex(t => t.id === id);
   if(idx > -1) state.tasks[idx] = data;
   render();
+  if('title' in fields || 'description' in fields){
+    autoTranslateContent('tasks', id, { title: data.title, description: data.description });
+  }
   return true;
 }
 // Une soumission "en attente" ou déjà "validée" bloque une nouvelle tentative ; une mission "refusée" peut être
@@ -1962,6 +2050,7 @@ async function createReward(name, description, xpCost, imageUrl){
   state.rewards.push(data);
   state.modal = null;
   render();
+  autoTranslateContent('rewards', data.id, { name: data.name, description: data.description });
 }
 async function updateReward(id, fields){
   const { data, error } = await sb.from('rewards').update(fields).eq('id', id).select().single();
@@ -1969,6 +2058,9 @@ async function updateReward(id, fields){
   const idx = state.rewards.findIndex(r => r.id === id);
   if(idx > -1) state.rewards[idx] = data;
   render();
+  if('name' in fields || 'description' in fields){
+    autoTranslateContent('rewards', id, { name: data.name, description: data.description });
+  }
   return true;
 }
 async function deleteReward(id){
@@ -3977,7 +4069,7 @@ function renderAccueil(){
             const label = mine && mine.status === 'refusee' ? t('missions.action.retry') : (mine && mine.status === 'validee' ? t('missions.action.redo') : ((t2.requires_answer || t2.requires_date) ? t('missions.action.complete') : t('missions.action.markDone')));
             return `
             <div class="mission-spotlight-row">
-              <div><div class="msr-title">${esc(t2.title)}${t2.is_recurring ? ` <span class="tag" style="margin-left:4px;">${esc(t('missions.recurring'))}</span>` : ''}</div><span class="task-xp">+${t2.xp_reward} XP</span></div>
+              <div><div class="msr-title">${esc(trField(t2,'title'))}${t2.is_recurring ? ` <span class="tag" style="margin-left:4px;">${esc(t('missions.recurring'))}</span>` : ''}</div><span class="task-xp">+${t2.xp_reward} XP</span></div>
               ${t2.requires_booking ? `<span style="font-size:11px;color:var(--text-faint);text-align:right;max-width:120px;">${esc(t('missions.autoBookingCredit'))}</span>` : ((t2.requires_answer || t2.requires_date) ? `<button class="btn btn-primary btn-sm" onclick="openAnswerModal('${t2.id}')">${esc(label)}</button>` : `<button class="btn btn-primary btn-sm" onclick="completeTask('${t2.id}')">${esc(label)}</button>`)}
             </div>`;
           }).join('')}
@@ -4011,10 +4103,10 @@ function renderCatalogue(){
     return `
       <div class="card ${u.is_master ? 'drag-sortable' : ''}" ${dropAttrs}>
         ${u.is_master ? `<div class="card-drag-handle" draggable="true" ondragstart="rowDragStart(event,'item','${item.id}',null)" ondragend="rowDragEnd(event)" title="Glisser pour réordonner">${tacticalIconSvg('grip',{size:18})}</div>` : ''}
-        ${item.image_url ? `<img class="card-photo" src="${item.image_url}" alt="${esc(item.name)}">` : `<div class="card-photo-ph">${tacticalIconSvg('scope',{size:30})}</div>`}
+        ${item.image_url ? `<img class="card-photo" src="${item.image_url}" alt="${esc(trField(item,'name'))}">` : `<div class="card-photo-ph">${tacticalIconSvg('scope',{size:30})}</div>`}
         <span class="tag">${esc(t('catalogue.xpOnBooking', { xp: item.xp_value }))}</span>
-        <h3>${esc(item.name)}</h3>
-        <div class="card-desc">${esc(item.description || '')}</div>
+        <h3>${esc(trField(item,'name'))}</h3>
+        <div class="card-desc">${esc(trField(item,'description'))}</div>
         ${(item.price_per_day!=null || item.price_per_week!=null) ? `<div class="card-desc" style="font-weight:600;">${item.price_per_day!=null?esc(t('catalogue.priceDay', { price: Number(item.price_per_day).toFixed(2) })):''}${item.price_per_day!=null&&item.price_per_week!=null?' · ':''}${item.price_per_week!=null?esc(t('catalogue.priceWeek', { price: Number(item.price_per_week).toFixed(2) })):''}</div>` : ''}
         <div class="card-foot">
           <span class="qty-pill">${dispo > 0 ? esc(t('catalogue.available', { n: dispo })) : esc(t('catalogue.full'))} · ${esc(t('catalogue.stock', { n: item.qty }))}</span>
@@ -4754,11 +4846,11 @@ function missionCardHtml(task, isMaster, u){
       <div class="mission-head">
         <div class="mission-icon" style="color:${iconInfo.color};background:${iconInfo.bg};">${icon}</div>
         <div style="flex:1;min-width:0;">
-          <h3 style="font-size:16.5px;">${esc(task.title)}${task.is_recurring ? ` <span class="tag" style="margin-left:4px;">${esc(t('missions.recurring'))}</span>` : ''}</h3>
+          <h3 style="font-size:16.5px;">${esc(trField(task,'title'))}${task.is_recurring ? ` <span class="tag" style="margin-left:4px;">${esc(t('missions.recurring'))}</span>` : ''}</h3>
           <span class="task-xp">+${task.xp_reward} XP</span>
         </div>
       </div>
-      ${task.description ? `<div class="card-desc">${esc(task.description)}</div>` : ''}
+      ${task.description ? `<div class="card-desc">${esc(trField(task,'description'))}</div>` : ''}
       ${clientStatusLine}
       ${isMaster && task.requires_answer ? `<div class="card-desc" style="flex:0;">Champ demandé : ${esc(task.answer_label)}</div>` : ''}
       ${isMaster && task.requires_date ? `<div class="card-desc" style="flex:0;">Date de location demandée (à partir du 15/08/2026)</div>` : ''}
@@ -5027,10 +5119,10 @@ function rewardCardHtml(r, isMaster, u){
   }
   return `
     <div class="card">
-      ${r.image_url ? `<img class="card-photo" src="${r.image_url}" alt="${esc(r.name)}">` : `<div class="card-photo-ph">${tacticalIconSvg('crate',{size:30})}</div>`}
+      ${r.image_url ? `<img class="card-photo" src="${r.image_url}" alt="${esc(trField(r,'name'))}">` : `<div class="card-photo-ph">${tacticalIconSvg('crate',{size:30})}</div>`}
       <span class="tag">${r.xp_cost} XP</span>
-      <h3>${esc(r.name)}</h3>
-      ${r.description ? `<div class="card-desc">${esc(r.description)}</div>` : ''}
+      <h3>${esc(trField(r,'name'))}</h3>
+      ${r.description ? `<div class="card-desc">${esc(trField(r,'description'))}</div>` : ''}
       ${clientBlock}
       ${isMaster && allRedemptions.length ? `<div>${allRedemptions.map(rd => `
         <div class="submission-row" style="flex-direction:column;align-items:stretch;gap:4px;">
@@ -6982,8 +7074,8 @@ function renderModal(){
     const task = state.tasks.find(tk => tk.id === m.taskId);
     return `
     <div class="modal-bg" onclick="closeModalBg(event)"><div class="modal">
-      <h3>${esc(task.title)}</h3>
-      ${task.description ? `<p style="font-size:13.5px;color:var(--text-dim);margin:-6px 0 14px;">${esc(task.description)}</p>` : ''}
+      <h3>${esc(trField(task,'title'))}</h3>
+      ${task.description ? `<p style="font-size:13.5px;color:var(--text-dim);margin:-6px 0 14px;">${esc(trField(task,'description'))}</p>` : ''}
       ${state.answerError ? `<div class="msg msg-error">${esc(state.answerError)}</div>` : ''}
       ${task.requires_answer ? `<div class="field"><label>${esc(task.answer_label || t('missions.answer.defaultLabel'))}</label><input id="ans-input" placeholder="${esc(t('missions.answer.placeholder'))}"></div>` : ''}
       ${task.requires_date ? `<div class="field"><label>${esc(t('missions.answer.dateLabel'))}</label><input id="ans-date-input" type="date" min="${MISSION_LAUNCH_DATE}"><div style="font-size:12px;color:var(--text-faint);margin-top:6px;line-height:1.5;">${esc(missionDateTooEarlyMsg())}</div></div>` : ''}
