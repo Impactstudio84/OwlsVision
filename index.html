@@ -1029,6 +1029,18 @@ function trField(obj, field){
   const tr = obj.translations && obj.translations[lang] && obj.translations[lang][field];
   return (tr && String(tr).trim()) ? tr : fr;
 }
+// Traduit rétroactivement tout ce qui a été créé avant l'ajout de cette fonctionnalité (jamais
+// passé par createTask/updateTask etc., donc jamais traduit) — voir l'appel dans boot(). Un à la
+// fois (pas en parallèle) pour rester correct avec l'API gratuite MyMemory en cas de gros volume.
+async function backfillMissingTranslations(){
+  const jobs = [];
+  state.tasks.forEach(t => { if(!t.translations || !t.translations.en) jobs.push(['tasks', t.id, { title: t.title, description: t.description }]); });
+  state.items.forEach(i => { if(!i.translations || !i.translations.en) jobs.push(['items', i.id, { name: i.name, description: i.description }]); });
+  state.rewards.forEach(r => { if(!r.translations || !r.translations.en) jobs.push(['rewards', r.id, { name: r.name, description: r.description }]); });
+  for(const [table, id, fields] of jobs){
+    await autoTranslateContent(table, id, fields);
+  }
+}
 
 let state = {
   loading: true,
@@ -1350,6 +1362,10 @@ async function boot(){
   maybeShowNotifPrompt();
   render();
   subscribeRealtime();
+  // Rattrapage Lot 24 : tout ce qui a été créé AVANT l'ajout de la traduction auto n'a jamais été
+  // traduit (autoTranslateContent ne se déclenche qu'à la création/modification). On le traduit une
+  // bonne fois pour toutes en tâche de fond, uniquement côté équipe, sans bloquer l'affichage.
+  if(state.session && state.session.isMaster) backfillMissingTranslations();
   bootDone = true;
 }
 
