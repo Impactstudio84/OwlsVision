@@ -1239,6 +1239,22 @@ function dismissNotifPrompt(){
   state.modal = null;
   render();
 }
+// Lot 25 : rappel de paiement. Contrairement à maybeShowNotifPrompt (qui ne se montre qu'une fois,
+// via un drapeau localStorage), ce rappel n'a volontairement AUCUN mécanisme "ne plus afficher" —
+// il réapparaît à chaque connexion tant que le master n'a pas basculé la réservation sur "Payée"
+// (voir toggleBookingPaid), et ne concerne qu'un contrat déjà signé (avant signature, rien à payer
+// n'est encore dû). Appelée depuis boot() et doClientLogin(), avant maybeShowNotifPrompt() afin que
+// le rappel de paiement ait priorité si les deux conditions sont réunies au même moment.
+function maybeShowPaymentReminder(){
+  const u = currentProfile();
+  if(!u || u.is_master) return;
+  if(state.modal) return; // ne pas couper une autre fenêtre déjà ouverte (ex. lien de notification)
+  const c = state.contracts.find(x => x.username === u.username);
+  if(!c || !c.signed_at) return;
+  const unpaid = state.bookings.find(b => b.username === u.username && (b.status === 'accepte' || b.status === 'loue') && !b.paid);
+  if(!unpaid) return;
+  state.modal = { type: 'paymentReminder' };
+}
 registerServiceWorker();
 
 // Traduit (Lot 20) : STATUS_LABELS reste utilisable comme avant (STATUS_LABELS[status]) grâce à ce
@@ -1359,6 +1375,7 @@ async function boot(){
     if(requestedView && state.session && !state.session.isMaster) state.view = requestedView;
     if(requestedView) history.replaceState(null, '', location.pathname);
   }catch(e){}
+  maybeShowPaymentReminder();
   maybeShowNotifPrompt();
   render();
   subscribeRealtime();
@@ -1376,6 +1393,7 @@ sb.auth.onAuthStateChange((event, session) => {
       await fetchAll();
       const prof = await ensureClientProfile(session.user.email.toLowerCase());
       state.session = { username: prof.username, isMaster: !!prof.is_master };
+      maybeShowPaymentReminder();
       maybeShowNotifPrompt();
       render();
     })();
@@ -1455,6 +1473,7 @@ async function doClientLogin(email, password){
   state.session = { username: prof.username, isMaster: !!prof.is_master };
   state.authError = ""; state.authNotice = ""; state.profileNotice = ""; state.docError = "";
   state.view = state.session.isMaster ? "dashboard" : "accueil";
+  maybeShowPaymentReminder();
   maybeShowNotifPrompt();
   render();
 }
@@ -1482,6 +1501,7 @@ async function doClientRegister(email, password, password2){
     const prof = await ensureClientProfile(email);
     state.session = { username: prof.username, isMaster: !!prof.is_master };
     state.view = state.session.isMaster ? "dashboard" : "accueil";
+    maybeShowPaymentReminder();
     maybeShowNotifPrompt();
     render();
     return;
@@ -1767,6 +1787,21 @@ async function setBookingStatus(id, status){
   const idx = state.bookings.findIndex(b => b.id === id);
   if(idx > -1) state.bookings[idx] = data;
   render();
+}
+// Lot 25 : simple bascule Payée / Non payée sur une réservation (voir gestionRowHtml). Mise à jour
+// optimiste (même principe que markMessageUnread) : l'affichage change immédiatement, l'écriture
+// Supabase part en tâche de fond. Tant qu'une réservation acceptée/louée n'est pas marquée payée,
+// le client voit un rappel à chaque connexion une fois son contrat signé (voir
+// maybeShowPaymentReminder, appelée depuis boot()).
+async function toggleBookingPaid(id){
+  if(!state.session.isMaster) return;
+  const b = state.bookings.find(x => x.id === id);
+  if(!b) return;
+  const newPaid = !b.paid;
+  b.paid = newPaid;
+  render();
+  const { error } = await sb.from('bookings').update({ paid: newPaid }).eq('id', id);
+  if(error){ b.paid = !newPaid; render(); alert("Erreur : " + error.message); }
 }
 
 /* ---------- Items (équipe) ---------- */
@@ -4242,6 +4277,15 @@ function gestionRowHtml(b){
     const contractLabel = c && c.signed_at ? 'Contrat signé' : c ? 'Contrat envoyé' : 'Envoyer le contrat';
     const contractCls = c ? 'btn-ghost' : 'btn-primary';
     actions.push(`<button class="btn ${contractCls} btn-sm" onclick="openGenerateContractModal('${esc(b.username)}')">${contractLabel}</button>`);
+  }
+  // Lot 25 : bascule Payée / Non payée, visible dès l'acceptation de la demande (c'est à partir de
+  // là qu'un paiement est attendu). Tant que non payée après signature du contrat, le client voit un
+  // rappel à chaque connexion — voir toggleBookingPaid et maybeShowPaymentReminder.
+  if(b.status === 'accepte' || b.status === 'loue' || b.status === 'retourne'){
+    const paidStyle = b.paid
+      ? 'background:var(--accent-soft);color:var(--accent);border-color:transparent;'
+      : 'background:var(--danger-soft);color:#FFB3A6;border-color:transparent;';
+    actions.push(`<button class="btn btn-sm" style="${paidStyle}" onclick="toggleBookingPaid('${b.id}')" title="Cliquer pour basculer">${b.paid ? '✓ Payée' : 'Non payée'}</button>`);
   }
   actions.push(`<button class="btn btn-danger btn-sm" onclick="cancelBooking('${b.id}')">Supprimer</button>`);
   return `
@@ -6783,6 +6827,15 @@ function renderModal(){
       <div class="modal-actions"><button class="btn btn-ghost" onclick="dismissNotifPrompt()">${esc(t('notifPrompt.later'))}</button><button class="btn btn-primary" onclick="window.enableNotifications()">${esc(t('notifPrompt.enable'))}</button></div>
     </div></div>`;
   }
+  if(m.type === "paymentReminder"){
+    return `
+    <div class="modal-bg"><div class="modal" style="text-align:center;">
+      <div style="display:flex;justify-content:center;color:var(--danger);margin-bottom:8px;">${tacticalIconSvg('warning',{size:36})}</div>
+      <h3>${esc(t('payment.reminder.title'))}</h3>
+      <p style="font-size:14px;color:var(--text-dim);line-height:1.6;margin:0 0 16px;">${esc(t('payment.reminder.body'))}</p>
+      <div class="modal-actions"><button class="btn btn-primary" style="width:100%;" onclick="closeModal()">${esc(t('common.close'))}</button></div>
+    </div></div>`;
+  }
   if(m.type === "moreGear"){
     return `
     <div class="modal-bg" onclick="closeModalBg(event)"><div class="modal" style="text-align:center;">
@@ -7889,7 +7942,7 @@ fr: {
   'auth.notice.resentFailed': "Échec du renvoi : {{msg}}",
   'auth.notice.resentOk': "Email renvoyé à {{email}}.",
   'auth.notice.sending': "Envoi en cours...",
-  'booking.avail.full': "Complet ({{n}} en stock)",
+  'booking.avail.full': "Matériel non disponible à cette date",
   'booking.avail.invalidPeriod': "Période invalide",
   'booking.avail.left': "{{left}} / {{total}} disponibles",
   'booking.avail.minDuration': "Durée minimum : {{n}} jours",
@@ -7897,11 +7950,13 @@ fr: {
   'booking.confirm.title': "Demande envoyée !",
   'booking.err.invalidPeriod': "Période invalide.",
   'booking.err.minDuration': "La durée minimum de réservation est de {{n}} jours.",
-  'booking.err.noneAvailable': "Aucun exemplaire disponible ({{n}} en stock).",
+  'booking.err.noneAvailable': "Matériel non disponible à cette date.",
   'booking.err.pastStart': "La date de début ne peut pas être dans le passé.",
   'booking.err.profileIncomplete': "Merci de compléter votre profil avant de réserver.",
   'booking.field.end': "Date de fin",
   'booking.field.start': "Date de début",
+  'payment.reminder.title': "Paiement en attente",
+  'payment.reminder.body': "Attention, votre demande de location n'a pas été payée. Elle sera annulée sous 5 jours si le paiement n'est pas confirmé.",
   'booking.modal.title': "Réserver {{item}}",
   'booking.note': "Cette réservation vous rapportera {{xp}} XP une fois validée.",
   'booking.send': "Envoyer la demande",
@@ -8124,7 +8179,7 @@ en: {
   'auth.notice.resentFailed': "Resend failed: {{msg}}",
   'auth.notice.resentOk': "Email resent to {{email}}.",
   'auth.notice.sending': "Sending...",
-  'booking.avail.full': "Fully booked ({{n}} in stock)",
+  'booking.avail.full': "Item not available for this date",
   'booking.avail.invalidPeriod': "Invalid period",
   'booking.avail.left': "{{left}} / {{total}} available",
   'booking.avail.minDuration': "Minimum duration: {{n}} days",
@@ -8132,11 +8187,13 @@ en: {
   'booking.confirm.title': "Request sent!",
   'booking.err.invalidPeriod': "Invalid period.",
   'booking.err.minDuration': "The minimum booking duration is {{n}} days.",
-  'booking.err.noneAvailable': "No units available ({{n}} in stock).",
+  'booking.err.noneAvailable': "Item not available for this date.",
   'booking.err.pastStart': "The start date cannot be in the past.",
   'booking.err.profileIncomplete': "Please complete your profile before booking.",
   'booking.field.end': "End date",
   'booking.field.start': "Start date",
+  'payment.reminder.title': "Payment pending",
+  'payment.reminder.body': "Heads up — your rental request hasn't been paid yet. It will be cancelled in 5 days if payment isn't confirmed.",
   'booking.modal.title': "Book {{item}}",
   'booking.note': "This booking will earn you {{xp}} XP once approved.",
   'booking.send': "Send request",
@@ -8359,7 +8416,7 @@ es: {
   'auth.notice.resentFailed': "Error al reenviar: {{msg}}",
   'auth.notice.resentOk': "Correo reenviado a {{email}}.",
   'auth.notice.sending': "Enviando...",
-  'booking.avail.full': "Completo ({{n}} en stock)",
+  'booking.avail.full': "Material no disponible en esta fecha",
   'booking.avail.invalidPeriod': "Período no válido",
   'booking.avail.left': "{{left}} / {{total}} disponibles",
   'booking.avail.minDuration': "Duración mínima: {{n}} días",
@@ -8367,11 +8424,13 @@ es: {
   'booking.confirm.title': "¡Solicitud enviada!",
   'booking.err.invalidPeriod': "Período no válido.",
   'booking.err.minDuration': "La duración mínima de reserva es de {{n}} días.",
-  'booking.err.noneAvailable': "No hay unidades disponibles ({{n}} en stock).",
+  'booking.err.noneAvailable': "Material no disponible en esta fecha.",
   'booking.err.pastStart': "La fecha de inicio no puede ser anterior a hoy.",
   'booking.err.profileIncomplete': "Complete su perfil antes de reservar.",
   'booking.field.end': "Fecha de fin",
   'booking.field.start': "Fecha de inicio",
+  'payment.reminder.title': "Pago pendiente",
+  'payment.reminder.body': "Atención, su solicitud de alquiler aún no ha sido pagada. Se cancelará en 5 días si no se confirma el pago.",
   'booking.modal.title': "Reservar {{item}}",
   'booking.note': "Esta reserva le hará ganar {{xp}} XP una vez validada.",
   'booking.send': "Enviar solicitud",
@@ -8594,7 +8653,7 @@ it: {
   'auth.notice.resentFailed': "Reinvio non riuscito: {{msg}}",
   'auth.notice.resentOk': "Email reinviata a {{email}}.",
   'auth.notice.sending': "Invio in corso...",
-  'booking.avail.full': "Al completo ({{n}} in magazzino)",
+  'booking.avail.full': "Materiale non disponibile in questa data",
   'booking.avail.invalidPeriod': "Periodo non valido",
   'booking.avail.left': "{{left}} / {{total}} disponibili",
   'booking.avail.minDuration': "Durata minima: {{n}} giorni",
@@ -8602,11 +8661,13 @@ it: {
   'booking.confirm.title': "Richiesta inviata!",
   'booking.err.invalidPeriod': "Periodo non valido.",
   'booking.err.minDuration': "La durata minima di prenotazione è di {{n}} giorni.",
-  'booking.err.noneAvailable': "Nessuna unità disponibile ({{n}} in magazzino).",
+  'booking.err.noneAvailable': "Materiale non disponibile in questa data.",
   'booking.err.pastStart': "La data di inizio non può essere nel passato.",
   'booking.err.profileIncomplete': "Completa il tuo profilo prima di prenotare.",
   'booking.field.end': "Data di fine",
   'booking.field.start': "Data di inizio",
+  'payment.reminder.title': "Pagamento in sospeso",
+  'payment.reminder.body': "Attenzione, la tua richiesta di noleggio non è ancora stata pagata. Sarà annullata entro 5 giorni se il pagamento non viene confermato.",
   'booking.modal.title': "Prenota {{item}}",
   'booking.note': "Questa prenotazione ti farà guadagnare {{xp}} XP una volta approvata.",
   'booking.send': "Invia richiesta",
@@ -8829,7 +8890,7 @@ de: {
   'auth.notice.resentFailed': "Erneutes Senden fehlgeschlagen: {{msg}}",
   'auth.notice.resentOk': "E-Mail erneut an {{email}} gesendet.",
   'auth.notice.sending': "Wird gesendet...",
-  'booking.avail.full': "Ausgebucht ({{n}} auf Lager)",
+  'booking.avail.full': "Material an diesem Datum nicht verfügbar",
   'booking.avail.invalidPeriod': "Ungültiger Zeitraum",
   'booking.avail.left': "{{left}} / {{total}} verfügbar",
   'booking.avail.minDuration': "Mindestdauer: {{n}} Tage",
@@ -8837,11 +8898,13 @@ de: {
   'booking.confirm.title': "Anfrage gesendet!",
   'booking.err.invalidPeriod': "Ungültiger Zeitraum.",
   'booking.err.minDuration': "Die Mindestbuchungsdauer beträgt {{n}} Tage.",
-  'booking.err.noneAvailable': "Keine Einheit verfügbar ({{n}} auf Lager).",
+  'booking.err.noneAvailable': "Material an diesem Datum nicht verfügbar.",
   'booking.err.pastStart': "Das Startdatum darf nicht in der Vergangenheit liegen.",
   'booking.err.profileIncomplete': "Bitte vervollständigen Sie Ihr Profil, bevor Sie buchen.",
   'booking.field.end': "Enddatum",
   'booking.field.start': "Startdatum",
+  'payment.reminder.title': "Zahlung ausstehend",
+  'payment.reminder.body': "Achtung, Ihre Mietanfrage wurde noch nicht bezahlt. Sie wird in 5 Tagen storniert, wenn die Zahlung nicht bestätigt wird.",
   'booking.modal.title': "{{item}} buchen",
   'booking.note': "Diese Buchung bringt Ihnen nach Genehmigung {{xp}} XP ein.",
   'booking.send': "Anfrage senden",
@@ -9064,7 +9127,7 @@ lb: {
   'auth.notice.resentFailed': "Nei schécken net geléngt: {{msg}}",
   'auth.notice.resentOk': "E-Mail nach eng Kéier un {{email}} geschéckt.",
   'auth.notice.sending': "Gëtt geschéckt...",
-  'booking.avail.full': "Ausgebucht ({{n}} um Lager)",
+  'booking.avail.full': "Material net disponibel fir dëst Datum",
   'booking.avail.invalidPeriod': "Ongültege Zäitraum",
   'booking.avail.left': "{{left}} / {{total}} verfügbar",
   'booking.avail.minDuration': "Minimal Dauer: {{n}} Deeg",
@@ -9072,11 +9135,13 @@ lb: {
   'booking.confirm.title': "Ufro geschéckt!",
   'booking.err.invalidPeriod': "Ongültege Zäitraum.",
   'booking.err.minDuration': "D'Mindestdauer fir eng Reservatioun ass {{n}} Deeg.",
-  'booking.err.noneAvailable': "Keen Exemplar verfügbar ({{n}} um Lager).",
+  'booking.err.noneAvailable': "Material net disponibel fir dëst Datum.",
   'booking.err.pastStart': "D'Ufankksdatum kann net an der Vergaangenheet leien.",
   'booking.err.profileIncomplete': "Vervollstännegt w.e.g. Äre Profil ier Dir reservéiert.",
   'booking.field.end': "Enddatum",
   'booking.field.start': "Ufankksdatum",
+  'payment.reminder.title': "Zahlung ausstoen",
+  'payment.reminder.body': "Oppassen, Är Locatiouns-Ufro gouf nach net bezuelt. Si gëtt a 5 Deeg annuléiert, wann d'Zahlung net confirméiert gëtt.",
   'booking.modal.title': "{{item}} reservéieren",
   'booking.note': "Dës Reservatioun bréngt Iech {{xp}} XP, soubal se validéiert ass.",
   'booking.send': "Ufro schécken",
