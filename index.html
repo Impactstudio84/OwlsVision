@@ -1063,7 +1063,7 @@ let state = {
   financePeriod: null, // {mode,start,end} — initialisé au premier affichage de l'onglet (finEnsurePeriod)
   financeStatsOpen: false,
   financeTableView: { A: false, B: false, C: false },
-  crmCompanies: [], crmActivities: [], crmTasks: [],
+  crmCompanies: [], crmActivities: [], crmTasks: [], crmTaskNotes: [],
   crmSearch: "",
   crmStatusFilter: "all",
   crmSort: { field: "name", dir: "asc" },
@@ -1103,6 +1103,7 @@ let state = {
   // partagés/persistés (state.bookingDateLabels, table booking_date_labels).
   gestionCollapsedDates: {},
   bookingDateLabels: [],
+  invoices: [],
   contratsSort: "client_asc",
   contratsSearch: "",
   calendarMonth: null, // {year, month} — initialisé au mois courant à la première ouverture du calendrier
@@ -1299,7 +1300,7 @@ function currentProfile(){ return state.profiles.find(p => p.username === state.
 
 /* ---------- Boot & data ---------- */
 async function fetchAll(){
-  const [profiles, items, bookings, tasks, completions, contracts, groups, rewards, redemptions, ownerContracts, platformDocs, rankConfig, messages, financeSales, financeCharges, financeSettings, crmCompanies, crmActivities, crmTasks, bookingDateLabels] = await Promise.all([
+  const [profiles, items, bookings, tasks, completions, contracts, groups, rewards, redemptions, ownerContracts, platformDocs, rankConfig, messages, financeSales, financeCharges, financeSettings, crmCompanies, crmActivities, crmTasks, bookingDateLabels, invoices, crmTaskNotes] = await Promise.all([
     sb.from('profiles').select('*'),
     sb.from('items').select('*').order('sort_order', { ascending: true, nullsFirst: false }).order('created_at', { ascending: true }),
     sb.from('bookings').select('*'),
@@ -1320,6 +1321,8 @@ async function fetchAll(){
     sb.from('crm_activities').select('*').order('date', { ascending: false }),
     sb.from('crm_tasks').select('*').order('due_date', { ascending: true, nullsFirst: false }),
     sb.from('booking_date_labels').select('*'),
+    sb.from('invoices').select('*'),
+    sb.from('crm_task_notes').select('*').order('created_at', { ascending: false }),
   ]);
   state.profiles = profiles.data || [];
   state.items = items.data || [];
@@ -1356,6 +1359,13 @@ async function fetchAll(){
   // les groupes s'affichent simplement avec leur date brute comme nom par défaut (voir
   // bookingDateLabel), rien ne casse.
   state.bookingDateLabels = bookingDateLabels.data || [];
+  // Lot 28 (Facturation) : même principe, tant que migration_lot28_factures.sql n'a pas été
+  // exécutée, cette lecture échoue silencieusement — aucune facture ne s'affiche, rien ne casse.
+  state.invoices = invoices.data || [];
+  // Lot 29 (notes de tâches CRM) : même principe, tant que migration_lot29_notes_taches.sql n'a
+  // pas été exécutée, cette lecture échoue silencieusement — la fiche tâche s'ouvre juste sans
+  // aucune note, rien ne casse.
+  state.crmTaskNotes = crmTaskNotes.data || [];
 }
 
 async function boot(){
@@ -1445,7 +1455,7 @@ function renderUnlessTyping(){
 }
 function subscribeRealtime(){
   const channel = sb.channel('ov-sync');
-  ['items','bookings','tasks','task_completions','contracts','profiles','mission_groups','rewards','reward_redemptions','messages','finance_sales','finance_charges','finance_settings'].forEach(table => {
+  ['items','bookings','tasks','task_completions','contracts','profiles','mission_groups','rewards','reward_redemptions','messages','finance_sales','finance_charges','finance_settings','invoices','crm_task_notes'].forEach(table => {
     channel.on('postgres_changes', { event:'*', schema:'public', table }, () => {
       clearTimeout(window.__ovSyncTimer);
       window.__ovSyncTimer = setTimeout(async () => {
@@ -1456,7 +1466,7 @@ function subscribeRealtime(){
   // Bandeau in-app (voir clientRealtimeNotifPlan) : abonnement séparé, en plus de la synchronisation
   // générale ci-dessus, sur les mêmes tables que celles surveillées côté serveur pour les vraies
   // notifications push — 'owner_contracts' n'était pas dans la liste de synchro générale, ajoutée ici.
-  ['messages','contracts','owner_contracts','task_completions','bookings','reward_redemptions'].forEach(table => {
+  ['messages','contracts','owner_contracts','task_completions','bookings','reward_redemptions','invoices'].forEach(table => {
     channel.on('postgres_changes', { event:'*', schema:'public', table }, (payload) => {
       try{
         const plan = clientRealtimeNotifPlan(table, payload);
@@ -1673,6 +1683,9 @@ function clientRealtimeNotifPlan(table, payload){
   if(table === 'owner_contracts' && payload.eventType === 'INSERT'){
     return { title: t('notifBanner.newOwnerContract'), sub: tap, view: 'contrat' };
   }
+  if(table === 'invoices' && payload.eventType === 'INSERT'){
+    return { title: t('notifBanner.newInvoice'), sub: tap, view: 'contrat' };
+  }
   if(table === 'task_completions' && payload.eventType === 'UPDATE'){
     if(!r.status || r.status === old.status) return null;
     if(r.status === 'validee') return { title: t('notifBanner.missionValidated'), sub: tap, view: 'missions' };
@@ -1788,7 +1801,13 @@ async function cancelBooking(id){
     alert(t('reservations.cancel.blocked'));
     return;
   }
-  await sb.from('bookings').delete().eq('id', id);
+  // Lot 28 : on vérifie désormais l'erreur de suppression au lieu de l'ignorer — avant, si la
+  // politique RLS bloquait la suppression côté base (ce qui était le cas tant que
+  // migration_lot28_factures.sql n'avait pas été exécutée), l'affichage du master se mettait à
+  // jour localement comme si tout s'était bien passé, alors que la ligne restait en base et le
+  // client la voyait toujours. Voir aussi le point 1 de ce fichier de migration.
+  const { error } = await sb.from('bookings').delete().eq('id', id);
+  if(error){ alert("Erreur : " + error.message); return; }
   state.bookings = state.bookings.filter(x => x.id !== id);
   render();
 }
@@ -2336,11 +2355,16 @@ const CONTRACT_WATERMARK_LOGO = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAA
 const CONTRACT_OWNER = {
   capitalSocial: "500", // € — modifiable ultérieurement par le master si le capital social évolue
   villeRCS: "Paris",
-  adresseSiege: "47 rue de Vivienne, 75002 Paris",
-  adresseEtablissement: "47 rue de Vivienne, 75002 Paris", // même adresse que le siège, sur instruction du master
-  siren: "953 642 535",
-  siret: "953 642 535 00017",
-  numeroTVA: "FR82107779795", // confirmé par le master : ne pas recalculer via la clé de contrôle SIREN
+  adresseSiege: "47 rue Vivienne, 75002 Paris",
+  adresseEtablissement: "47 rue Vivienne, 75002 Paris", // même adresse que le siège, sur instruction du master
+  // Corrigé (Lot 29) : le SIREN était "953 642 535" depuis le début du contrat, mais ne
+  // correspondait pas au numéro de TVA FR82107779795 déjà confirmé — le master a confirmé que
+  // "107779795" (visible sur ses factures LegalPlace) est le bon numéro, cohérent avec la TVA
+  // (FR82 + les 9 chiffres du SIREN). Le NIC du SIRET ("00017") n'a pas été reconfirmé —
+  // à vérifier auprès du master si un doute subsiste sur l'établissement.
+  siren: "107 779 795",
+  siret: "107 779 795 00017",
+  numeroTVA: "FR82107779795",
   telephone: "06 61 52 78 57",
   emailLocation: "rental@owlsvision.fr",
   emailRGPD: "contact@owlsvision.fr", // même adresse que la constante CONTACT_EMAIL utilisée dans le reste de l'appli (déclarée plus loin dans ce fichier — pas de référence directe ici pour éviter un problème d'ordre de déclaration)
@@ -2358,7 +2382,7 @@ const CONTRACT_OWNER = {
   montantCautionDefaut: "", // laissé vide : le master le fixe au cas par cas à chaque contrat
   delaiLiberationCaution: "5", // jours ouvrés
   delaiIndemnisation: "5", // jours ouvrés
-  lieuSignatureDefaut: "47 rue de Vivienne, 75002 Paris",
+  lieuSignatureDefaut: "47 rue Vivienne, 75002 Paris",
 };
 // Document juridique généré via pdfmake (PDF vectoriel, texte réellement sélectionnable/
 // recherchable — contrairement à un rendu HTML→image). Le texte de chaque article est repris
@@ -3022,6 +3046,204 @@ async function generateClientContract(username, fields){
   const ok = await finalizeContractAssignment(username, path);
   return ok;
 }
+
+/* ---------- Facturation (Lot 28) ----------
+   Une fois le contrat de location signé, le master génère et envoie la facture au client en un
+   clic (bouton "Envoyer la facture" dans Gestion > Réservations). Numérotation légale (série
+   "L", continue et sans trou, attribuée côté base par next_invoice_number — voir
+   migration_lot28_factures.sql et la conversation sur le CGI art. 242 nonies A ann. II). Le PDF
+   est généré dans le navigateur via pdfmake (même principe que buildContractDocDefinition) et
+   stocké dans le bucket privé "invoices" (même principe que "contracts", lot 10). Dès
+   l'insertion de la ligne en base, le client la voit apparaître dans "Mes contrats" (realtime,
+   voir subscribeRealtime) et reçoit une notification (bandeau in-app + notification push via
+   l'Edge Function send-notification — à mettre à jour séparément côté Supabase). Quand le client
+   ouvre le PDF, mark_invoice_read() horodate la lecture pour l'indicateur "Lu à..." côté master. */
+const INVOICE_OWNER = {
+  nom: "OwlsVision",
+  adresseLigne1: "47 rue Vivienne",
+  adresseLigne2: "75002 Paris",
+  email: "contact@owlsvision.fr",
+  telephone: "+33661527857",
+  capitalSocial: "500,00",
+  // Confirmé par le master (Lot 29) : même SIREN que CONTRACT_OWNER, cohérent avec le numéro de
+  // TVA FR82107779795 (FR82 + les 9 chiffres du SIREN) — tel qu'indiqué sur le modèle LegalPlace.
+  siren: "107779795",
+  tva: "FR82107779795",
+  iban: "FR76 1732 8844 0093 0712 3539 910",
+};
+function invMoney(n){ return `${round2(n).toFixed(2).replace('.', ',')} €`; }
+function round2(n){ return Math.round((Number(n) || 0) * 100) / 100; }
+function buildInvoiceDocDefinition(f){
+  const itemRows = [
+    [
+      { text: 'Description', bold: true, fillColor: '#f4f4f2' },
+      { text: 'Qté', bold: true, fillColor: '#f4f4f2', alignment: 'center' },
+      { text: 'Prix unitaire HT', bold: true, fillColor: '#f4f4f2', alignment: 'right' },
+      { text: 'TVA %', bold: true, fillColor: '#f4f4f2', alignment: 'center' },
+      { text: 'TVA €', bold: true, fillColor: '#f4f4f2', alignment: 'right' },
+      { text: 'TOTAL TTC', bold: true, fillColor: '#f4f4f2', alignment: 'right' },
+    ],
+    [
+      { stack: [{ text: f.item_label, bold: true }, { text: f.item_sub, fontSize: 8.6, color: '#666666' }] },
+      { text: String(f.qty), alignment: 'center' },
+      { text: invMoney(f.base_ht), alignment: 'right' },
+      { text: '20 %', alignment: 'center' },
+      { text: invMoney(f.base_tva), alignment: 'right' },
+      { text: invMoney(f.base_ttc), alignment: 'right' },
+    ],
+  ];
+  if(f.discount_ttc > 0){
+    itemRows.push([
+      { text: 'Remise commerciale', italics: true, color: '#666666' },
+      { text: '—', alignment: 'center' },
+      { text: `- ${invMoney(f.disc_ht)}`, alignment: 'right' },
+      { text: '20 %', alignment: 'center' },
+      { text: `- ${invMoney(f.disc_tva)}`, alignment: 'right' },
+      { text: `- ${invMoney(f.discount_ttc)}`, alignment: 'right' },
+    ]);
+  }
+  return {
+    pageSize: 'A4',
+    pageMargins: [50, 50, 50, 60],
+    defaultStyle: { fontSize: 9.8, lineHeight: 1.25 },
+    images: { invoiceLogo: CONTRACT_WATERMARK_LOGO },
+    content: [
+      { columns: [
+        { width: '*', text: 'Facture', bold: true, fontSize: 24 },
+        { width: 64, image: 'invoiceLogo', fit: [64, 64], alignment: 'right' },
+      ], margin: [0, 0, 0, 16] },
+      { table: { widths: ['auto', 'auto'], body: [
+        [{ text: 'Numéro de facture :', bold: true }, { text: f.invoice_number }],
+        [{ text: "Date d'émission :", bold: true }, { text: f.issue_date }],
+        [{ text: "Date d'échéance :", bold: true }, { text: f.due_date }],
+      ] }, layout: 'noBorders', margin: [0, 0, 0, 18] },
+      { columns: [
+        { width: '*', stack: [
+          { text: INVOICE_OWNER.nom, bold: true, margin: [0, 0, 0, 3] },
+          { text: INVOICE_OWNER.adresseLigne1 },
+          { text: INVOICE_OWNER.adresseLigne2 },
+          { text: INVOICE_OWNER.email },
+          { text: INVOICE_OWNER.telephone },
+        ] },
+        { width: '*', stack: [
+          { text: f.client_nom, bold: true, margin: [0, 0, 0, 3] },
+          { text: f.client_adresse },
+          { text: f.client_email },
+        ] },
+      ], margin: [0, 0, 0, 22] },
+      { table: { widths: ['*', 32, 72, 42, 62, 72], body: itemRows }, layout: 'lightHorizontalLines', margin: [0, 0, 0, 16] },
+      { columns: [
+        { width: '*', text: '' },
+        { width: 220, table: { widths: ['*', 'auto'], body: [
+          [{ text: 'TOTAL HT :', bold: true }, { text: invMoney(f.amount_ht), alignment: 'right' }],
+          [{ text: 'TOTAL TVA :', bold: true }, { text: invMoney(f.amount_tva), alignment: 'right' }],
+          [{ text: 'TOTAL TTC :', bold: true, fillColor: '#f4f4f2' }, { text: invMoney(f.amount_ttc), bold: true, alignment: 'right', fillColor: '#f4f4f2' }],
+        ] }, layout: 'noBorders' },
+      ], margin: [0, 0, 0, 36] },
+      { text: 'Détails du paiement', bold: true, margin: [0, 0, 0, 6] },
+      { text: `IBAN : ${INVOICE_OWNER.iban}`, margin: [0, 0, 0, 10] },
+      { text: "Pas d'escompte accordé pour paiement anticipé.", fontSize: 8.6, color: '#666666' },
+      { text: "En cas de non-paiement à la date d'échéance, des pénalités calculées à trois fois le taux d'intérêt légal seront appliquées.", fontSize: 8.6, color: '#666666' },
+      { text: "Tout retard de paiement entraînera une indemnité forfaitaire pour frais de recouvrement de 40€.", fontSize: 8.6, color: '#666666', margin: [0, 0, 0, 16] },
+      { text: `${INVOICE_OWNER.nom}, SASU au capital de ${INVOICE_OWNER.capitalSocial} €, SIREN N°${INVOICE_OWNER.siren}, ${INVOICE_OWNER.adresseLigne1} ${INVOICE_OWNER.adresseLigne2}, N°TVA Intracommunautaire ${INVOICE_OWNER.tva}.`, fontSize: 8, color: '#3a6b8a', italics: true },
+    ],
+  };
+}
+function openSendInvoiceModal(bookingId){
+  if(!state.session.isMaster) return;
+  state.modal = { type: 'sendInvoice', bookingId };
+  render();
+}
+window.openSendInvoiceModal = openSendInvoiceModal;
+async function confirmSendInvoice(event, bookingId){
+  if(!state.session.isMaster) return;
+  const b = state.bookings.find(x => x.id === bookingId);
+  const errEl = document.getElementById('inv-error');
+  if(!b){ if(errEl) errEl.innerHTML = `<div class="msg msg-error">Réservation introuvable.</div>`; return; }
+  const item = state.items.find(i => i.id === b.item_id);
+  const p = state.profiles.find(x => x.username === b.username);
+  const baseTtc = estimatedBookingPrice(b);
+  if(baseTtc == null){
+    if(errEl) errEl.innerHTML = `<div class="msg msg-error">Impossible de calculer le prix : le tarif de cet article n'est pas renseigné.</div>`;
+    return;
+  }
+  const discountInput = document.getElementById('inv-discount');
+  const discountTtc = Math.max(0, round2(discountInput ? discountInput.value : 0));
+  if(discountTtc >= baseTtc){
+    if(errEl) errEl.innerHTML = `<div class="msg msg-error">La remise ne peut pas être supérieure ou égale au montant total.</div>`;
+    return;
+  }
+  const btn = event.target; const oldLabel = btn.textContent; btn.textContent = "Génération..."; btn.disabled = true;
+  if(errEl) errEl.innerHTML = '';
+  try{
+    const year = new Date().getFullYear();
+    const { data: nextNum, error: numErr } = await sb.rpc('next_invoice_number', { p_series: 'L', p_year: year });
+    if(numErr) throw numErr;
+    const invoiceNumber = `L-${year}-${nextNum}`;
+    const issuedAt = new Date();
+    const dueAt = new Date(issuedAt.getTime() + 4 * 86400000);
+    const days = bookingDurationDays(b);
+    const periodLabel = `Location du ${fmtDate(b.start_date)} au ${fmtDate(b.end_date)} (${days} jour${days > 1 ? 's' : ''})`;
+    const baseHt = round2(baseTtc / 1.2);
+    const baseTva = round2(baseTtc - baseHt);
+    const discHt = discountTtc > 0 ? round2(discountTtc / 1.2) : 0;
+    const discTva = discountTtc > 0 ? round2(discountTtc - discHt) : 0;
+    const amountHt = round2(baseHt - discHt);
+    const amountTva = round2(baseTva - discTva);
+    const amountTtc = round2(baseTtc - discountTtc);
+    const dd = buildInvoiceDocDefinition({
+      invoice_number: invoiceNumber,
+      issue_date: fmtDate(issuedAt.toISOString()),
+      due_date: fmtDate(dueAt.toISOString()),
+      client_nom: clientDisplayName(p) || b.username,
+      client_adresse: (p && p.adresse) || '—',
+      client_email: b.username,
+      item_label: `Location ${item ? item.name : 'matériel'}`,
+      item_sub: periodLabel,
+      qty: 1,
+      base_ht: baseHt, base_tva: baseTva, base_ttc: baseTtc,
+      discount_ttc: discountTtc, disc_ht: discHt, disc_tva: discTva,
+      amount_ht: amountHt, amount_tva: amountTva, amount_ttc: amountTtc,
+    });
+    const blob = await window.pdfMake.createPdf(dd).getBlob();
+    const path = `${b.username}/${invoiceNumber}.pdf`;
+    const { error: upErr } = await sb.storage.from('invoices').upload(path, blob, { upsert: true, contentType: 'application/pdf' });
+    if(upErr) throw upErr;
+    const payload = {
+      booking_id: b.id, username: b.username, invoice_number: invoiceNumber, series: 'L',
+      item_name: item ? item.name : 'Matériel', item_description: periodLabel, qty: 1,
+      amount_ht: amountHt, tva_rate: 20, amount_tva: amountTva, amount_ttc: amountTtc,
+      discount_ttc: discountTtc,
+      issued_at: issuedAt.toISOString(), due_at: dueAt.toISOString(),
+      pdf_path: path, sent_at: issuedAt.toISOString(),
+    };
+    const { data, error } = await sb.from('invoices').insert(payload).select().single();
+    if(error) throw error;
+    state.invoices.push(data);
+    closeModal();
+  }catch(e){
+    if(errEl) errEl.innerHTML = `<div class="msg msg-error">${esc(t('common.error_prefix', { msg: e.message || String(e) }))}</div>`;
+    btn.textContent = oldLabel; btn.disabled = false;
+  }
+}
+window.confirmSendInvoice = confirmSendInvoice;
+async function openInvoiceFile(path, invoiceId){
+  if(!path) return;
+  const { data, error } = await sb.storage.from('invoices').createSignedUrl(path, 600);
+  if(error){ alert(t('common.error_prefix', { msg: error.message })); return; }
+  window.open(data.signedUrl, '_blank', 'noopener');
+  // Horodate la lecture pour l'indicateur "Lu à..." côté master (mark_invoice_read ne fait rien
+  // si ce n'est pas le propriétaire de la facture qui appelle — voir migration_lot28_factures.sql).
+  if(invoiceId && !state.session.isMaster){
+    try{
+      await sb.rpc('mark_invoice_read', { p_invoice_id: invoiceId });
+      const inv = state.invoices.find(x => x.id === invoiceId);
+      if(inv && !inv.read_at) inv.read_at = new Date().toISOString();
+    }catch(e){}
+  }
+}
+window.openInvoiceFile = openInvoiceFile;
+
 async function masterDeleteContract(username){
   if(!confirm(`Supprimer le contrat de "${username}" (original + version signée) ?`)) return;
   await sb.storage.from('contracts').remove([`${username}/original.pdf`, `${username}/signed.pdf`]);
@@ -4302,6 +4524,23 @@ function gestionRowHtml(b){
     const contractCls = c ? 'btn-ghost' : 'btn-primary';
     actions.push(`<button class="btn ${contractCls} btn-sm" onclick="openGenerateContractModal('${esc(b.username)}')">${contractLabel}</button>`);
   }
+  // Lot 28 : facturation, visible une fois le contrat SIGNÉ (avant ça, rien à facturer). Tant
+  // qu'aucune facture n'a été envoyée pour cette réservation, bouton pour en générer une ; une
+  // fois envoyée, le bouton devient un lien vers le PDF, avec en dessous l'indicateur de lecture
+  // ("Lu le...") alimenté par mark_invoice_read, appelé quand le client ouvre le PDF.
+  let invoiceReadLineHtml = '';
+  if(b.status === 'accepte' || b.status === 'loue' || b.status === 'retourne'){
+    const c = state.contracts.find(x => x.username === b.username);
+    if(c && c.signed_at){
+      const inv = state.invoices.find(x => x.booking_id === b.id);
+      if(inv){
+        actions.push(`<button class="btn btn-ghost btn-sm" onclick="openInvoiceFile('${esc(inv.pdf_path)}','${esc(inv.id)}')">Facture ${esc(inv.invoice_number)}</button>`);
+        invoiceReadLineHtml = `<div style="font-size:11px;color:var(--text-faint);margin-top:4px;">${inv.read_at ? `Lu le ${esc(fmtDateTime(inv.read_at))}` : 'Non lu'}</div>`;
+      } else {
+        actions.push(`<button class="btn btn-primary btn-sm" onclick="openSendInvoiceModal('${esc(b.id)}')">Envoyer la facture</button>`);
+      }
+    }
+  }
   // Lot 25 : bascule Payée / Non payée, visible dès l'acceptation de la demande (c'est à partir de
   // là qu'un paiement est attendu). Tant que non payée après signature du contrat, le client voit un
   // rappel à chaque connexion — voir toggleBookingPaid et maybeShowPaymentReminder.
@@ -4319,7 +4558,7 @@ function gestionRowHtml(b){
       <td>${fmtDate(b.end_date)}</td>
       <td>${fmtPrice(price)}</td>
       <td>${statusPillHtml(b.status)}</td>
-      <td><div class="btn-row" style="display:flex;gap:6px;flex-wrap:wrap;">${actions.join('')}</div></td>
+      <td><div class="btn-row" style="display:flex;gap:6px;flex-wrap:wrap;">${actions.join('')}</div>${invoiceReadLineHtml}</td>
     </tr>`;
 }
 function gestionTheadHtml(){
@@ -5453,6 +5692,13 @@ function chatBubbleHtml(m, isMasterViewer){
   // client (c'est le statut "vu par l'équipe" qu'on remet à zéro, pour que la conversation
   // remonte comme non lue dans la liste — voir messagesConversations).
   const canMarkUnread = isMasterViewer && !m.sender_is_master;
+  // Lot 29 : indicateur "Lu / Envoyé" — uniquement côté équipe (isMasterViewer) et uniquement sur
+  // les messages envoyés PAR l'équipe (m.sender_is_master) : c'est le statut "vu par le client"
+  // (m.seen_by_client, déjà suivi depuis le Lot 18 pour le badge de non-lus — voir
+  // markMessagesSeenByClient) qu'on rend enfin visible. chatBubbleHtml(m, false) est la seule
+  // façon dont un client voit ses messages (renderMessagesClient) : cette ligne n'existe tout
+  // simplement pas dans ce cas, le client ne peut donc jamais la voir.
+  const readReceipt = (isMasterViewer && m.sender_is_master) ? ` · ${m.seen_by_client ? 'Lu' : 'Envoyé'}` : '';
   return `
     <div class="chat-bubble-row ${mine?'mine':''}">
       <div class="chat-bubble">
@@ -5462,7 +5708,7 @@ function chatBubbleHtml(m, isMasterViewer){
           <button type="button" class="chat-bubble-del" title="Supprimer ce message" onclick="deleteMessage('${m.id}')">${tacticalIconSvg('x-circle',{size:13})}</button>
         </div>` : ''}
         <div class="chat-bubble-text">${esc(m.body)}</div>
-        <div class="chat-bubble-meta">${fmtDateTime(m.created_at)}</div>
+        <div class="chat-bubble-meta">${fmtDateTime(m.created_at)}${readReceipt}</div>
       </div>
     </div>`;
 }
@@ -6370,7 +6616,7 @@ function crmTaskRowHtml(tk){
     <div style="display:flex;align-items:center;gap:10px;padding:8px 10px;background:rgba(255,255,255,0.03);border-radius:var(--r-sm);${tk.done?'opacity:0.55;':''}">
       <input type="checkbox" ${tk.done?'checked':''} onchange="crmToggleTaskDone('${tk.id}')" style="width:17px;height:17px;flex-shrink:0;cursor:pointer;">
       <div class="crm-item-ic" style="background:${c.bg};color:${c.fg};">${c.icon}</div>
-      <div style="flex:1;min-width:0;">
+      <div style="flex:1;min-width:0;cursor:pointer;" onclick="openEditCrmTaskModal('${tk.id}')" title="Ouvrir la fiche de la tâche">
         <div style="font-size:13.5px;${tk.done?'text-decoration:line-through;':''}">${esc(tk.title)}${urgent ? ' <span class="status-pill danger" style="padding:1px 8px;font-size:10px;vertical-align:middle;">Urgent</span>' : ''}</div>
         ${tk.due_date ? `<div style="font-size:11.5px;color:${overdue?'#FFB3A6':dueToday?'var(--amber)':'var(--text-faint)'};font-weight:${overdue||dueToday?700:400};">${overdue?'En retard — ':dueToday?"Aujourd'hui — ":''}${fmtDate(tk.due_date)}</div>` : ''}
       </div>
@@ -6490,7 +6736,7 @@ function renderCommercialTaches(){
     return `
     <tr>
       <td style="width:36px;border-left:3px solid ${accent};"><input type="checkbox" ${tk.done?'checked':''} onchange="crmToggleTaskDone('${tk.id}')" style="width:17px;height:17px;cursor:pointer;"></td>
-      <td><div class="t-title" style="${tk.done?'text-decoration:line-through;color:var(--text-faint);':''}">${esc(tk.title)}${urgent ? ' <span class="status-pill danger" style="padding:1px 8px;font-size:10px;vertical-align:middle;">Urgent</span>' : ''}</div></td>
+      <td><div class="t-title" style="cursor:pointer;${tk.done?'text-decoration:line-through;color:var(--text-faint);':''}" onclick="openEditCrmTaskModal('${tk.id}')" title="Ouvrir la fiche de la tâche">${esc(tk.title)}${urgent ? ' <span class="status-pill danger" style="padding:1px 8px;font-size:10px;vertical-align:middle;">Urgent</span>' : ''}</div></td>
       <td>${c ? `<button class="btn btn-ghost btn-sm" onclick="openCompanyDetailModal('${c.id}')">${esc(c.name)}</button>` : tk.company_id ? '<span style="color:var(--text-faint);">Entreprise supprimée</span>' : '<span style="color:var(--text-faint);">—</span>'}</td>
       <td>${tk.due_date ? `<span style="color:${overdue?'#FFB3A6':dueToday?'var(--amber)':'var(--text)'};font-weight:${overdue||dueToday?700:400};">${fmtDate(tk.due_date)}${overdue?' · en retard':dueToday?" · aujourd'hui":''}</span>` : '<span style="color:var(--text-faint);">—</span>'}</td>
     </tr>`;
@@ -6619,6 +6865,64 @@ window.crmDeleteTask = async (id) => {
   const { error } = await sb.from('crm_tasks').delete().eq('id', id);
   if(error){ alert("Erreur : " + error.message); return; }
   state.crmTasks = state.crmTasks.filter(x => x.id !== id);
+  state.crmTaskNotes = state.crmTaskNotes.filter(x => x.task_id !== id);
+  state.modal = null;
+  render();
+};
+
+/* ---------- Fiche tâche CRM (Lot 29) ----------
+   Avant ce lot, une tâche crm_tasks n'était qu'une ligne : titre + échéance, cochable ou
+   supprimable, mais rien d'autre n'était modifiable une fois créée. Cliquer sur le titre d'une
+   tâche (dans crmTaskRowHtml et renderCommercialTaches) ouvre maintenant une vraie fiche : les
+   champs de la tâche redeviennent éditables, et un journal de notes libres (crm_task_notes,
+   même principe que crm_activities pour les entreprises — chaque note s'ajoute, aucune n'écrase
+   la précédente) permet de suivre ce qui se passe sur cette tâche au fil du temps. */
+function crmTaskNotesFor(taskId){
+  return state.crmTaskNotes.filter(n => n.task_id === taskId).slice().sort((a,b) => (b.created_at||'').localeCompare(a.created_at||''));
+}
+function crmTaskNoteRowHtml(n){
+  return `
+    <div style="display:flex;gap:10px;padding:9px 10px;background:rgba(255,255,255,0.03);border-radius:var(--r-sm);">
+      <div style="flex:1;min-width:0;">
+        <div style="display:flex;justify-content:space-between;align-items:baseline;gap:8px;">
+          <span style="font-size:11.5px;color:var(--text-faint);">${esc(fmtDateTime(n.created_at))}</span>
+          <button class="btn btn-ghost btn-sm" onclick="crmDeleteTaskNote('${n.id}')" title="Supprimer" style="padding:3px 7px;width:auto;">✕</button>
+        </div>
+        <div style="font-size:13px;color:var(--text-dim);margin-top:3px;line-height:1.5;white-space:pre-wrap;">${esc(n.body)}</div>
+      </div>
+    </div>`;
+}
+window.openEditCrmTaskModal = (id) => { state.crmTaskError = ""; state.modal = { type: "editCrmTask", taskId: id }; render(); };
+window.confirmEditCrmTask = async (id) => {
+  const tk = state.crmTasks.find(x => x.id === id);
+  if(!tk) return;
+  const title = document.getElementById('crm-task-edit-title').value.trim();
+  if(!title){ state.crmTaskError = "Le titre de la tâche est obligatoire."; render(); return; }
+  const due = document.getElementById('crm-task-edit-due').value || null;
+  const companyId = document.getElementById('crm-task-edit-company').value || null;
+  const urgent = !!document.getElementById('crm-task-edit-urgent').checked;
+  const payload = { title, due_date: due, company_id: companyId, urgent };
+  const { data, error } = await sb.from('crm_tasks').update(payload).eq('id', id).select().single();
+  if(error){ state.crmTaskError = "Erreur : " + error.message; render(); return; }
+  const idx = state.crmTasks.findIndex(x => x.id === id);
+  if(idx > -1) state.crmTasks[idx] = data;
+  state.crmTaskError = "";
+  render();
+};
+window.crmAddTaskNote = async (taskId) => {
+  const input = document.getElementById('crm-task-note-input');
+  const body = input ? input.value.trim() : '';
+  if(!body) return;
+  const { data, error } = await sb.from('crm_task_notes').insert({ task_id: taskId, body }).select().single();
+  if(error){ state.crmTaskError = "Erreur : " + error.message; render(); return; }
+  state.crmTaskNotes.push(data);
+  state.crmTaskError = "";
+  render();
+};
+window.crmDeleteTaskNote = async (id) => {
+  const { error } = await sb.from('crm_task_notes').delete().eq('id', id);
+  if(error){ alert("Erreur : " + error.message); return; }
+  state.crmTaskNotes = state.crmTaskNotes.filter(x => x.id !== id);
   render();
 };
 
@@ -6765,6 +7069,9 @@ function renderContratClient(){
           ${c.signed_at ? (() => { const lb = latestRelevantBookingFor(u.username); return lb && lb.paid
             ? `<span class="status-pill ok">${esc(t('contrat.paymentStatus.paid'))}</span>`
             : `<span class="status-pill pending">${esc(t('contrat.paymentStatus.pending'))}</span>`; })() : ''}
+          ${c.signed_at ? (() => { const lb = latestRelevantBookingFor(u.username); const inv = lb ? state.invoices.find(x => x.booking_id === lb.id) : null; return inv
+            ? `<button type="button" class="btn btn-ghost" style="width:100%;" onclick="openInvoiceFile('${esc(inv.pdf_path)}','${esc(inv.id)}')">${tacticalIconSvg('doc',{size:16})} ${esc(t('contrat.invoice.view', { number: inv.invoice_number }))}</button>`
+            : ''; })() : ''}
           <button type="button" class="btn btn-ghost" style="width:100%;" onclick="openContractFile('${esc(u.username)}','original')">${tacticalIconSvg('doc',{size:16})} ${esc(t('contrat.openPdf'))}</button>
           ${c.signed_pdf_path ? `<button type="button" class="btn btn-ghost" style="width:100%;" onclick="openContractFile('${esc(u.username)}','signed')">${tacticalIconSvg('download',{size:16})} ${esc(t('contrat.downloadSigned'))}</button>` : ''}
           ${!c.signed_at ? `<button class="btn btn-primary" style="width:100%;" onclick="openSignaturePad()">${tacticalIconSvg('signature-pen',{size:16})} ${esc(t('contrat.sign'))}</button>` : ''}
@@ -7056,6 +7363,29 @@ function renderModal(){
       <div class="modal-actions">
         <button class="btn btn-ghost" onclick="closeModal()">Annuler</button>
         <button class="btn btn-primary" onclick="confirmGenerateContract(event,'${esc(m.username)}')">Générer le PDF</button>
+      </div>
+    </div></div>`;
+  }
+  if(m.type === "sendInvoice"){
+    const b = state.bookings.find(x => x.id === m.bookingId);
+    if(!b) return "";
+    const item = state.items.find(i => i.id === b.item_id);
+    const p = state.profiles.find(x => x.username === b.username);
+    const baseTtc = estimatedBookingPrice(b);
+    const days = bookingDurationDays(b);
+    return `
+    <div class="modal-bg" onclick="closeModalBg(event)"><div class="modal">
+      <h3>Envoyer la facture — ${esc(clientDisplayName(p) || b.username)}</h3>
+      <div style="font-size:12.5px;color:var(--text-dim);line-height:1.55;margin:-6px 0 14px;">${esc(item ? item.name : 'Matériel')} — du ${esc(fmtDate(b.start_date))} au ${esc(fmtDate(b.end_date))} (${days} jour${days > 1 ? 's' : ''})</div>
+      <div class="row">
+        <div class="field"><label>Montant total (€ TTC)</label><input value="${baseTtc != null ? baseTtc.toFixed(2) : '—'}" disabled></div>
+        <div class="field"><label>Remise (€ TTC, optionnel)</label><input id="inv-discount" type="number" step="0.01" min="0" placeholder="0.00"></div>
+      </div>
+      <div style="font-size:11.5px;color:var(--text-faint);margin:-2px 0 10px;">La remise apparaîtra comme une ligne séparée, visible sur la facture.</div>
+      <div id="inv-error"></div>
+      <div class="modal-actions">
+        <button class="btn btn-ghost" onclick="closeModal()">Annuler</button>
+        <button class="btn btn-primary" onclick="confirmSendInvoice(event,'${esc(b.id)}')">Générer et envoyer</button>
       </div>
     </div></div>`;
   }
@@ -7399,6 +7729,45 @@ function renderModal(){
         <input type="checkbox" id="crm-task2-urgent" style="width:16px;height:16px;cursor:pointer;"> Marquer comme urgent (tag rouge, visible dans le menu)
       </label>
       <div class="modal-actions"><button class="btn btn-ghost" onclick="closeModal()">Annuler</button><button class="btn btn-primary" onclick="confirmNewCrmTask()">Créer la tâche</button></div>
+    </div></div>`;
+  }
+  if(m.type === "editCrmTask"){
+    const tk = state.crmTasks.find(x => x.id === m.taskId);
+    if(!tk) return "";
+    const companiesSorted = state.crmCompanies.slice().sort((a,b) => (a.name||'').localeCompare(b.name||''));
+    const notes = crmTaskNotesFor(tk.id);
+    return `
+    <div class="modal-bg" onclick="closeModalBg(event)"><div class="modal" style="max-width:560px;text-align:left;">
+      <h3>Modifier la tâche</h3>
+      ${state.crmTaskError ? `<div class="msg msg-error">${esc(state.crmTaskError)}</div>` : ''}
+      <div class="field"><label>Titre *</label><input id="crm-task-edit-title" value="${esc(tk.title)}" autofocus></div>
+      <div class="row">
+        <div class="field" style="flex:1;"><label>Échéance</label><input id="crm-task-edit-due" type="date" value="${esc(tk.due_date||'')}"></div>
+        <div class="field" style="flex:1;"><label>Entreprise (optionnel)</label>
+          <select id="crm-task-edit-company">
+            <option value="">Aucune — tâche générale</option>
+            ${companiesSorted.map(c => `<option value="${c.id}" ${tk.company_id===c.id?'selected':''}>${esc(c.name)}</option>`).join('')}
+          </select>
+        </div>
+      </div>
+      <label style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text-dim);margin:2px 0 14px;cursor:pointer;">
+        <input type="checkbox" id="crm-task-edit-urgent" ${tk.urgent?'checked':''} style="width:16px;height:16px;cursor:pointer;"> Marquer comme urgent (tag rouge, visible dans le menu)
+      </label>
+      <div class="modal-actions" style="justify-content:flex-start;margin-bottom:18px;">
+        <button class="btn btn-primary btn-sm" style="width:auto;" onclick="confirmEditCrmTask('${tk.id}')">Enregistrer les modifications</button>
+      </div>
+      <div class="section-title" style="margin:0 0 8px;font-size:13px;">Notes</div>
+      <div class="field"><textarea id="crm-task-note-input" rows="2" placeholder="Ajouter une note..."></textarea></div>
+      <div class="modal-actions" style="justify-content:flex-start;margin-bottom:14px;">
+        <button class="btn btn-ghost btn-sm" style="width:auto;" onclick="crmAddTaskNote('${tk.id}')">Ajouter la note</button>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:8px;max-height:260px;overflow-y:auto;">
+        ${notes.length ? notes.map(crmTaskNoteRowHtml).join('') : `<div class="empty" style="padding:4px 0;">Aucune note pour cette tâche.</div>`}
+      </div>
+      <div class="modal-actions">
+        <button class="btn btn-danger" onclick="crmDeleteTask('${tk.id}')">Supprimer la tâche</button>
+        <button class="btn btn-ghost" onclick="closeModal()">Fermer</button>
+      </div>
     </div></div>`;
   }
   if(m.type === "newConversation"){
@@ -8064,9 +8433,9 @@ fr: {
   'booking.field.end': "Date de fin",
   'booking.field.start': "Date de début",
   'payment.info.title': "Contrat signé",
-  'payment.info.body': "Votre contrat a bien été signé. Vous recevrez votre facture par email, avec notre RIB en pièce jointe pour effectuer le règlement. Votre location sera validée dès réception du paiement.",
+  'payment.info.body': "Votre contrat a bien été signé. Vous recevrez une notification dès que votre facture sera disponible dans votre espace, avec nos coordonnées bancaires pour le règlement. Votre location sera validée dès réception du paiement.",
   'payment.reminder.title': "Paiement en attente",
-  'payment.reminder.body': "Attention, votre demande de location n'a pas été payée. Elle sera annulée sous 5 jours si le paiement n'est pas confirmé.",
+  'payment.reminder.body': "Attention, votre demande de location n'a pas été payée. Retrouvez votre facture et nos coordonnées bancaires dans l'onglet « Mes contrats ». Elle sera annulée sous 5 jours si le paiement n'est pas confirmé.",
   'booking.modal.title': "Réserver {{item}}",
   'booking.note': "Cette réservation vous rapportera {{xp}} XP une fois validée.",
   'booking.send': "Envoyer la demande",
@@ -8094,6 +8463,7 @@ fr: {
   'contrat.location.title': "Contrat de location",
   'contrat.none': "Aucun contrat pour le moment.",
   'contrat.openPdf': "Voir le PDF",
+  'contrat.invoice.view': "Voir ma facture ({{number}})",
   'contrat.owner.title': "Contrat propriétaire",
   'contrat.paymentStatus.paid': "Payé",
   'contrat.paymentStatus.pending': "En attente de paiement",
@@ -8203,6 +8573,7 @@ fr: {
   'notifBanner.newMessage': "Nouveau message",
   'notifBanner.newContract': "Contrat disponible",
   'notifBanner.newOwnerContract': "Contrat propriétaire disponible",
+  'notifBanner.newInvoice': "Facture disponible",
   'notifBanner.missionValidated': "Mission validée",
   'notifBanner.missionRefused': "Mission refusée",
   'notifBanner.bookingAccepted': "Réservation acceptée",
@@ -8305,9 +8676,9 @@ en: {
   'booking.field.end': "End date",
   'booking.field.start': "Start date",
   'payment.info.title': "Contract signed",
-  'payment.info.body': "Your contract has been signed. You'll receive your invoice by email, with our bank details (RIB) attached for payment. Your rental will be confirmed once payment is received.",
+  'payment.info.body': "Your contract has been signed. You'll receive a notification as soon as your invoice is available in your account, with our bank details for payment. Your rental will be confirmed once payment is received.",
   'payment.reminder.title': "Payment pending",
-  'payment.reminder.body': "Heads up — your rental request hasn't been paid yet. It will be cancelled in 5 days if payment isn't confirmed.",
+  'payment.reminder.body': "Heads up — your rental request hasn't been paid yet. Find your invoice and our bank details under \"My contracts\". It will be cancelled in 5 days if payment isn't confirmed.",
   'booking.modal.title': "Book {{item}}",
   'booking.note': "This booking will earn you {{xp}} XP once approved.",
   'booking.send': "Send request",
@@ -8334,6 +8705,7 @@ en: {
   'contrat.downloadSigned': "Download signed contract",
   'contrat.location.title': "Rental contract",
   'contrat.none': "No contract yet.",
+  'contrat.invoice.view': "View my invoice ({{number}})",
   'contrat.openPdf': "View PDF",
   'contrat.owner.title': "Owner contract",
   'contrat.paymentStatus.paid': "Paid",
@@ -8444,6 +8816,7 @@ en: {
   'notifBanner.newMessage': "New message",
   'notifBanner.newContract': "Contract available",
   'notifBanner.newOwnerContract': "Owner contract available",
+  'notifBanner.newInvoice': "Invoice available",
   'notifBanner.missionValidated': "Mission approved",
   'notifBanner.missionRefused': "Mission declined",
   'notifBanner.bookingAccepted': "Booking accepted",
@@ -8546,9 +8919,9 @@ es: {
   'booking.field.end': "Fecha de fin",
   'booking.field.start': "Fecha de inicio",
   'payment.info.title': "Contrato firmado",
-  'payment.info.body': "Su contrato ha sido firmado. Recibirá su factura por correo electrónico, con nuestros datos bancarios (RIB) adjuntos para el pago. Su alquiler se validará en cuanto se reciba el pago.",
+  'payment.info.body': "Su contrato ha sido firmado. Recibirá una notificación en cuanto su factura esté disponible en su espacio, con nuestros datos bancarios para el pago. Su alquiler se validará en cuanto se reciba el pago.",
   'payment.reminder.title': "Pago pendiente",
-  'payment.reminder.body': "Atención, su solicitud de alquiler aún no ha sido pagada. Se cancelará en 5 días si no se confirma el pago.",
+  'payment.reminder.body': "Atención, su solicitud de alquiler aún no ha sido pagada. Encuentre su factura y nuestros datos bancarios en «Mis contratos». Se cancelará en 5 días si no se confirma el pago.",
   'booking.modal.title': "Reservar {{item}}",
   'booking.note': "Esta reserva le hará ganar {{xp}} XP una vez validada.",
   'booking.send': "Enviar solicitud",
@@ -8575,6 +8948,7 @@ es: {
   'contrat.downloadSigned': "Descargar contrato firmado",
   'contrat.location.title': "Contrato de alquiler",
   'contrat.none': "Todavía no hay ningún contrato.",
+  'contrat.invoice.view': "Ver mi factura ({{number}})",
   'contrat.openPdf': "Ver PDF",
   'contrat.owner.title': "Contrato de propietario",
   'contrat.paymentStatus.paid': "Pagado",
@@ -8685,6 +9059,7 @@ es: {
   'notifBanner.newMessage': "Nuevo mensaje",
   'notifBanner.newContract': "Contrato disponible",
   'notifBanner.newOwnerContract': "Contrato de propietario disponible",
+  'notifBanner.newInvoice': "Factura disponible",
   'notifBanner.missionValidated': "Misión validada",
   'notifBanner.missionRefused': "Misión rechazada",
   'notifBanner.bookingAccepted': "Reserva aceptada",
@@ -8787,9 +9162,9 @@ it: {
   'booking.field.end': "Data di fine",
   'booking.field.start': "Data di inizio",
   'payment.info.title': "Contratto firmato",
-  'payment.info.body': "Il tuo contratto è stato firmato. Riceverai la fattura via email, con i nostri dati bancari (RIB) in allegato per il pagamento. Il tuo noleggio sarà confermato alla ricezione del pagamento.",
+  'payment.info.body': "Il tuo contratto è stato firmato. Riceverai una notifica non appena la fattura sarà disponibile nel tuo spazio, con i nostri dati bancari per il pagamento. Il tuo noleggio sarà confermato alla ricezione del pagamento.",
   'payment.reminder.title': "Pagamento in sospeso",
-  'payment.reminder.body': "Attenzione, la tua richiesta di noleggio non è ancora stata pagata. Sarà annullata entro 5 giorni se il pagamento non viene confermato.",
+  'payment.reminder.body': "Attenzione, la tua richiesta di noleggio non è ancora stata pagata. Trovi la fattura e i nostri dati bancari in «I miei contratti». Sarà annullata entro 5 giorni se il pagamento non viene confermato.",
   'booking.modal.title': "Prenota {{item}}",
   'booking.note': "Questa prenotazione ti farà guadagnare {{xp}} XP una volta approvata.",
   'booking.send': "Invia richiesta",
@@ -8816,6 +9191,7 @@ it: {
   'contrat.downloadSigned': "Scarica il contratto firmato",
   'contrat.location.title': "Contratto di noleggio",
   'contrat.none': "Nessun contratto per il momento.",
+  'contrat.invoice.view': "Vedi la mia fattura ({{number}})",
   'contrat.openPdf': "Visualizza PDF",
   'contrat.owner.title': "Contratto proprietario",
   'contrat.paymentStatus.paid': "Pagato",
@@ -8926,6 +9302,7 @@ it: {
   'notifBanner.newMessage': "Nuovo messaggio",
   'notifBanner.newContract': "Contratto disponibile",
   'notifBanner.newOwnerContract': "Contratto proprietario disponibile",
+  'notifBanner.newInvoice': "Fattura disponibile",
   'notifBanner.missionValidated': "Missione convalidata",
   'notifBanner.missionRefused': "Missione rifiutata",
   'notifBanner.bookingAccepted': "Prenotazione accettata",
@@ -9028,9 +9405,9 @@ de: {
   'booking.field.end': "Enddatum",
   'booking.field.start': "Startdatum",
   'payment.info.title': "Vertrag unterschrieben",
-  'payment.info.body': "Ihr Vertrag wurde unterschrieben. Sie erhalten Ihre Rechnung per E-Mail, mit unseren Bankdaten (RIB) im Anhang zur Zahlung. Ihre Mietbuchung wird nach Zahlungseingang bestätigt.",
+  'payment.info.body': "Ihr Vertrag wurde unterschrieben. Sie erhalten eine Benachrichtigung, sobald Ihre Rechnung in Ihrem Bereich verfügbar ist, mit unseren Bankdaten zur Zahlung. Ihre Mietbuchung wird nach Zahlungseingang bestätigt.",
   'payment.reminder.title': "Zahlung ausstehend",
-  'payment.reminder.body': "Achtung, Ihre Mietanfrage wurde noch nicht bezahlt. Sie wird in 5 Tagen storniert, wenn die Zahlung nicht bestätigt wird.",
+  'payment.reminder.body': "Achtung, Ihre Mietanfrage wurde noch nicht bezahlt. Ihre Rechnung mit unseren Bankdaten finden Sie unter «Meine Verträge». Sie wird in 5 Tagen storniert, wenn die Zahlung nicht bestätigt wird.",
   'booking.modal.title': "{{item}} buchen",
   'booking.note': "Diese Buchung bringt Ihnen nach Genehmigung {{xp}} XP ein.",
   'booking.send': "Anfrage senden",
@@ -9057,6 +9434,7 @@ de: {
   'contrat.downloadSigned': "Unterschriebenen Vertrag herunterladen",
   'contrat.location.title': "Mietvertrag",
   'contrat.none': "Noch kein Vertrag vorhanden.",
+  'contrat.invoice.view': "Meine Rechnung ansehen ({{number}})",
   'contrat.openPdf': "PDF ansehen",
   'contrat.owner.title': "Eigentümervertrag",
   'contrat.paymentStatus.paid': "Bezahlt",
@@ -9167,6 +9545,7 @@ de: {
   'notifBanner.newMessage': "Neue Nachricht",
   'notifBanner.newContract': "Vertrag verfügbar",
   'notifBanner.newOwnerContract': "Eigentümervertrag verfügbar",
+  'notifBanner.newInvoice': "Rechnung verfügbar",
   'notifBanner.missionValidated': "Mission bestätigt",
   'notifBanner.missionRefused': "Mission abgelehnt",
   'notifBanner.bookingAccepted': "Buchung angenommen",
@@ -9269,9 +9648,9 @@ lb: {
   'booking.field.end': "Enddatum",
   'booking.field.start': "Ufankksdatum",
   'payment.info.title': "Kontrakt ënnerschriwwen",
-  'payment.info.body': "Äre Kontrakt gouf ënnerschriwwen. Dir kritt Är Rechnung per E-Mail, mat eisem Kontoauszuch (RIB) als Uschloss fir d'Bezuelen. Är Locatioun gëtt confirméiert sou bal mir d'Bezuelung kréien.",
+  'payment.info.body': "Äre Kontrakt gouf ënnerschriwwen. Dir kritt eng Notifikatioun sou bal Är Rechnung an Ärem Beräich disponibel ass, mat eisem Kontoauszuch fir d'Bezuelen. Är Locatioun gëtt confirméiert sou bal mir d'Bezuelung kréien.",
   'payment.reminder.title': "Zahlung ausstoen",
-  'payment.reminder.body': "Oppassen, Är Locatiouns-Ufro gouf nach net bezuelt. Si gëtt a 5 Deeg annuléiert, wann d'Zahlung net confirméiert gëtt.",
+  'payment.reminder.body': "Oppassen, Är Locatiouns-Ufro gouf nach net bezuelt. Är Rechnung mat eisem Kontoauszuch fannt Dir ënner «Meng Kontrakter». Si gëtt a 5 Deeg annuléiert, wann d'Zahlung net confirméiert gëtt.",
   'booking.modal.title': "{{item}} reservéieren",
   'booking.note': "Dës Reservatioun bréngt Iech {{xp}} XP, soubal se validéiert ass.",
   'booking.send': "Ufro schécken",
@@ -9298,6 +9677,7 @@ lb: {
   'contrat.downloadSigned': "Ënnerschriwwene Kontrakt eroflueden",
   'contrat.location.title': "Locatiounskontrakt",
   'contrat.none': "Nach kee Kontrakt.",
+  'contrat.invoice.view': "Meng Rechnung kucken ({{number}})",
   'contrat.openPdf': "PDF kucken",
   'contrat.owner.title': "Proprietärkontrakt",
   'contrat.paymentStatus.paid': "Bezuelt",
@@ -9408,6 +9788,7 @@ lb: {
   'notifBanner.newMessage': "Neie Message",
   'notifBanner.newContract': "Kontrakt disponibel",
   'notifBanner.newOwnerContract': "Proprietärskontrakt disponibel",
+  'notifBanner.newInvoice': "Rechnung disponibel",
   'notifBanner.missionValidated': "Missioun validéiert",
   'notifBanner.missionRefused': "Missioun refuséiert",
   'notifBanner.bookingAccepted': "Reservatioun ugeholl",
