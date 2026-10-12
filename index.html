@@ -203,6 +203,38 @@
      texte — inspiré du rendu "par carte" d'une timeline HubSpot. */
   .crm-item-ic{width:27px;height:27px;border-radius:9px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
   .crm-item-ic svg{width:14px;height:14px;}
+
+  /* ---------- Lot 32 : refonte visuelle CRM (entreprises + tâches) ----------
+     Avant ce lot, la liste d'entreprises et la liste de tâches étaient de simples <table>
+     compactes : efficace à produire mais plat à l'œil, sans hiérarchie visuelle. Ce lot reprend le
+     système déjà en place ailleurs dans l'appli (.grid/.card du catalogue, .avatar de la barre
+     latérale) pour que le CRM ait le même niveau de finition que le reste de l'appli, au lieu d'un
+     langage visuel à part — une carte d'entreprise ressemble donc à une carte de catalogue, avec
+     un avatar d'initiales comme celui du compte utilisateur. */
+  .crm-grid{display:grid;grid-template-columns:repeat(auto-fill, minmax(300px,1fr));gap:14px;}
+  .crm-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-md);padding:18px 20px;cursor:pointer;transition:transform .18s var(--ease), background .18s var(--ease), box-shadow .18s var(--ease);}
+  .crm-card:hover{background:var(--surface-hover);transform:translateY(-2px);box-shadow:var(--shadow-2);}
+  .crm-card-top{display:flex;align-items:flex-start;gap:12px;}
+  .crm-avatar{width:40px;height:40px;border-radius:12px;background:var(--accent-soft);display:flex;align-items:center;justify-content:center;font-family:var(--font-disp);font-size:15px;font-weight:700;color:var(--accent);flex-shrink:0;}
+  .crm-card-name{font-size:15.5px;font-weight:700;letter-spacing:0.002em;}
+  .crm-card-loc{font-size:12px;color:var(--text-faint);margin-top:2px;}
+  .crm-card-contact{font-size:12.5px;color:var(--text-dim);margin-top:12px;line-height:1.6;}
+  .crm-card-contact .c-name{color:var(--text);font-weight:600;}
+  .crm-card-foot{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-top:14px;padding-top:12px;border-top:1px solid var(--border-soft);}
+  .crm-card-stat{font-size:11px;color:var(--text-faint);}
+  .crm-card-stat b{display:block;font-size:12.5px;color:var(--text);font-weight:600;margin-top:1px;}
+  .crm-card-actions{display:flex;gap:6px;margin-top:12px;}
+
+  .crm-task-list{display:flex;flex-direction:column;gap:7px;}
+  .crm-task-card{display:flex;align-items:center;gap:11px;padding:12px 13px;background:var(--surface);border:1px solid var(--border-soft);border-radius:var(--r-sm);transition:background .15s var(--ease);}
+  .crm-task-card:hover{background:var(--surface-hover);}
+  .crm-task-title{flex:1;min-width:0;cursor:pointer;}
+  .crm-task-company{font-size:11.5px;color:var(--blue);font-weight:600;margin-top:3px;}
+
+  .crm-section-head{display:flex;align-items:center;gap:8px;margin:22px 0 10px;}
+  .crm-section-head .crm-item-ic{width:24px;height:24px;}
+  .crm-section-head h4{font-size:13.5px;font-weight:700;color:var(--text);letter-spacing:0.01em;}
+  .crm-section-head .count-pill{font-size:11px;color:var(--text-faint);background:rgba(255,255,255,0.05);padding:2px 9px;border-radius:var(--r-pill);font-weight:600;}
   .side-user .u-name{font-size:13.5px;font-weight:600;word-break:break-all;}
   .side-user .u-rank{font-size:11.5px;color:var(--text-faint);}
 
@@ -714,7 +746,7 @@
 
     /* ---------- Finances (Lot 19) ---------- */
     .fin-2col{grid-template-columns:1fr;}
-    .fin-entry-form{grid-template-columns:1fr 1fr;}
+    .fin-entry-form{grid-template-columns:minmax(0,1fr) minmax(0,1fr);}
     .fin-remu-grid{grid-template-columns:1fr 1fr;}
     .fin-params-grid{grid-template-columns:1fr 1fr;}
     .fin-period-tabs{flex-wrap:wrap;}
@@ -724,10 +756,17 @@
   }
 
   /* ---------- Finances (Lot 19) ---------- */
-  .fin-2col{display:grid;grid-template-columns:1fr 1fr;gap:18px;align-items:start;margin-bottom:18px;}
+  /* Lot 33 : minmax(0,1fr) plutôt que 1fr — un <select> (ex. la catégorie "Prestataires (Lamar / Le
+     H)") ne rétrécit jamais sous son texte le plus long dans une piste de grille 1fr classique, ce
+     qui poussait le panneau "Charges" plus large que sa colonne et le faisait déborder hors champ,
+     invisible derrière le filet de sécurité overflow-x:hidden (bouton "+ Ajouter la charge" et
+     champ TVA récupérable coupés). minmax(0,1fr) autorise la piste à rétrécir, et width:100% sur
+     les champs (.field select etc., règle existante) fait le reste. */
+  .fin-2col{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:18px;align-items:start;margin-bottom:18px;}
   .fin-2col > .panel + .panel{margin-top:0;}
-  .fin-entry-form{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;}
+  .fin-entry-form{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:12px;margin-bottom:16px;}
   .fin-entry-form .fin-span2{grid-column:1 / -1;}
+  .fin-entry-form select{text-overflow:ellipsis;}
   .fin-tbl-wrap{max-height:280px;overflow-y:auto;border:1px solid var(--border-soft);border-radius: var(--r-sm);}
   .tag.fin-vente{background:var(--blue-soft);color:var(--blue);}
   .tag.fin-location{background:var(--violet-soft);color:var(--violet);}
@@ -746,6 +785,18 @@
   .fin-mini-stat{background:rgba(255,255,255,0.03);border:1px solid var(--border-soft);border-radius: var(--r-sm);padding:11px 13px;}
   .fin-mini-stat .ms-label{font-size:10.5px;color:var(--text-faint);font-weight:600;text-transform:uppercase;letter-spacing:0.03em;}
   .fin-mini-stat .ms-value{font-size:15.5px;font-weight:700;font-variant-numeric:tabular-nums;margin-top:4px;}
+
+  /* ---------- Finances (Lot 33) : un seul chiffre net en avant, le détail juste en dessous
+     (cascade) — remplace l'ancien empilement cartes KPI + mini-stats qui répétait trois fois
+     la même chaîne de calcul sous des formes différentes. */
+  .fin-hero{display:grid;grid-template-columns:1.4fr 1fr 1fr 1fr;gap:16px;margin:16px 0 20px;}
+  @media (max-width:980px){ .fin-hero{grid-template-columns:1fr 1fr;} }
+  @media (max-width:620px){ .fin-hero{grid-template-columns:1fr;} }
+  .fin-hero-main{background:var(--surface);border:1px solid var(--border);border-radius: var(--r-md);padding:22px 24px;display:flex;flex-direction:column;justify-content:center;gap:7px;position:relative;overflow:hidden;}
+  .fin-hero-main::after{content:"";position:absolute;top:-50%;right:-22%;width:170px;height:170px;border-radius:50%;background:radial-gradient(circle, var(--stat-glow, rgba(143,239,61,0.1)), transparent 70%);pointer-events:none;}
+  .fin-hero-main .fh-eyebrow{font-size:12px;color:var(--text-faint);font-weight:700;text-transform:uppercase;letter-spacing:0.04em;position:relative;z-index:1;}
+  .fin-hero-main .fh-value{font-family:var(--font-disp);font-size:38px;font-weight:800;line-height:1.1;position:relative;z-index:1;}
+  .fin-hero-main .fh-sub{font-size:12.5px;color:var(--text-faint);line-height:1.4;position:relative;z-index:1;}
 
   .fin-remu-grid{display:grid;grid-template-columns:220px repeat(4,1fr);gap:14px;align-items:end;}
   .fin-remu-out{background:rgba(255,255,255,0.03);border:1px solid var(--border-soft);border-radius: var(--r-sm);padding:10px 13px;}
@@ -1062,7 +1113,7 @@ let state = {
   financeSales: [], financeCharges: [], financeSettings: null,
   financePeriod: null, // {mode,start,end} — initialisé au premier affichage de l'onglet (finEnsurePeriod)
   financeStatsOpen: false,
-  financeTableView: { A: false, B: false, C: false },
+  financeTableView: { A: false, B: false },
   crmCompanies: [], crmActivities: [], crmTasks: [], crmTaskNotes: [],
   crmSearch: "",
   crmStatusFilter: "all",
@@ -1806,6 +1857,11 @@ async function cancelBooking(id){
   // migration_lot28_factures.sql n'avait pas été exécutée), l'affichage du master se mettait à
   // jour localement comme si tout s'était bien passé, alors que la ligne restait en base et le
   // client la voyait toujours. Voir aussi le point 1 de ce fichier de migration.
+  // Lot 30 : si une facture était liée à cette réservation, on la supprime AUSSI (PDF + ligne,
+  // numéro rendu si c'est la dernière émise) — sinon elle resterait une trace orpheline en base,
+  // invisible et sans bouton pour la supprimer une fois la réservation elle-même effacée.
+  const linkedInvoice = state.invoices.find(x => x.booking_id === id);
+  if(linkedInvoice) await deleteInvoiceRecord(linkedInvoice);
   const { error } = await sb.from('bookings').delete().eq('id', id);
   if(error){ alert("Erreur : " + error.message); return; }
   state.bookings = state.bookings.filter(x => x.id !== id);
@@ -1840,10 +1896,51 @@ async function toggleBookingPaid(id){
   const b = state.bookings.find(x => x.id === id);
   if(!b) return;
   const newPaid = !b.paid;
+  const prevPaid = b.paid, prevPaidAt = b.paid_at;
   b.paid = newPaid;
+  if(newPaid) b.paid_at = new Date().toISOString();
   render();
-  const { error } = await sb.from('bookings').update({ paid: newPaid }).eq('id', id);
-  if(error){ b.paid = !newPaid; render(); alert("Erreur : " + error.message); }
+  const { error } = await sb.from('bookings').update({ paid: newPaid, paid_at: b.paid_at }).eq('id', id);
+  if(error){ b.paid = prevPaid; b.paid_at = prevPaidAt; render(); alert("Erreur : " + error.message); return; }
+  // Lot 31 : "ce qui compte c'est quand on clique sur payé" — l'onglet Finances se synchronise
+  // automatiquement au moment EXACT du clic (paid_at), jamais sur les dates de la réservation elle-
+  // même. La ligne finance_sales créée porte booking_id (jamais posé sur une saisie manuelle), donc
+  // on peut toujours la retrouver pour l'annuler sans jamais toucher à ce que Luka a saisi à la main.
+  if(newPaid){
+    await finSyncBookingToSales(b);
+  } else {
+    await finRemoveBookingSale(id);
+  }
+  finRefreshInner();
+}
+// Crée automatiquement la ligne finance_sales correspondant à une réservation tout juste marquée
+// payée. Montant repris de la facture déjà émise si elle existe (montant réellement facturé,
+// remise déjà déduite — voir confirmSendInvoice), sinon du tarif catalogue de la réservation. Le
+// coût d'achat n'est volontairement pas deviné (mis à 0) : Luka reste seul juge de ce chiffre,
+// modifiable comme n'importe quelle vente depuis le tableau Finances.
+async function finSyncBookingToSales(b){
+  if(state.financeSales.find(s => s.booking_id === b.id)) return;
+  const item = state.items.find(i => i.id === b.item_id);
+  const inv = state.invoices.find(x => x.booking_id === b.id);
+  const ttc = inv ? round2(Number(inv.amount_ttc)) : round2(estimatedBookingPrice(b) || 0);
+  const clientName = clientDisplayName(state.profiles.find(p => p.username === b.username)) || b.username;
+  const payload = {
+    date: todayStr(),
+    type: 'location',
+    label: `${item ? item.name : 'Matériel'} — ${clientName}`,
+    ttc, cout_ht: 0,
+    booking_id: b.id,
+  };
+  const { data, error } = await sb.from('finance_sales').insert(payload).select().single();
+  if(!error && data) state.financeSales.push(data);
+}
+// Symétrique : si on redécoche "Payé" (erreur de clic, annulation...), on retire la ligne qu'on
+// avait ajoutée automatiquement — jamais une ligne saisie à la main, qui n'a pas de booking_id.
+async function finRemoveBookingSale(bookingId){
+  const row = state.financeSales.find(s => s.booking_id === bookingId);
+  if(!row) return;
+  await sb.from('finance_sales').delete().eq('id', row.id);
+  state.financeSales = state.financeSales.filter(s => s.id !== row.id);
 }
 
 /* ---------- Items (équipe) ---------- */
@@ -3106,7 +3203,13 @@ function buildInvoiceDocDefinition(f){
     pageSize: 'A4',
     pageMargins: [50, 50, 50, 60],
     defaultStyle: { fontSize: 9.8, lineHeight: 1.25 },
-    images: { invoiceLogo: CONTRACT_WATERMARK_LOGO },
+    // Lot 32 : le logo paraissait "transparent/grisâtre" sur la facture — CONTRACT_WATERMARK_LOGO
+    // n'est pas un défaut d'affichage, c'est fait exprès : sa transparence est pré-cuite dans le
+    // PNG lui-même pour servir de FILIGRANE discret en fond de page sur le contrat (voir plus haut).
+    // Réutilisé ici comme logo d'en-tête plein cadre, ce même fondu rendait le logo délavé au lieu
+    // d'un vrai logo net. LOGO est l'asset plein, opaque, déjà utilisé tel quel ailleurs dans
+    // l'appli (barre latérale) — c'est lui qu'il faut pour un logo net sur la facture.
+    images: { invoiceLogo: LOGO },
     content: [
       { columns: [
         { width: '*', text: 'Facture', bold: true, fontSize: 24 },
@@ -3243,6 +3346,46 @@ async function openInvoiceFile(path, invoiceId){
   }
 }
 window.openInvoiceFile = openInvoiceFile;
+
+/* ---------- Suppression de facture (Lot 30) ----------
+   "Je veux plus de trace" : supprime la ligne invoices ET le PDF dans le storage. Si c'est la
+   TOUTE DERNIÈRE facture émise de sa série/année (aucune autre créée depuis), son numéro est rendu
+   via release_invoice_number pour que la prochaine facture le réutilise — exactement le cas d'une
+   facture de test/erreur qu'on supprime pour la refaire aussitôt. Si une facture plus récente
+   existe déjà, le numéro reste consommé : c'est un trou légal normal (annulation), pas une
+   réutilisation après coup — voir migration_lot30_suppression_facture.sql pour le détail légal.
+   deleteInvoiceRecord() est la fonction partagée : masterDeleteInvoice() l'appelle depuis le bouton
+   facture, et cancelBooking() l'appelle automatiquement pour ne jamais laisser une facture
+   orpheline (sans trace) quand on supprime directement la réservation sans supprimer la facture
+   d'abord. Ne jette jamais : la suppression de la réservation ne doit pas être bloquée par un souci
+   sur la facture liée. */
+async function deleteInvoiceRecord(inv){
+  if(!inv) return;
+  try{
+    if(inv.pdf_path){
+      await sb.storage.from('invoices').remove([inv.pdf_path]);
+    }
+    const { error } = await sb.from('invoices').delete().eq('id', inv.id);
+    if(error) throw error;
+    state.invoices = state.invoices.filter(x => x.id !== inv.id);
+    const lastDash = inv.invoice_number.lastIndexOf('-');
+    const number = parseInt(inv.invoice_number.slice(lastDash + 1), 10);
+    const year = new Date(inv.issued_at).getFullYear();
+    if(!isNaN(number)){
+      await sb.rpc('release_invoice_number', { p_series: inv.series, p_year: year, p_number: number });
+    }
+  }catch(e){
+    console.error('deleteInvoiceRecord', e.message || e);
+  }
+}
+window.masterDeleteInvoice = async (id) => {
+  if(!state.session.isMaster) return;
+  const inv = state.invoices.find(x => x.id === id);
+  if(!inv) return;
+  if(!confirm(`Supprimer la facture ${inv.invoice_number} ? Le PDF sera supprimé définitivement. Si c'est la toute dernière facture émise, son numéro sera réutilisé pour la prochaine — sinon il reste consommé (trou normal légalement).`)) return;
+  await deleteInvoiceRecord(inv);
+  render();
+};
 
 async function masterDeleteContract(username){
   if(!confirm(`Supprimer le contrat de "${username}" (original + version signée) ?`)) return;
@@ -4535,6 +4678,7 @@ function gestionRowHtml(b){
       const inv = state.invoices.find(x => x.booking_id === b.id);
       if(inv){
         actions.push(`<button class="btn btn-ghost btn-sm" onclick="openInvoiceFile('${esc(inv.pdf_path)}','${esc(inv.id)}')">Facture ${esc(inv.invoice_number)}</button>`);
+        actions.push(`<button class="btn btn-danger btn-sm" onclick="masterDeleteInvoice('${esc(inv.id)}')" title="Supprimer la facture (sans trace)" style="width:auto;padding:6px 9px;">✕</button>`);
         invoiceReadLineHtml = `<div style="font-size:11px;color:var(--text-faint);margin-top:4px;">${inv.read_at ? `Lu le ${esc(fmtDateTime(inv.read_at))}` : 'Non lu'}</div>`;
       } else {
         actions.push(`<button class="btn btn-primary btn-sm" onclick="openSendInvoiceModal('${esc(b.id)}')">Envoyer la facture</button>`);
@@ -4905,8 +5049,8 @@ function bookingRevenueEstimateHtml(){
   }).length;
   return `
     <div class="panel" style="margin-bottom:18px;">
-      <h2>Chiffre Location</h2>
-      <div style="font-size:12.5px;color:var(--text-faint);margin-bottom:16px;line-height:1.5;">Calculé automatiquement depuis le planning des locations (prix/jour ou /semaine de chaque location) — uniquement les locations, distinct du CA encaissé ci-dessous, qui totalise ventes et locations saisies à la main.</div>
+      <h2>Chiffre Location — prévision (pas encore encaissé)</h2>
+      <div style="font-size:12.5px;color:var(--text-faint);margin-bottom:16px;line-height:1.5;">Calculé depuis le planning des locations (acceptées, signées ou non) — une estimation de ce qui arrive, pas de l'argent déjà reçu. Le chiffre réellement encaissé, lui, n'apparaît dans "Finances" ci-dessous qu'au moment où vous cliquez sur "Payé" pour chaque réservation.</div>
       <div class="stat-grid">
         <div class="stat-card">
           <div class="stat-card-top">
@@ -5828,6 +5972,38 @@ function finMonthsElapsed(startStr, endStr){
   return Object.keys(months).length;
 }
 
+// Lot 31 : une charge "récurrente" (loyer, abonnement...) ne se saisit qu'une fois — elle doit
+// ensuite se reporter automatiquement chaque mois, sans qu'il faille la recréer à la main. Cette
+// fonction étend les charges réelles (inchangées) avec des occurrences VIRTUELLES pour chaque
+// charge marquée recurring=true : même montant/catégorie/libellé, juste la date décalée au même
+// jour du mois (ajustée en fin de mois si besoin), un mois après l'autre jusqu'au plus tard entre
+// aujourd'hui et la fin de la période affichée. Rien n'est stocké : recalculé à chaque affichage,
+// donc jamais de risque de désynchronisation avec la ligne d'origine, et supprimer la ligne
+// d'origine arrête automatiquement toutes ses occurrences futures.
+function finExpandRecurringCharges(){
+  finEnsurePeriod();
+  const periodEnd = new Date(state.financePeriod.end + 'T00:00:00');
+  const today = new Date(); today.setHours(0,0,0,0);
+  const cap = periodEnd > today ? periodEnd : today;
+  const out = [];
+  state.financeCharges.forEach(c => {
+    out.push(c);
+    if(!c.recurring) return;
+    const start = new Date(c.date + 'T00:00:00');
+    const day = start.getDate();
+    let cur = new Date(start.getFullYear(), start.getMonth() + 1, 1);
+    let guard = 0;
+    while(cur <= cap && guard < 600){
+      guard++;
+      const lastDayOfMonth = new Date(cur.getFullYear(), cur.getMonth() + 1, 0).getDate();
+      const occDate = new Date(cur.getFullYear(), cur.getMonth(), Math.min(day, lastDayOfMonth));
+      out.push(Object.assign({}, c, { id: c.id + '_r' + finIso(occDate), date: finIso(occDate), _recurringVirtual: true, _recurringSourceId: c.id }));
+      cur = new Date(cur.getFullYear(), cur.getMonth() + 1, 1);
+    }
+  });
+  return out;
+}
+
 function finComputeAll(){
   finEnsurePeriod();
   const p = finSettings();
@@ -5835,7 +6011,7 @@ function finComputeAll(){
   const salRate = p.charges_salariales/100, patRate = p.charges_patronales/100, pfuRate = p.pfu/100;
 
   const sales = state.financeSales.filter(s => finInRange(s.date));
-  const charges = state.financeCharges.filter(c => finInRange(c.date));
+  const charges = finExpandRecurringCharges().filter(c => finInRange(c.date));
 
   let caTTC=0, caHT=0, tvaCollectee=0, coutMarch=0;
   sales.forEach(s => {
@@ -5907,55 +6083,39 @@ function finPeriodBarHtml(){
     </div>`;
 }
 
-/* ---------- Rendu : KPI + mini-stats ---------- */
-function finKpisHtml(t){
-  const salesLabel = t.salesCount + (t.salesCount>1 ? ' ventes' : ' vente');
-  const margeColor = t.margeBrute>=0 ? 'var(--accent)' : 'var(--danger)';
+/* ---------- Rendu : le chiffre qui compte (Lot 33) ----------
+   Avant ce lot, la même chaîne de calcul (CA -> marge -> charges -> IS -> net) s'affichait TROIS
+   fois sous trois formes différentes (4 cartes KPI, 6 mini-tuiles, puis la cascade juste en
+   dessous) — c'est ce que Luka appelait "trop d'info en bordel". Un seul chiffre net en avant,
+   trois chiffres de contexte à côté, et le détail étape par étape juste en dessous (la cascade,
+   qui explique déjà très bien chaque ligne) : plus rien n'est répété. */
+function finHeroHtml(t){
   const netColor = t.resultatNet>=0 ? 'var(--accent)' : 'var(--danger)';
+  const netWord = t.resultatNet>=0 ? 'Bénéfice' : 'Perte';
+  const salesLabel = t.salesCount + (t.salesCount>1 ? ' ventes' : ' vente');
   return `
-    <div class="stat-grid">
+    <div class="fin-hero">
+      <div class="fin-hero-main">
+        <div class="fh-eyebrow">Résultat net de la période</div>
+        <div class="fh-value" style="color:${netColor};">${finFmtEUR(t.resultatNet)}</div>
+        <div class="fh-sub">${netWord} après charges, rémunération et impôt estimé — le détail du calcul est juste en dessous.</div>
+      </div>
       <div class="stat-card">
-        <div class="stat-card-top">
-          <div class="stat-icon" style="background:var(--blue-soft);color:var(--blue);">${tacticalIconSvg('coins',{size:19})}</div>
-          <span class="stat-delta" style="background:var(--blue-soft);color:var(--blue);">${esc(salesLabel)}</span>
-        </div>
+        <div class="stat-card-top"><div class="stat-icon" style="background:var(--blue-soft);color:var(--blue);">${tacticalIconSvg('coins',{size:19})}</div></div>
         <div class="stat-value">${finFmtEUR(t.caTTC)}</div>
-        <div class="stat-label">CA encaissé (TTC)</div>
+        <div class="stat-label">Encaissé (TTC) — ${esc(salesLabel)}</div>
       </div>
       <div class="stat-card">
-        <div class="stat-card-top">
-          <div class="stat-icon" style="background:var(--accent-soft);color:var(--accent);">${tacticalIconSvg('trending-up',{size:19})}</div>
-          <span class="stat-delta" style="background:var(--accent-soft);color:var(--accent);">${finFmtPct(t.margePct)}</span>
-        </div>
-        <div class="stat-value" style="color:${margeColor};">${finFmtEUR(t.margeBrute)}</div>
-        <div class="stat-label">Marge brute (du CA HT)</div>
+        <div class="stat-card-top"><div class="stat-icon" style="background:var(--amber-soft);color:var(--amber);">${tacticalIconSvg('doc',{size:19})}</div></div>
+        <div class="stat-value">${finFmtEUR(t.chargesHT + t.coutEmployeur)}</div>
+        <div class="stat-label">Charges totales (dont rémunération)</div>
       </div>
       <div class="stat-card">
-        <div class="stat-card-top">
-          <div class="stat-icon" style="background:var(--amber-soft);color:var(--amber);">${tacticalIconSvg('doc',{size:19})}</div>
-        </div>
+        <div class="stat-card-top"><div class="stat-icon" style="background:var(--danger-soft);color:#FFB3A6;">${tacticalIconSvg('reticle',{size:19})}</div></div>
         <div class="stat-value">${finFmtEUR(t.tvaNette)}</div>
         <div class="stat-label">TVA nette à décaisser</div>
       </div>
-      <div class="stat-card">
-        <div class="stat-card-top">
-          <div class="stat-icon" style="background:${t.resultatNet>=0?'var(--accent-soft)':'var(--danger-soft)'};color:${netColor};">${tacticalIconSvg('reticle',{size:19})}</div>
-        </div>
-        <div class="stat-value" style="color:${netColor};">${finFmtEUR(t.resultatNet)}</div>
-        <div class="stat-label">Résultat net (période, après IS estimé)</div>
-      </div>
     </div>`;
-}
-function finMiniStatHtml(label,value){ return `<div class="fin-mini-stat"><div class="ms-label">${esc(label)}</div><div class="ms-value">${value}</div></div>`; }
-function finMiniStatsHtml(t){
-  return `<div class="fin-mini-stats">
-    ${finMiniStatHtml('CA HT', finFmtEUR(t.caHT))}
-    ${finMiniStatHtml('Coût marchandises', finFmtEUR(t.coutMarch))}
-    ${finMiniStatHtml('Charges', finFmtEUR(t.chargesHT))}
-    ${finMiniStatHtml('Rémunération (coût total)', finFmtEUR(t.coutEmployeur))}
-    ${finMiniStatHtml('Résultat avant IS', finFmtEUR(t.resultatAvantIS))}
-    ${finMiniStatHtml('IS estimé', finFmtEUR(t.isEstime))}
-  </div>`;
 }
 
 /* ---------- Rendu : ventes / charges (saisie + tableaux) ---------- */
@@ -5967,25 +6127,35 @@ function finSalesTbodyHtml(){
     const ht = Number(s.ttc)/(1+tvaRate);
     const marge = ht - Number(s.cout_ht||0);
     const dt = new Date(s.date+'T00:00:00').toLocaleDateString('fr-FR', { day:'2-digit', month:'2-digit' });
+    // Lot 31 : une vente liée automatiquement à une réservation (créée au clic "Payé" — voir
+    // toggleBookingPaid) porte un petit repère visuel, pour la distinguer d'une saisie manuelle.
+    const autoTag = s.booking_id ? `<span class="tag" style="background:var(--blue-soft);color:var(--blue);margin-left:6px;" title="Ajoutée automatiquement quand la réservation a été marquée payée">auto</span>` : '';
     return `<tr>
       <td>${dt}</td>
-      <td><span class="tag ${s.type==='vente'?'fin-vente':'fin-location'}">${s.type==='vente'?'Vente':'Location'}</span> ${esc(s.label)}</td>
+      <td><span class="tag ${s.type==='vente'?'fin-vente':'fin-location'}">${s.type==='vente'?'Vente':'Location'}</span> ${esc(s.label)}${autoTag}</td>
       <td style="text-align:right;font-variant-numeric:tabular-nums;">${finFmtEUR(s.ttc)}</td>
       <td style="text-align:right;font-variant-numeric:tabular-nums;">${finFmtEUR(marge)}</td>
-      <td><div style="display:flex;"><button class="btn btn-danger btn-sm" onclick="finDeleteSale('${s.id}')">Suppr.</button></div></td>
+      <td><button class="btn btn-danger btn-sm" onclick="finDeleteSale('${s.id}')" title="Supprimer" style="width:auto;padding:6px 9px;">✕</button></td>
     </tr>`;
   }).join('');
 }
 function finChargesTbodyHtml(){
-  const rows = state.financeCharges.filter(c => finInRange(c.date)).slice().sort((a,b) => a.date < b.date ? 1 : -1);
+  const rows = finExpandRecurringCharges().filter(c => finInRange(c.date)).slice().sort((a,b) => a.date < b.date ? 1 : -1);
   if(!rows.length) return `<tr><td colspan="4"><div class="empty">Aucune charge sur cette période.</div></td></tr>`;
   return rows.map(c => {
+    // Lot 31 : une occurrence virtuelle (générée automatiquement pour une charge récurrente) ne se
+    // supprime pas individuellement — seule la ligne d'origine se supprime, ce qui arrête toutes
+    // ses occurrences futures d'un coup.
+    const recurTag = c.recurring ? `<span class="tag" style="background:var(--accent-soft);color:var(--accent);margin-left:6px;" title="Se reporte automatiquement chaque mois">↻ récurrente</span>` : '';
+    const deleteCell = c._recurringVirtual
+      ? `<span style="font-size:11px;color:var(--text-faint);">auto</span>`
+      : `<button class="btn btn-danger btn-sm" onclick="finDeleteCharge('${c.id}')" title="Supprimer" style="width:auto;padding:6px 9px;">✕</button>`;
     const dt = new Date(c.date+'T00:00:00').toLocaleDateString('fr-FR', { day:'2-digit', month:'2-digit' });
     return `<tr>
       <td>${dt}</td>
-      <td>${esc(c.label)}<div style="font-size:11px;color:var(--text-faint);margin-top:2px;">${esc(c.category)}</div></td>
+      <td>${esc(c.label)}${recurTag}<div style="font-size:11px;color:var(--text-faint);margin-top:2px;">${esc(c.category)}</div></td>
       <td style="text-align:right;font-variant-numeric:tabular-nums;">${finFmtEUR(c.montant_ht)}</td>
-      <td><div style="display:flex;"><button class="btn btn-danger btn-sm" onclick="finDeleteCharge('${c.id}')">Suppr.</button></div></td>
+      <td>${deleteCell}</td>
     </tr>`;
   }).join('');
 }
@@ -6018,6 +6188,7 @@ function finChargesPanelHtml(){
         <div class="field fin-span2"><label for="fin-c-label">Libellé</label><input type="text" id="fin-c-label" placeholder="Ex. Loyer local Puget-sur-Argens" required></div>
         <div class="field"><label for="fin-c-montant">Montant HT (€)</label><input type="number" id="fin-c-montant" min="0" step="0.01" required></div>
         <div class="field"><label for="fin-c-tva">TVA récupérable</label><select id="fin-c-tva"><option value="1">Oui</option><option value="0">Non</option></select></div>
+        <div class="fin-span2"><label style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text-dim);cursor:pointer;"><input type="checkbox" id="fin-c-recurring" style="width:16px;height:16px;cursor:pointer;"> Charge récurrente — se reporte automatiquement chaque mois, pas besoin de la ressaisir</label></div>
         <div class="fin-span2"><button type="submit" class="btn btn-primary btn-sm">+ Ajouter la charge</button></div>
       </form>
       <div class="fin-tbl-wrap"><table><thead><tr><th>Date</th><th>Charge</th><th style="text-align:right;">HT</th><th></th></tr></thead>
@@ -6035,15 +6206,18 @@ function finRemuOutputsHtml(t){
 }
 function finRemunerationPanelHtml(t){
   const p = finSettings();
+  // Lot 33 : repliée par défaut (comme "Hypothèses de calcul" juste plus bas) — un réglage mensuel,
+  // pas une information à regarder à chaque visite ; son résultat est déjà injecté dans le chiffre
+  // du haut et dans la cascade, donc rien n'est perdu en la repliant.
   return `
-    <div class="panel">
-      <h2>Rémunération du président</h2>
-      <div style="font-size:12.5px;color:var(--text-faint);margin-bottom:16px;line-height:1.5;">Assimilé salarié : les cotisations patronales s'ajoutent au brut (coût réel pour la société), les cotisations salariales se déduisent du brut (ce que vous touchez avant impôt sur le revenu personnel). Ce coût total est injecté automatiquement dans les charges de la période affichée.</div>
+    <details class="panel fin-details">
+      <summary><svg class="chev" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9.5 5 16 12l-6.5 7"/></svg>Rémunération du président</summary>
+      <div style="font-size:12.5px;color:var(--text-faint);margin:10px 0 16px;line-height:1.5;">Assimilé salarié : les cotisations patronales s'ajoutent au brut (coût réel pour la société), les cotisations salariales se déduisent du brut (ce que vous touchez avant impôt sur le revenu personnel). Ce coût total est injecté automatiquement dans les charges de la période affichée.</div>
       <div class="fin-remu-grid">
         <div class="field"><label for="fin-r-brut">Salaire brut mensuel (€)</label><input type="number" id="fin-r-brut" min="0" step="10" value="${p.remuneration_brut_mensuel||0}" oninput="finOnBrutInput(this.value)" onchange="finPersistBrut(this.value)"></div>
         <div id="fin-remu-outputs" style="display:contents;">${finRemuOutputsHtml(t)}</div>
       </div>
-    </div>`;
+    </details>`;
 }
 function finCascadeHtml(t){
   const rows = [];
@@ -6138,7 +6312,7 @@ function finChartATableHtml(data){
   return `<div class="fin-tbl-wrap"><table><thead><tr><th>Mois</th><th style="text-align:right;">Coût d'achat</th><th style="text-align:right;">Marge brute</th><th style="text-align:right;">CA HT</th></tr></thead><tbody>${rows}</tbody></table></div>`;
 }
 function finChargesByCategory(){
-  const charges = state.financeCharges.filter(c => finInRange(c.date));
+  const charges = finExpandRecurringCharges().filter(c => finInRange(c.date));
   const map = {}; let total = 0;
   charges.forEach(c => { const cat = c.category || 'Autre'; const m = Number(c.montant_ht||0); map[cat] = (map[cat]||0) + m; total += m; });
   const rows = Object.keys(map).map(cat => ({ cat, value: map[cat] }));
@@ -6176,69 +6350,13 @@ function finChartBTableHtml(agg){
   const rows = agg.rows.map(r => { const pct = agg.total>0? r.value/agg.total:0; return `<tr><td>${esc(r.cat)}</td><td style="text-align:right;">${finFmtEUR(r.value)}</td><td style="text-align:right;">${finFmtPct(pct)}</td></tr>`; }).join('');
   return `<div class="fin-tbl-wrap"><table><thead><tr><th>Catégorie</th><th style="text-align:right;">Montant HT</th><th style="text-align:right;">Part</th></tr></thead><tbody>${rows}</tbody></table></div>`;
 }
-function finWaterfallSteps(t){
-  return [
-    { key:'marge', label:'Marge brute', short:'Marge brute', type:'anchor', value:t.margeBrute },
-    { key:'charges', label:'Charges', short:'Charges', type:'float', delta:-t.chargesHT, color:FIN_COLORS.amber },
-    { key:'remu', label:'Rémunération (coût total)', short:'Rémun.', type:'float', delta:-t.coutEmployeur, color:FIN_COLORS.violet },
-    { key:'is', label:'IS estimé', short:'IS', type:'float', delta:-t.isEstime, color:FIN_COLORS.red },
-    { key:'net', label:'Résultat net', short:'Résultat net', type:'anchor', value:t.resultatNet },
-  ];
-}
-function finChartCHtml(t){
-  const steps = finWaterfallSteps(t);
-  let running = 0;
-  const bars = steps.map(s => {
-    let start,end;
-    if(s.type==='anchor'){ start=0; end=s.value; running=s.value; }
-    else { start=running; end=running+s.delta; running=end; }
-    return { key:s.key, label:s.label, short:s.short, type:s.type, top:Math.max(start,end), bottom:Math.min(start,end), start, end, color:s.color, finalValue: s.type==='anchor'?s.value:s.delta };
-  });
-  const allVals = [0]; bars.forEach(b => allVals.push(b.top,b.bottom));
-  let minV = Math.min(...allVals), maxV = Math.max(...allVals);
-  if(maxV===minV) maxV += 10;
-  const range = maxV-minV;
-  const barW=22, gap=30;
-  const padL=60, padR=14, padT=26, padB=40, plotH=200;
-  const W = padL+padR+bars.length*(barW+gap)-gap;
-  const H = padT+plotH+padB;
-  const y = v => padT+plotH-((v-minV)/range)*plotH;
-  const zeroY = y(0);
-  let gridlines = `<line x1="${padL}" y1="${zeroY}" x2="${W}" y2="${zeroY}" class="fin-chart-svg-axis" stroke-width="1.4"></line>`;
-  [0.25,0.5,0.75,1].forEach(f => {
-    const v = minV+range*f, yy = y(v);
-    gridlines += `<line x1="${padL}" y1="${yy}" x2="${W}" y2="${yy}" class="fin-chart-svg-axis"></line><text x="${padL-8}" y="${yy+3}" text-anchor="end" class="fin-chart-svg-label">${finFmtEUR(v)}</text>`;
-  });
-  let marks='', connectors='';
-  bars.forEach((b,idx) => {
-    const cx = padL+idx*(barW+gap);
-    const yTop=y(b.top), yBot=y(b.bottom);
-    const h = Math.max(2, yBot-yTop);
-    let fill;
-    if(b.key==='marge') fill = FIN_COLORS.neutral;
-    else if(b.key==='net') fill = b.finalValue>=0 ? FIN_COLORS.statusGood : FIN_COLORS.statusCritical;
-    else fill = b.color;
-    const tipKey = 'C-'+idx;
-    const dotColor = b.key==='marge' ? 'rgba(255,255,255,0.4)' : (b.key==='net' ? fill : b.color);
-    finTipData[tipKey] = { title: b.label, rows: [ { label: b.type==='anchor'?'Montant':'Variation', value:finFmtEUR(b.finalValue), color:dotColor } ] };
-    marks += `<rect class="fin-chart-mark" data-tip="${tipKey}" onmousemove="finTip(event,this)" onmouseleave="finTipHide()" x="${cx}" y="${yTop}" width="${barW}" height="${h}" rx="4" fill="${fill}"></rect>`;
-    const labelY = (b.finalValue>=0 || b.type==='anchor') ? (yTop-8) : (yBot+16);
-    marks += `<text x="${cx+barW/2}" y="${labelY}" text-anchor="middle" class="fin-chart-svg-value">${finFmtEUR(b.finalValue)}</text>`;
-    marks += finAxisLabel(cx+barW/2, H-8, b.short);
-    if(idx < bars.length-1){
-      const nextCx = padL+(idx+1)*(barW+gap);
-      const connY = y(b.end);
-      connectors += `<line x1="${cx+barW}" y1="${connY}" x2="${nextCx}" y2="${connY}" stroke="var(--border-soft)" stroke-width="1"></line>`;
-    }
-  });
-  const svg = `<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" role="img" aria-label="De la marge brute au résultat net">${gridlines}${connectors}${marks}</svg>`;
-  const legend = finLegendItem(FIN_COLORS.neutral,'Marge brute (départ)') + finLegendItem(FIN_COLORS.amber,'Charges') + finLegendItem(FIN_COLORS.violet,'Rémunération (coût total)') + finLegendItem(FIN_COLORS.red,'IS estimé') + finLegendItem(FIN_COLORS.statusGood,'Résultat net positif') + finLegendItem(FIN_COLORS.statusCritical,'Résultat net négatif');
-  return { svg, legend, bars };
-}
-function finChartCTableHtml(bars){
-  const rows = bars.map(b => `<tr><td>${esc(b.label)}</td><td style="text-align:right;">${finFmtEUR(b.finalValue)}</td></tr>`).join('');
-  return `<div class="fin-tbl-wrap"><table><thead><tr><th>Étape</th><th style="text-align:right;">Montant</th></tr></thead><tbody>${rows}</tbody></table></div>`;
-}
+// Lot 33 : le 3e graphique (waterfall marge -> net) a été retiré — il montrait, en version
+// graphique plus difficile à lire, exactement la même chaîne de chiffres que la cascade affichée
+// juste au-dessus du chiffre net (finCascadeHtml), déjà en français clair étape par étape. Garder
+// les deux revenait à répéter une 4e fois la même information : c'était une partie de ce que Luka
+// décrivait comme "moche et n'a aucun sens". Les deux graphiques qui restent (A : tendance sur
+// l'année, B : répartition des charges) apportent chacun une information que la cascade ne montre
+// pas (évolution dans le temps, poids relatif des catégories de charges).
 function finChartCardHtml(key, title, bodyHtml, legendHtml, tableHtml){
   const showTable = !!state.financeTableView[key];
   return `
@@ -6252,19 +6370,17 @@ function finChartCardHtml(key, title, bodyHtml, legendHtml, tableHtml){
       <div class="fin-chart-table" id="fin-chart${key}-table" ${showTable?'':'hidden'}>${tableHtml}</div>
     </div>`;
 }
-function finStatsPanelHtml(t){
+function finStatsPanelHtml(){
   if(!state.financeStatsOpen) return '';
   finTipData = {};
   const a = finChartAHtml();
   const b = finChartBHtml();
-  const c = finChartCHtml(t);
   return `
     <div class="panel" id="fin-stats-panel">
       <h2>Statistiques</h2>
-      <div style="font-size:12.5px;color:var(--text-faint);margin-bottom:16px;line-height:1.5;">Vue graphique de vos chiffres — la répartition des charges et de la marge suit la période sélectionnée ci-dessus ; l'évolution mensuelle couvre l'année en cours.</div>
-      ${finChartCardHtml('A', 'Évolution mensuelle — coût vs marge', a.svg, a.legend, finChartATableHtml(a.data))}
+      <div style="font-size:12.5px;color:var(--text-faint);margin-bottom:16px;line-height:1.5;">Deux vues qui n'apparaissent pas déjà dans le chiffre du haut : où va l'argent sur l'année, et quelles charges pèsent le plus. La répartition des charges suit la période sélectionnée ci-dessus ; la tendance mensuelle couvre toujours l'année en cours.</div>
+      ${finChartCardHtml('A', "Tendance sur l'année — coût vs marge", a.svg, a.legend, finChartATableHtml(a.data))}
       ${finChartCardHtml('B', 'Charges par catégorie', b.svg, b.legend, finChartBTableHtml(b.agg))}
-      ${finChartCardHtml('C', 'De la marge brute au résultat net', c.svg, c.legend, finChartCTableHtml(c.bars))}
     </div>`;
 }
 
@@ -6301,26 +6417,25 @@ function finRootHtml(){
   return `
     ${bookingRevenueEstimateHtml()}
     ${finPeriodBarHtml()}
-    <div id="fin-kpis">${finKpisHtml(t)}</div>
-    <div id="fin-ministats">${finMiniStatsHtml(t)}</div>
+    <div id="fin-hero">${finHeroHtml(t)}</div>
+    <div class="panel">
+      <h2>D'où vient ce chiffre ?</h2>
+      <div style="font-size:12.5px;color:var(--text-faint);margin-bottom:16px;line-height:1.5;">Le calcul du résultat net ci-dessus, étape par étape, pour la période sélectionnée.</div>
+      <div class="fin-cascade" id="fin-cascade">${finCascadeHtml(t)}</div>
+    </div>
     <div class="fin-2col">
       ${finVentesPanelHtml()}
       ${finChargesPanelHtml()}
     </div>
     ${finRemunerationPanelHtml(t)}
-    <div class="panel">
-      <h2>Cascade — de l'encaissé au disponible</h2>
-      <div style="font-size:12.5px;color:var(--text-faint);margin-bottom:16px;line-height:1.5;">Lecture directe de ce qui reste réellement, étape par étape, pour la période sélectionnée.</div>
-      <div class="fin-cascade" id="fin-cascade">${finCascadeHtml(t)}</div>
-    </div>
-    ${finStatsPanelHtml(t)}
+    ${finStatsPanelHtml()}
     ${finParamsPanelHtml()}
     ${finDisclaimerHtml()}
     <div id="fin-tooltip" class="fin-tooltip" role="tooltip"></div>`;
 }
 function renderFinances(){
   return `
-    <div class="topbar"><div><h1>Finances</h1><div class="desc">Vue d'ensemble SASU — ventes, charges, cascade CA → TVA → marge → IS → net, et statistiques.</div></div></div>
+    <div class="topbar"><div><h1>Finances</h1><div class="desc">Le résultat net de la période en un coup d'œil, son détail juste en dessous, et la saisie des ventes/charges plus bas.</div></div></div>
     <div id="fin-root">${finRootHtml()}</div>`;
 }
 function finRefreshInner(){
@@ -6330,21 +6445,18 @@ function finRefreshInner(){
 function finRefreshCalc(){
   const t = finComputeAll();
   const set = (id, html) => { const el = document.getElementById(id); if(el) el.innerHTML = html; };
-  set('fin-kpis', finKpisHtml(t));
-  set('fin-ministats', finMiniStatsHtml(t));
+  set('fin-hero', finHeroHtml(t));
   set('fin-cascade', finCascadeHtml(t));
   set('fin-remu-outputs', finRemuOutputsHtml(t));
   set('fin-sales-tbody', finSalesTbodyHtml());
   set('fin-charges-tbody', finChargesTbodyHtml());
   if(state.financeStatsOpen){
     finTipData = {};
-    const a = finChartAHtml(), b = finChartBHtml(), c = finChartCHtml(t);
+    const a = finChartAHtml(), b = finChartBHtml();
     if(!state.financeTableView.A){ set('fin-chartA-viz', a.svg); set('fin-chartA-legend', a.legend); }
     set('fin-chartA-table', finChartATableHtml(a.data));
     if(!state.financeTableView.B){ set('fin-chartB-viz', b.svg); }
     set('fin-chartB-table', finChartBTableHtml(b.agg));
-    if(!state.financeTableView.C){ set('fin-chartC-viz', c.svg); set('fin-chartC-legend', c.legend); }
-    set('fin-chartC-table', finChartCTableHtml(c.bars));
   }
 }
 
@@ -6394,6 +6506,7 @@ async function doFinAddCharge(){
     label: document.getElementById('fin-c-label').value.trim() || document.getElementById('fin-c-cat').value,
     montant_ht: montant,
     tva_deductible: document.getElementById('fin-c-tva').value === '1',
+    recurring: !!document.getElementById('fin-c-recurring').checked,
   };
   const { data, error } = await sb.from('finance_charges').insert(payload).select().single();
   if(!error && data) state.financeCharges.push(data);
@@ -6546,38 +6659,52 @@ function crmTheadHtml(){
     <th></th>
   </tr>`;
 }
-function crmCompanyRowHtml(c){
+// Lot 32 : initiales d'entreprise pour l'avatar de la carte — jusqu'à 2 lettres, une par mot
+// significatif du nom ("OWLS Vision" -> "OV", "Decathlon" -> "DE").
+function crmCompanyInitials(name){
+  const words = (name||'').trim().split(/\s+/).filter(Boolean);
+  if(words.length === 0) return '??';
+  if(words.length === 1) return words[0].slice(0,2).toUpperCase();
+  return (words[0][0] + words[1][0]).toUpperCase();
+}
+// Lot 32 : la liste d'entreprises était une <table> compacte, difficile à parcourir d'un coup
+// d'œil. Reprend le système .grid/.card déjà utilisé pour le catalogue : une carte par entreprise,
+// avatar d'initiales, statut en pastille, et en pied de carte les deux infos qui comptent pour
+// relancer — dernier contact et prochaine échéance, colorée si en retard/aujourd'hui.
+function crmCompanyCardHtml(c){
   const lastAct = crmLastActivityFor(c.id);
   const nextTask = crmNextOpenTaskFor(c.id);
   const today = todayStr();
   const overdue = !!(nextTask && nextTask.due_date && nextTask.due_date < today);
   const dueToday = !!(nextTask && nextTask.due_date === today);
-  const contactBits = [
-    c.contact_name ? `<div class="t-title" style="font-size:13px;">${esc(c.contact_name)}</div>` : '',
-    c.phone ? `<div class="t-desc">${esc(c.phone)}</div>` : '',
-    c.email ? `<div class="t-desc">${esc(c.email)}</div>` : '',
-  ].filter(Boolean).join('');
+  const contactLine = [c.contact_name, c.phone, c.email].filter(Boolean);
   return `
-    <tr>
-      <td><button class="btn btn-ghost btn-sm" style="padding:0;background:none;border:none;text-align:left;" onclick="openCompanyDetailModal('${c.id}')"><div class="t-title">${esc(c.name)}</div></button>${(c.city||c.country) ? `<div class="t-desc">${esc([c.city,c.country].filter(Boolean).join(', '))}</div>` : ''}</td>
-      <td>${crmStatusPillHtml(c.status)}</td>
-      <td>${contactBits || '<span style="color:var(--text-faint);">—</span>'}</td>
-      <td>${lastAct ? `${fmtDate(lastAct.date)}<div class="t-desc">${esc(CRM_TYPE_LABELS[lastAct.type]||lastAct.type)}</div>` : '<span style="color:var(--text-faint);">Aucun contact</span>'}</td>
-      <td>${nextTask ? `<span style="color:${overdue?'#FFB3A6':dueToday?'var(--amber)':'var(--text)'};font-weight:${overdue||dueToday?700:400};">${fmtDate(nextTask.due_date)}</span><div class="t-desc">${esc(nextTask.title)}</div>` : '<span style="color:var(--text-faint);">—</span>'}</td>
-      <td><div style="display:flex;gap:5px;flex-wrap:wrap;">
-        <button class="btn btn-ghost btn-sm" onclick="openCompanyDetailModal('${c.id}')">Ouvrir</button>
-        <button class="btn btn-danger btn-sm" onclick="deleteCompany('${c.id}')">Supprimer</button>
-      </div></td>
-    </tr>`;
+    <div class="crm-card" onclick="openCompanyDetailModal('${c.id}')">
+      <div class="crm-card-top">
+        <div class="crm-avatar">${esc(crmCompanyInitials(c.name))}</div>
+        <div style="flex:1;min-width:0;">
+          <div class="crm-card-name">${esc(c.name)}</div>
+          <div class="crm-card-loc">${esc([c.city,c.country].filter(Boolean).join(', ') || 'Localisation non renseignée')}</div>
+        </div>
+        ${crmStatusPillHtml(c.status)}
+      </div>
+      ${contactLine.length ? `<div class="crm-card-contact">${c.contact_name ? `<span class="c-name">${esc(c.contact_name)}</span><br>` : ''}${[c.phone,c.email].filter(Boolean).join(' · ')}</div>` : ''}
+      <div class="crm-card-foot">
+        <div class="crm-card-stat">Dernier contact${lastAct ? `<b>${fmtDate(lastAct.date)} · ${esc(CRM_TYPE_LABELS[lastAct.type]||lastAct.type)}</b>` : `<b style="color:var(--text-faint);font-weight:500;">Aucun</b>`}</div>
+        <div class="crm-card-stat" style="text-align:right;">Prochaine échéance${nextTask ? `<b style="color:${overdue?'#FFB3A6':dueToday?'var(--amber)':'var(--text)'};">${fmtDate(nextTask.due_date)}</b>` : `<b style="color:var(--text-faint);font-weight:500;">—</b>`}</div>
+      </div>
+      <div class="crm-card-actions" onclick="event.stopPropagation();">
+        <button class="btn btn-ghost btn-sm" style="width:auto;flex:1;" onclick="openCompanyDetailModal('${c.id}')">Ouvrir la fiche</button>
+        <button class="btn btn-danger btn-sm" style="width:auto;" onclick="deleteCompany('${c.id}')" title="Supprimer">✕</button>
+      </div>
+    </div>`;
 }
 function refreshCommercialView(){
   const list = crmFilteredSorted();
-  const tbody = document.getElementById('crm-tbody');
-  const thead = document.getElementById('crm-thead');
+  const grid = document.getElementById('crm-grid');
   const count = document.getElementById('crm-count');
-  if(!tbody) return;
-  if(thead) thead.innerHTML = crmTheadHtml();
-  tbody.innerHTML = list.length ? list.map(crmCompanyRowHtml).join('') : `<tr><td colspan="6"><div class="empty">Aucune entreprise ne correspond à cette recherche.</div></td></tr>`;
+  if(!grid) return;
+  grid.innerHTML = list.length ? list.map(crmCompanyCardHtml).join('') : `<div class="empty">Aucune entreprise ne correspond à cette recherche.</div>`;
   if(count) count.textContent = `${list.length} entreprise${list.length>1?'s':''}`;
 }
 function renderCommercial(){
@@ -6595,13 +6722,13 @@ function renderCommercial(){
       </select>
     </div>
     <div class="result-count" id="crm-count">${list.length} entreprise${list.length>1?'s':''}</div>
-    <div class="panel"><table class="tbl-compact"><thead id="crm-thead">${crmTheadHtml()}</thead><tbody id="crm-tbody">${list.length ? list.map(crmCompanyRowHtml).join('') : `<tr><td colspan="6"><div class="empty">Aucune entreprise pour le moment — ajoutez la première ci-dessus.</div></td></tr>`}</tbody></table></div>
+    <div class="crm-grid" id="crm-grid">${list.length ? list.map(crmCompanyCardHtml).join('') : `<div class="empty">Aucune entreprise pour le moment — ajoutez la première ci-dessus.</div>`}</div>
   `;
 }
 // Une pastille ronde colorée par ligne (en retard = rouge, aujourd'hui = orange, faite = vert,
 // sinon neutre) plutôt qu'un simple texte — pour repérer l'urgence d'un coup d'œil, comme sur
 // une carte de tâche HubSpot, sans avoir à lire la date.
-function crmTaskRowHtml(tk){
+function crmTaskRowHtml(tk, showCompany){
   const today = todayStr();
   const overdue = !tk.done && tk.due_date && tk.due_date < today;
   const dueToday = !tk.done && tk.due_date === today;
@@ -6612,13 +6739,26 @@ function crmTaskRowHtml(tk){
     : urgent || overdue ? { bg:'var(--danger-soft)', fg:'#FFB3A6', icon: CRM_TASK_ICON_CLOCK }
     : dueToday ? { bg:'var(--amber-soft)', fg:'var(--amber)', icon: CRM_TASK_ICON_CLOCK }
     : { bg:'rgba(255,255,255,0.07)', fg:'var(--text-dim)', icon: CRM_TASK_ICON_CLOCK };
+  // Lot 32 : showCompany (optionnel) affiche le nom de l'entreprise rattachée sous le titre — utile
+  // sur la page "Tâches commerciales" qui mélange des tâches de plusieurs entreprises ; jamais
+  // affiché dans la fiche d'une entreprise (son identité est déjà celle de la fiche ouverte).
+  const companyLine = showCompany ? (() => {
+    const comp = tk.company_id ? state.crmCompanies.find(x => x.id === tk.company_id) : null;
+    // Seul le nom d'une vraie entreprise est cliquable (ouvre sa fiche) — les deux autres cas
+    // (tâche générale, entreprise depuis supprimée) ne mènent nulle part : les garder en gris
+    // plutôt qu'en bleu évite qu'ils aient l'air d'un lien qui ne répond pas au clic.
+    if(comp) return `<div class="crm-task-company" onclick="event.stopPropagation();openCompanyDetailModal('${comp.id}')" style="cursor:pointer;">${esc(comp.name)}</div>`;
+    if(tk.company_id) return `<div class="crm-task-company" style="color:var(--text-faint);">Entreprise supprimée</div>`;
+    return `<div class="crm-task-company" style="color:var(--text-faint);">Tâche générale</div>`;
+  })() : '';
   return `
-    <div style="display:flex;align-items:center;gap:10px;padding:8px 10px;background:rgba(255,255,255,0.03);border-radius:var(--r-sm);${tk.done?'opacity:0.55;':''}">
+    <div class="crm-task-card" style="${tk.done?'opacity:0.55;':''}">
       <input type="checkbox" ${tk.done?'checked':''} onchange="crmToggleTaskDone('${tk.id}')" style="width:17px;height:17px;flex-shrink:0;cursor:pointer;">
       <div class="crm-item-ic" style="background:${c.bg};color:${c.fg};">${c.icon}</div>
-      <div style="flex:1;min-width:0;cursor:pointer;" onclick="openEditCrmTaskModal('${tk.id}')" title="Ouvrir la fiche de la tâche">
+      <div class="crm-task-title" onclick="openEditCrmTaskModal('${tk.id}')" title="Ouvrir la fiche de la tâche">
         <div style="font-size:13.5px;${tk.done?'text-decoration:line-through;':''}">${esc(tk.title)}${urgent ? ' <span class="status-pill danger" style="padding:1px 8px;font-size:10px;vertical-align:middle;">Urgent</span>' : ''}</div>
         ${tk.due_date ? `<div style="font-size:11.5px;color:${overdue?'#FFB3A6':dueToday?'var(--amber)':'var(--text-faint)'};font-weight:${overdue||dueToday?700:400};">${overdue?'En retard — ':dueToday?"Aujourd'hui — ":''}${fmtDate(tk.due_date)}</div>` : ''}
+        ${companyLine}
       </div>
       <button class="btn btn-ghost btn-sm" onclick="crmDeleteTask('${tk.id}')" title="Supprimer" style="padding:5px 9px;width:auto;">✕</button>
     </div>`;
@@ -6656,14 +6796,17 @@ function crmCompanyDetailHtml(c){
   });
   return `
   <div class="modal-bg" onclick="closeModalBg(event)"><div class="modal" style="max-width:640px;text-align:left;">
-    <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;">
-      <div>
-        <h3 style="margin-bottom:2px;">${esc(c.name)}</h3>
-        <div style="font-size:12.5px;color:var(--text-faint);">${esc([c.city,c.country].filter(Boolean).join(', ') || '—')}</div>
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;">
+      <div style="display:flex;gap:12px;align-items:center;min-width:0;">
+        <div class="crm-avatar" style="width:46px;height:46px;font-size:16px;">${esc(crmCompanyInitials(c.name))}</div>
+        <div style="min-width:0;">
+          <h3 style="margin-bottom:2px;">${esc(c.name)}</h3>
+          <div style="font-size:12.5px;color:var(--text-faint);">${esc([c.city,c.country].filter(Boolean).join(', ') || 'Localisation non renseignée')}</div>
+        </div>
       </div>
       ${crmStatusPillHtml(c.status)}
     </div>
-    <div class="row" style="margin-top:14px;align-items:flex-start;">
+    <div class="row" style="margin-top:16px;align-items:flex-start;">
       <div style="flex:1;font-size:13px;color:var(--text-dim);line-height:1.7;">
         ${c.contact_name ? `<div><strong style="color:var(--text);">${esc(c.contact_name)}</strong></div>` : ''}
         ${c.phone ? `<div>${esc(c.phone)}</div>` : ''}
@@ -6675,10 +6818,10 @@ function crmCompanyDetailHtml(c){
     </div>
     ${c.notes ? `<div class="msg" style="background:rgba(255,255,255,0.04);margin-top:12px;margin-bottom:0;font-size:12.5px;line-height:1.5;">${esc(c.notes)}</div>` : ''}
 
-    <div class="section-title" style="margin-top:20px;">Tâches / relances</div>
+    <div class="crm-section-head">${tacticalIconSvg('clock',{size:14,style:'opacity:.7;'})}<h4>Tâches / relances</h4><span class="count-pill">${tasks.filter(t=>!t.done).length} en cours</span></div>
     ${state.crmTaskError ? `<div class="msg msg-error">${esc(state.crmTaskError)}</div>` : ''}
-    <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:12px;">
-      ${tasks.length ? tasks.map(crmTaskRowHtml).join('') : `<div class="empty" style="padding:8px 0;">Aucune tâche pour cette entreprise.</div>`}
+    <div class="crm-task-list" style="margin-bottom:12px;">
+      ${tasks.length ? tasks.map(tk => crmTaskRowHtml(tk, false)).join('') : `<div class="empty" style="padding:8px 0;">Aucune tâche pour cette entreprise.</div>`}
     </div>
     <div class="row" style="align-items:flex-end;">
       <div class="field" style="flex:2;margin-bottom:0;"><label>Nouvelle tâche</label><input id="crm-task-title" placeholder="ex. Relancer par téléphone"></div>
@@ -6689,7 +6832,7 @@ function crmCompanyDetailHtml(c){
       <input type="checkbox" id="crm-task-urgent" style="width:14px;height:14px;cursor:pointer;"> Urgent (tag rouge, visible dans le menu)
     </label>
 
-    <div class="section-title" style="margin-top:20px;">Historique de contact</div>
+    <div class="crm-section-head">${tacticalIconSvg('mail',{size:14,style:'opacity:.7;'})}<h4>Historique de contact</h4><span class="count-pill">${activities.length}</span></div>
     ${state.crmActivityError ? `<div class="msg msg-error">${esc(state.crmActivityError)}</div>` : ''}
     <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:12px;max-height:220px;overflow-y:auto;">
       ${activities.length ? activities.map(crmActivityRowHtml).join('') : `<div class="empty" style="padding:8px 0;">Aucun contact enregistré pour l'instant.</div>`}
@@ -6725,22 +6868,9 @@ function renderCommercialTaches(){
   });
   const overdueCount = state.crmTasks.filter(tk => !tk.done && tk.due_date && tk.due_date < today).length;
   const todayCount = state.crmTasks.filter(tk => !tk.done && tk.due_date === today).length;
-  const rows = tasks.map(tk => {
-    // tk.company_id peut être vide (tâche générale, jamais rattachée) ou pointer vers une
-    // entreprise depuis supprimée — les deux cas doivent s'afficher différemment.
-    const c = tk.company_id ? state.crmCompanies.find(x => x.id === tk.company_id) : null;
-    const overdue = !tk.done && tk.due_date && tk.due_date < today;
-    const dueToday = !tk.done && tk.due_date === today;
-    const urgent = !tk.done && !!tk.urgent;
-    const accent = tk.done ? 'var(--accent)' : (urgent || overdue) ? 'var(--danger)' : dueToday ? 'var(--amber)' : 'transparent';
-    return `
-    <tr>
-      <td style="width:36px;border-left:3px solid ${accent};"><input type="checkbox" ${tk.done?'checked':''} onchange="crmToggleTaskDone('${tk.id}')" style="width:17px;height:17px;cursor:pointer;"></td>
-      <td><div class="t-title" style="cursor:pointer;${tk.done?'text-decoration:line-through;color:var(--text-faint);':''}" onclick="openEditCrmTaskModal('${tk.id}')" title="Ouvrir la fiche de la tâche">${esc(tk.title)}${urgent ? ' <span class="status-pill danger" style="padding:1px 8px;font-size:10px;vertical-align:middle;">Urgent</span>' : ''}</div></td>
-      <td>${c ? `<button class="btn btn-ghost btn-sm" onclick="openCompanyDetailModal('${c.id}')">${esc(c.name)}</button>` : tk.company_id ? '<span style="color:var(--text-faint);">Entreprise supprimée</span>' : '<span style="color:var(--text-faint);">—</span>'}</td>
-      <td>${tk.due_date ? `<span style="color:${overdue?'#FFB3A6':dueToday?'var(--amber)':'var(--text)'};font-weight:${overdue||dueToday?700:400};">${fmtDate(tk.due_date)}${overdue?' · en retard':dueToday?" · aujourd'hui":''}</span>` : '<span style="color:var(--text-faint);">—</span>'}</td>
-    </tr>`;
-  }).join('');
+  // showCompany:true — cette vue mélange les tâches de toutes les entreprises (+ tâches
+  // générales), chaque carte doit donc préciser à quelle entreprise elle se rattache.
+  const rows = tasks.map(tk => crmTaskRowHtml(tk, true)).join('');
   return `
     <div class="topbar"><div><h1>Tâches commerciales</h1><div class="desc">${!showDone ? `${overdueCount} en retard, ${todayCount} pour aujourd'hui.` : 'Tâches déjà marquées comme terminées.'}</div></div></div>
     <div style="display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap;align-items:center;justify-content:space-between;">
@@ -6750,7 +6880,7 @@ function renderCommercialTaches(){
       </div>
       <button type="button" class="btn btn-primary btn-sm" style="width:auto;" onclick="openNewCrmTaskModal()">+ Nouvelle tâche</button>
     </div>
-    <div class="panel"><table class="tbl-compact"><thead><tr><th></th><th>Tâche</th><th>Entreprise</th><th>Échéance</th></tr></thead><tbody id="crm-tasks-tbody">${rows || `<tr><td colspan="4"><div class="empty">${showDone?'Aucune tâche terminée.':'Aucune tâche en attente — tout est à jour.'}</div></td></tr>`}</tbody></table></div>
+    <div class="crm-task-list" id="crm-tasks-tbody">${rows || `<div class="empty">${showDone?'Aucune tâche terminée.':'Aucune tâche en attente — tout est à jour.'}</div>`}</div>
   `;
 }
 /* ---------- Gestion commerciale : handlers (window.*) ---------- */
