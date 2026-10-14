@@ -1463,6 +1463,7 @@ async function boot(){
   maybeShowNotifPrompt();
   render();
   subscribeRealtime();
+  startRealtimeFallbackRefresh();
   // Rattrapage Lot 24 : tout ce qui a été créé AVANT l'ajout de la traduction auto n'a jamais été
   // traduit (autoTranslateContent ne se déclenche qu'à la création/modification). On le traduit une
   // bonne fois pour toutes en tâche de fond, uniquement côté équipe, sans bloquer l'affichage.
@@ -1504,9 +1505,18 @@ function renderUnlessTyping(){
   }
   render();
 }
+// Lot 34 : la liste ci-dessous DOIT couvrir toutes les tables lues par fetchAll() — toute table
+// absente d'ici ne se met à jour, sur un autre onglet/appareil que celui qui a fait l'action, qu'au
+// prochain rechargement manuel de la page. C'est exactement ce qui causait "je supprime un contrat
+// propriétaire / une tâche commerciale et ça ne disparaît pas, je dois rafraîchir" — owner_contracts,
+// crm_companies, crm_activities, crm_tasks et booking_date_labels manquaient à l'appel (les pastilles
+// rouges de la nav, ex. "Contrats propriétaire" et "Commercial", sont recalculées à chaque render()
+// depuis state, donc elles se remettent à jour toutes seules dès que la bonne table est synchronisée
+// ici — inutile d'y toucher séparément).
+const OV_REALTIME_TABLES = ['items','bookings','tasks','task_completions','contracts','owner_contracts','profiles','mission_groups','rewards','reward_redemptions','messages','finance_sales','finance_charges','finance_settings','invoices','crm_task_notes','crm_companies','crm_activities','crm_tasks','booking_date_labels','platform_docs','rank_config'];
 function subscribeRealtime(){
   const channel = sb.channel('ov-sync');
-  ['items','bookings','tasks','task_completions','contracts','profiles','mission_groups','rewards','reward_redemptions','messages','finance_sales','finance_charges','finance_settings','invoices','crm_task_notes'].forEach(table => {
+  OV_REALTIME_TABLES.forEach(table => {
     channel.on('postgres_changes', { event:'*', schema:'public', table }, () => {
       clearTimeout(window.__ovSyncTimer);
       window.__ovSyncTimer = setTimeout(async () => {
@@ -1515,8 +1525,7 @@ function subscribeRealtime(){
     });
   });
   // Bandeau in-app (voir clientRealtimeNotifPlan) : abonnement séparé, en plus de la synchronisation
-  // générale ci-dessus, sur les mêmes tables que celles surveillées côté serveur pour les vraies
-  // notifications push — 'owner_contracts' n'était pas dans la liste de synchro générale, ajoutée ici.
+  // générale ci-dessus, pour les vraies notifications push (titre + sous-titre + lien vers l'onglet).
   ['messages','contracts','owner_contracts','task_completions','bookings','reward_redemptions','invoices'].forEach(table => {
     channel.on('postgres_changes', { event:'*', schema:'public', table }, (payload) => {
       try{
@@ -1526,6 +1535,31 @@ function subscribeRealtime(){
     });
   });
   channel.subscribe();
+}
+
+// Lot 34 : filet de sécurité derrière le websocket Realtime ci-dessus. Un websocket Supabase peut se
+// couper silencieusement (ordinateur mis en veille, onglet mobile mis en arrière-plan, coupure
+// réseau passagère) sans que l'app ne le signale — l'utilisateur se retrouve alors avec des pastilles
+// rouges et des listes figées jusqu'à un rechargement manuel de la page, ce que Luka décrivait comme
+// "je dois refresh". Deux filets complémentaires, aucun des deux ne remplace Realtime (qui reste la
+// source de mise à jour la plus rapide, quasi instantanée) :
+//  1) un re-fetch dès que l'onglet redevient visible (ordinateur réveillé, onglet repris en main) —
+//     c'est le cas le plus fréquent d'un écran resté figé "toute la nuit" ou "pendant la pause".
+//  2) un re-fetch périodique tant que l'onglet est visible, pour rattraper le cas plus rare d'une
+//     coupure silencieuse alors que l'app reste ouverte et au premier plan.
+function startRealtimeFallbackRefresh(){
+  let lastRefresh = Date.now();
+  const refresh = async () => {
+    // Avant connexion (ou après déconnexion), inutile d'interroger Supabase : fetchAll() ne
+    // ramènerait rien d'exploitable (RLS) et l'écran de connexion n'affiche aucune donnée.
+    if(document.visibilityState !== 'visible' || !state.session) return;
+    lastRefresh = Date.now();
+    try{ await fetchAll(); renderUnlessTyping(); }catch(e){}
+  };
+  document.addEventListener('visibilitychange', () => {
+    if(document.visibilityState === 'visible' && Date.now() - lastRefresh > 5000) refresh();
+  });
+  setInterval(refresh, 30000);
 }
 
 /* ---------- Auth : clients (Supabase Auth + email) ---------- */
@@ -6013,21 +6047,31 @@ function finComputeAll(){
   const sales = state.financeSales.filter(s => finInRange(s.date));
   const charges = finExpandRecurringCharges().filter(c => finInRange(c.date));
 
-  let caTTC=0, caHT=0, tvaCollectee=0, coutMarch=0;
+  // Lot 35 : deux ajustements demandés par Luka. (1) La TVA payée à l'achat d'un produit revendu
+  // (cout_ht) peut elle aussi être récupérée, exactement comme pour une charge — avant ce lot, seule
+  // la TVA sur les charges était déductible, jamais celle sur la marchandise achetée pour la revente.
+  // (2) Pour une location où le matériel ne lui appartient pas, une partie de l'encaissé est reversée
+  // au propriétaire : ce n'est pas une marge pour OwlsVision, donc ça se déduit avant la marge brute,
+  // au même titre que le coût d'achat.
+  let caTTC=0, caHT=0, tvaCollectee=0, coutMarch=0, retroProprietaires=0, tvaDeductibleAchats=0;
   sales.forEach(s => {
     const ttc = Number(s.ttc)||0;
     const ht = ttc / (1+tvaRate);
-    caTTC += ttc; caHT += ht; tvaCollectee += (ttc - ht); coutMarch += Number(s.cout_ht||0);
+    const cout = Number(s.cout_ht||0);
+    const retro = Number(s.retribution_proprietaire||0);
+    caTTC += ttc; caHT += ht; tvaCollectee += (ttc - ht); coutMarch += cout; retroProprietaires += retro;
+    if(s.tva_deductible) tvaDeductibleAchats += cout * tvaRate;
   });
-  const margeBrute = caHT - coutMarch;
+  const margeBrute = caHT - coutMarch - retroProprietaires;
   const margePct = caHT > 0 ? margeBrute / caHT : 0;
 
-  let chargesHT=0, tvaDeductible=0;
+  let chargesHT=0, tvaDeductibleCharges=0;
   charges.forEach(c => {
     const m = Number(c.montant_ht||0);
     chargesHT += m;
-    if(c.tva_deductible) tvaDeductible += m * tvaRate;
+    if(c.tva_deductible) tvaDeductibleCharges += m * tvaRate;
   });
+  const tvaDeductible = tvaDeductibleAchats + tvaDeductibleCharges;
   const tvaNette = tvaCollectee - tvaDeductible;
 
   const nbMois = finMonthsElapsed(state.financePeriod.start, state.financePeriod.end);
@@ -6049,8 +6093,8 @@ function finComputeAll(){
   const dividendesApresPfu = dividendesDispo * (1 - pfuRate);
 
   return {
-    caTTC, caHT, tvaCollectee, coutMarch, margeBrute, margePct,
-    chargesHT, tvaDeductible, tvaNette,
+    caTTC, caHT, tvaCollectee, coutMarch, retroProprietaires, margeBrute, margePct,
+    chargesHT, tvaDeductible, tvaDeductibleAchats, tvaDeductibleCharges, tvaNette,
     nbMois, brut, chargesSalariales, netAvantImpot, chargesPatronales, coutEmployeur,
     resultatAvantIS, isEstime, resultatNet, dividendesDispo, dividendesApresPfu,
     salesCount: sales.length,
@@ -6125,14 +6169,20 @@ function finSalesTbodyHtml(){
   const tvaRate = finSettings().tva/100;
   return rows.map(s => {
     const ht = Number(s.ttc)/(1+tvaRate);
-    const marge = ht - Number(s.cout_ht||0);
+    const retro = Number(s.retribution_proprietaire||0);
+    const marge = ht - Number(s.cout_ht||0) - retro;
     const dt = new Date(s.date+'T00:00:00').toLocaleDateString('fr-FR', { day:'2-digit', month:'2-digit' });
     // Lot 31 : une vente liée automatiquement à une réservation (créée au clic "Payé" — voir
     // toggleBookingPaid) porte un petit repère visuel, pour la distinguer d'une saisie manuelle.
     const autoTag = s.booking_id ? `<span class="tag" style="background:var(--blue-soft);color:var(--blue);margin-left:6px;" title="Ajoutée automatiquement quand la réservation a été marquée payée">auto</span>` : '';
+    // Lot 35 : deux repères visuels supplémentaires — "TVA récup." quand la TVA payée à l'achat est
+    // récupérée, et le détail de la part reversée au propriétaire pour une location où le matériel
+    // ne lui appartient pas.
+    const tvaTag = s.tva_deductible ? `<span class="tag" style="background:var(--accent-soft);color:var(--accent);margin-left:6px;" title="TVA payée à l'achat, récupérée auprès de l'État">TVA récup.</span>` : '';
+    const retroLine = retro > 0 ? `<div style="font-size:11px;color:var(--text-faint);margin-top:2px;">Reversé au propriétaire : ${finFmtEUR(retro)}</div>` : '';
     return `<tr>
       <td>${dt}</td>
-      <td><span class="tag ${s.type==='vente'?'fin-vente':'fin-location'}">${s.type==='vente'?'Vente':'Location'}</span> ${esc(s.label)}${autoTag}</td>
+      <td><span class="tag ${s.type==='vente'?'fin-vente':'fin-location'}">${s.type==='vente'?'Vente':'Location'}</span> ${esc(s.label)}${autoTag}${tvaTag}${retroLine}</td>
       <td style="text-align:right;font-variant-numeric:tabular-nums;">${finFmtEUR(s.ttc)}</td>
       <td style="text-align:right;font-variant-numeric:tabular-nums;">${finFmtEUR(marge)}</td>
       <td><button class="btn btn-danger btn-sm" onclick="finDeleteSale('${s.id}')" title="Supprimer" style="width:auto;padding:6px 9px;">✕</button></td>
@@ -6163,13 +6213,19 @@ function finVentesPanelHtml(){
   return `
     <div class="panel">
       <h2>Ventes — saisie jour par jour</h2>
-      <div style="font-size:12.5px;color:var(--text-faint);margin-bottom:16px;line-height:1.5;">Une ligne par vente ou location encaissée. La marge et la TVA sont calculées automatiquement à partir du montant TTC et du coût d'achat.</div>
+      <div style="font-size:12.5px;color:var(--text-faint);margin-bottom:10px;line-height:1.5;">Une ligne par vente ou location encaissée. Rien n'est obligatoire : laissez vide ce qui ne s'applique pas, l'outil compte 0 à sa place.</div>
+      <div style="background:var(--accent-soft);border-radius:8px;padding:10px 14px;margin-bottom:14px;font-size:12.5px;color:var(--text-dim);line-height:1.5;">
+        <div><strong>Vous avez payé de la TVA en achetant ce produit ?</strong> Répondez "Oui" plus bas — elle sera automatiquement déduite de la TVA que vous devez à l'État.</div>
+        <div style="margin-top:6px;"><strong>C'est une location et le matériel ne vous appartient pas ?</strong> Choisissez "Location" comme type et indiquez ce que vous reversez au propriétaire — ce montant sera retiré de votre marge automatiquement.</div>
+      </div>
       <form class="fin-entry-form" onsubmit="return finAddSale(event)">
-        <div class="field"><label for="fin-s-date">Date</label><input type="date" id="fin-s-date" value="${todayStr()}" required></div>
-        <div class="field"><label for="fin-s-type">Type</label><select id="fin-s-type"><option value="vente">Vente</option><option value="location">Location</option></select></div>
-        <div class="field fin-span2"><label for="fin-s-label">Désignation</label><input type="text" id="fin-s-label" placeholder="Ex. Argus 1431 Gen2+ complet" required></div>
-        <div class="field"><label for="fin-s-ttc">Montant encaissé TTC (€)</label><input type="number" id="fin-s-ttc" min="0" step="0.01" required></div>
-        <div class="field"><label for="fin-s-cout">Coût d'achat HT (€)</label><input type="number" id="fin-s-cout" min="0" step="0.01" required></div>
+        <div class="field"><label for="fin-s-date">Date</label><input type="date" id="fin-s-date" value="${todayStr()}"></div>
+        <div class="field"><label for="fin-s-type">Type</label><select id="fin-s-type" onchange="finOnSaleTypeChange(this.value)"><option value="vente">Vente</option><option value="location">Location</option></select></div>
+        <div class="field fin-span2"><label for="fin-s-label">Désignation</label><input type="text" id="fin-s-label" placeholder="Ex. Argus 1431 Gen2+ complet"></div>
+        <div class="field"><label for="fin-s-ttc">Montant encaissé, TVA incluse (€)</label><input type="number" id="fin-s-ttc" min="0" step="0.01" placeholder="0"></div>
+        <div class="field"><label for="fin-s-cout">Ce que ce produit vous a coûté, hors TVA (€)</label><input type="number" id="fin-s-cout" min="0" step="0.01" placeholder="0"></div>
+        <div class="field"><label for="fin-s-tva">Vous récupérez la TVA de cet achat ?</label><select id="fin-s-tva"><option value="1">Oui</option><option value="0">Non</option></select></div>
+        <div class="field" id="fin-s-retro-field" style="display:none;"><label for="fin-s-retro">Part reversée au propriétaire du matériel (€)</label><input type="number" id="fin-s-retro" min="0" step="0.01" placeholder="0"></div>
         <div class="fin-span2"><button type="submit" class="btn btn-primary btn-sm">+ Ajouter la vente</button></div>
       </form>
       <div class="fin-tbl-wrap"><table><thead><tr><th>Date</th><th>Désignation</th><th style="text-align:right;">TTC</th><th style="text-align:right;">Marge</th><th></th></tr></thead>
@@ -6183,10 +6239,10 @@ function finChargesPanelHtml(){
       <h2>Charges</h2>
       <div style="font-size:12.5px;color:var(--text-faint);margin-bottom:16px;line-height:1.5;">Loyer, assurances, abonnements, prestataires… La rémunération du président se règle plus bas et s'ajoute automatiquement ici.</div>
       <form class="fin-entry-form" onsubmit="return finAddCharge(event)">
-        <div class="field"><label for="fin-c-date">Date</label><input type="date" id="fin-c-date" value="${todayStr()}" required></div>
+        <div class="field"><label for="fin-c-date">Date</label><input type="date" id="fin-c-date" value="${todayStr()}"></div>
         <div class="field"><label for="fin-c-cat">Catégorie</label><select id="fin-c-cat">${cats.map(c => `<option>${esc(c)}</option>`).join('')}</select></div>
-        <div class="field fin-span2"><label for="fin-c-label">Libellé</label><input type="text" id="fin-c-label" placeholder="Ex. Loyer local Puget-sur-Argens" required></div>
-        <div class="field"><label for="fin-c-montant">Montant HT (€)</label><input type="number" id="fin-c-montant" min="0" step="0.01" required></div>
+        <div class="field fin-span2"><label for="fin-c-label">Libellé</label><input type="text" id="fin-c-label" placeholder="Ex. Loyer local Puget-sur-Argens"></div>
+        <div class="field"><label for="fin-c-montant">Montant HT (€)</label><input type="number" id="fin-c-montant" min="0" step="0.01" placeholder="0"></div>
         <div class="field"><label for="fin-c-tva">TVA récupérable</label><select id="fin-c-tva"><option value="1">Oui</option><option value="0">Non</option></select></div>
         <div class="fin-span2"><label style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text-dim);cursor:pointer;"><input type="checkbox" id="fin-c-recurring" style="width:16px;height:16px;cursor:pointer;"> Charge récurrente — se reporte automatiquement chaque mois, pas besoin de la ressaisir</label></div>
         <div class="fin-span2"><button type="submit" class="btn btn-primary btn-sm">+ Ajouter la charge</button></div>
@@ -6228,6 +6284,9 @@ function finCascadeHtml(t){
   row('minus', 'TVA collectée', t.tvaCollectee);
   row('eq', "Chiffre d'affaires net de taxe (HT)", t.caHT, 'total');
   row('minus', "Coût d'achat des ventes de la période", t.coutMarch);
+  // Lot 35 : n'affiche cette ligne que si elle concerne la période — pas la peine de montrer "0 €"
+  // reversé aux propriétaires sur une période sans location à rétrocession.
+  if(t.retroProprietaires > 0) row('minus', "Reversé aux propriétaires (locations)", t.retroProprietaires);
   row('eq', 'Marge brute', t.margeBrute, 'total');
   row('minus', "Charges d'exploitation", t.chargesHT);
   row('minus', 'Rémunération président — coût total employeur', t.coutEmployeur, '', `${t.nbMois} mois × ${finFmtEUR(finSettings().remuneration_brut_mensuel||0)} brut`);
@@ -6263,7 +6322,7 @@ function finMonthlyAggregates(){
     if(dt.getFullYear() !== y) return;
     const ht = Number(s.ttc)/(1+tvaRate);
     const row = months[dt.getMonth()];
-    row.caHT += ht; row.cout += Number(s.cout_ht||0);
+    row.caHT += ht; row.cout += Number(s.cout_ht||0) + Number(s.retribution_proprietaire||0);
   });
   months.forEach(r => { r.marge = r.caHT - r.cout; });
   return months;
@@ -6474,16 +6533,29 @@ window.finSetCustomRange = (which, v) => {
 };
 window.finToggleStats = () => { state.financeStatsOpen = !state.financeStatsOpen; finRefreshInner(); };
 window.finToggleTable = (key) => { state.financeTableView[key] = !state.financeTableView[key]; finRefreshInner(); };
+// Lot 35 : le champ "part reversée au propriétaire" ne concerne que les locations — on le cache pour
+// une vente classique, plutôt que d'afficher un champ qui ne s'applique jamais à ce cas.
+window.finOnSaleTypeChange = (val) => {
+  const el = document.getElementById('fin-s-retro-field');
+  if(el) el.style.display = val === 'location' ? '' : 'none';
+};
 
 async function doFinAddSale(){
-  const ttc = parseFloat(document.getElementById('fin-s-ttc').value);
-  const cout = parseFloat(document.getElementById('fin-s-cout').value);
-  if(!isFinite(ttc) || ttc < 0 || !isFinite(cout) || cout < 0) return;
+  // Lot 35 : plus aucun champ n'est obligatoire — un montant laissé vide compte pour 0 plutôt que de
+  // bloquer l'enregistrement de la ligne.
+  const ttcRaw = parseFloat(document.getElementById('fin-s-ttc').value);
+  const coutRaw = parseFloat(document.getElementById('fin-s-cout').value);
+  const retroRaw = parseFloat(document.getElementById('fin-s-retro').value);
+  const ttc = isFinite(ttcRaw) && ttcRaw >= 0 ? ttcRaw : 0;
+  const cout = isFinite(coutRaw) && coutRaw >= 0 ? coutRaw : 0;
+  const retro = isFinite(retroRaw) && retroRaw >= 0 ? retroRaw : 0;
   const payload = {
     date: document.getElementById('fin-s-date').value || todayStr(),
     type: document.getElementById('fin-s-type').value,
     label: document.getElementById('fin-s-label').value.trim() || 'Vente',
     ttc, cout_ht: cout,
+    tva_deductible: document.getElementById('fin-s-tva').value === '1',
+    retribution_proprietaire: retro,
   };
   const { data, error } = await sb.from('finance_sales').insert(payload).select().single();
   if(!error && data) state.financeSales.push(data);
@@ -6498,8 +6570,9 @@ window.finDeleteSale = async (id) => {
 };
 
 async function doFinAddCharge(){
-  const montant = parseFloat(document.getElementById('fin-c-montant').value);
-  if(!isFinite(montant) || montant < 0) return;
+  // Lot 35 : idem — rien n'est obligatoire, un montant vide compte pour 0.
+  const montantRaw = parseFloat(document.getElementById('fin-c-montant').value);
+  const montant = isFinite(montantRaw) && montantRaw >= 0 ? montantRaw : 0;
   const payload = {
     date: document.getElementById('fin-c-date').value || todayStr(),
     category: document.getElementById('fin-c-cat').value,
