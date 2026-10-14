@@ -775,6 +775,13 @@
   .fin-row-clickable{cursor:pointer;}
   .fin-row-clickable:hover{background:rgba(255,255,255,0.045);}
 
+  /* Lot 37 : entonnoir visuel du suivi de réservation (barres décroissantes, mêmes tokens que la
+     barre d'XP) dans Utilisateurs > Suivi réservation. */
+  .funnel-step{margin-bottom:16px;}
+  .funnel-step:last-child{margin-bottom:0;}
+  .funnel-step-head{display:flex;justify-content:space-between;align-items:baseline;font-size:13px;color:var(--text-dim);margin-bottom:6px;}
+  .funnel-step-head strong{font-size:17px;color:var(--text);font-variant-numeric:tabular-nums;}
+
   .fin-period-bar{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;padding:14px 18px;margin-bottom:18px;}
   .fin-period-tabs{display:flex;gap:4px;background:rgba(255,255,255,0.05);border:1px solid var(--border-soft);border-radius: var(--r-pill);padding:4px;flex-wrap:wrap;}
   .fin-period-tabs button{background:none;border:none;color:var(--text-dim);font-size:12.5px;font-weight:600;padding:8px 14px;border-radius: var(--r-pill);transition:all .18s var(--ease);width:auto;}
@@ -1115,6 +1122,7 @@ let state = {
   session: null, // {username(=email pour les clients), isMaster}
   profiles: [], items: [], bookings: [], tasks: [], completions: [], contracts: [], mission_groups: [], rewards: [], redemptions: [], rank_config: [], messages: [],
   financeSales: [], financeCharges: [], financeSettings: null,
+  funnelEvents: [], // Lot 37 : journal des étapes du parcours de réservation (voir fetchAll)
   financePeriod: null, // {mode,start,end} — initialisé au premier affichage de l'onglet (finEnsurePeriod)
   financeStatsOpen: false,
   financeTableView: { A: false, B: false },
@@ -1355,9 +1363,41 @@ function clientDisplayName(p){
 
 function currentProfile(){ return state.profiles.find(p => p.username === state.session?.username) || null; }
 
+// Lot 37 : suivi du parcours de réservation côté client (où un compte client s'arrête — a-t-il
+// choisi un modèle ? des dates ? envoyé sa demande ?), pour que Luka voie les "paniers abandonnés"
+// dans le nouveau sous-onglet Utilisateurs > Suivi réservation (voir funnelAbandonedList).
+// Jamais pour le compte équipe lui-même (il n'a pas de "parcours client" à suivre), et toujours en
+// best-effort : une erreur d'écriture (ex. migration_lot37_funnel.sql pas encore exécutée côté
+// Supabase) ne doit JAMAIS faire planter ou bloquer une vraie action du client (ouvrir le
+// formulaire, choisir des dates, envoyer sa demande) — d'où le try/catch silencieux et l'absence
+// de tout await côté appelants.
+async function logFunnelEvent(eventType, itemId, start, end){
+  try{
+    const u = currentProfile();
+    if(!u || u.is_master) return;
+    const item = itemId ? state.items.find(i => i.id === itemId) : null;
+    await sb.from('funnel_events').insert({
+      username: u.username,
+      event_type: eventType,
+      item_id: itemId || null,
+      item_name: item ? item.name : null,
+      start_date: start || null,
+      end_date: end || null,
+    });
+  }catch(e){ /* suivi best-effort, voir commentaire ci-dessus */ }
+}
+// Les champs de dates déclenchent "oninput" à chaque frappe/sélection dans le datepicker — sans
+// debounce, chaque micro-changement écrirait une ligne en base. Un seul événement "dates_selected"
+// par pause de saisie (même principe que window.__ovSyncTimer plus haut dans ce fichier).
+window.__funnelDatesTimer = null;
+function logFunnelEventDebounced(eventType, itemId, start, end){
+  clearTimeout(window.__funnelDatesTimer);
+  window.__funnelDatesTimer = setTimeout(() => { logFunnelEvent(eventType, itemId, start, end); }, 800);
+}
+
 /* ---------- Boot & data ---------- */
 async function fetchAll(){
-  const [profiles, items, bookings, tasks, completions, contracts, groups, rewards, redemptions, ownerContracts, platformDocs, rankConfig, messages, financeSales, financeCharges, financeSettings, crmCompanies, crmActivities, crmTasks, bookingDateLabels, invoices, crmTaskNotes] = await Promise.all([
+  const [profiles, items, bookings, tasks, completions, contracts, groups, rewards, redemptions, ownerContracts, platformDocs, rankConfig, messages, financeSales, financeCharges, financeSettings, crmCompanies, crmActivities, crmTasks, bookingDateLabels, invoices, crmTaskNotes, funnelEvents] = await Promise.all([
     sb.from('profiles').select('*'),
     sb.from('items').select('*').order('sort_order', { ascending: true, nullsFirst: false }).order('created_at', { ascending: true }),
     sb.from('bookings').select('*'),
@@ -1380,6 +1420,7 @@ async function fetchAll(){
     sb.from('booking_date_labels').select('*'),
     sb.from('invoices').select('*'),
     sb.from('crm_task_notes').select('*').order('created_at', { ascending: false }),
+    sb.from('funnel_events').select('*').order('created_at', { ascending: true }),
   ]);
   state.profiles = profiles.data || [];
   state.items = items.data || [];
@@ -1423,6 +1464,12 @@ async function fetchAll(){
   // pas été exécutée, cette lecture échoue silencieusement — la fiche tâche s'ouvre juste sans
   // aucune note, rien ne casse.
   state.crmTaskNotes = crmTaskNotes.data || [];
+  // Lot 37 (suivi du parcours de réservation) : même principe, tant que migration_lot37_funnel.sql
+  // n'a pas été exécutée, cette lecture échoue silencieusement — le sous-onglet "Suivi réservation"
+  // reste juste vide, rien ne casse. Côté client la RLS n'autorise que l'écriture (insert) de ses
+  // propres événements, jamais la lecture — cette liste reste donc vide pour un compte client,
+  // volontairement (le suivi est un outil réservé à l'équipe).
+  state.funnelEvents = funnelEvents.data || [];
 }
 
 async function boot(){
@@ -1519,7 +1566,7 @@ function renderUnlessTyping(){
 // rouges de la nav, ex. "Contrats propriétaire" et "Commercial", sont recalculées à chaque render()
 // depuis state, donc elles se remettent à jour toutes seules dès que la bonne table est synchronisée
 // ici — inutile d'y toucher séparément).
-const OV_REALTIME_TABLES = ['items','bookings','tasks','task_completions','contracts','owner_contracts','profiles','mission_groups','rewards','reward_redemptions','messages','finance_sales','finance_charges','finance_settings','invoices','crm_task_notes','crm_companies','crm_activities','crm_tasks','booking_date_labels','platform_docs','rank_config'];
+const OV_REALTIME_TABLES = ['items','bookings','tasks','task_completions','contracts','owner_contracts','profiles','mission_groups','rewards','reward_redemptions','messages','finance_sales','finance_charges','finance_settings','invoices','crm_task_notes','crm_companies','crm_activities','crm_tasks','booking_date_labels','platform_docs','rank_config','funnel_events'];
 function subscribeRealtime(){
   const channel = sb.channel('ov-sync');
   OV_REALTIME_TABLES.forEach(table => {
@@ -1876,6 +1923,9 @@ async function submitBooking(itemId, start, end){
     const { data, error } = await sb.rpc('book_item', { p_item_id: itemId, p_start: start, p_end: end });
     if(error){ state.bookingError = t('common.error_prefix', { msg: error.message }); render(); return; }
     state.bookings.push(data.booking);
+    // Lot 37 : étape 3 (finale) du suivi funnel — la demande a réellement été envoyée. À partir
+    // d'ici ce client n'apparaît plus dans les "paniers abandonnés" (voir funnelAbandonedList).
+    logFunnelEvent('booking_submitted', itemId, start, end);
     state.bookingError = "";
     state.modal = { type: "bookConfirm", itemName: item.name };
     render();
@@ -4397,7 +4447,16 @@ function masterNavDef(){
         { id: "stock", label: "Stock" },
         { id: "catalogue", label: "Catalogue" },
       ] },
-    { id: "utilisateurs", label: "Utilisateurs", shortLabel: "Clients" },
+    // Lot 37 : "Utilisateurs" passe en groupe avec deux sous-onglets — "Comptes" (liste existante,
+    // inchangée) et "Suivi réservation" (nouveau : où les clients s'arrêtent dans le parcours de
+    // réservation). La pastille du groupe reprend le nombre de paniers abandonnés, pour que Luka la
+    // voie sans avoir à ouvrir l'onglet.
+    { id: "utilisateurs-group", label: "Utilisateurs", shortLabel: "Clients", icon: "utilisateurs",
+      badge: () => funnelAbandonedList().length,
+      sub: [
+        { id: "utilisateurs", label: "Comptes" },
+        { id: "utilisateurs-suivi", label: "Suivi réservation", badge: () => funnelAbandonedList().length },
+      ] },
     { id: "finances", label: "Finances", icon: "finances" },
     { id: "commercial-group", label: "Commercial", icon: "commercial",
       badge: () => crmOpenTasksDueCount(),
@@ -5845,6 +5904,104 @@ function renderUtilisateurs(){
     </div>
     <div class="panel"><table class="tbl-compact"><thead id="users-thead">${usersTheadHtml()}</thead><tbody id="users-tbody">${list.length ? list.map(usersRowHtml).join('') : `<tr><td colspan="5"><div class="empty">Aucun compte ne correspond à cette recherche.</div></td></tr>`}</tbody></table></div>
   `;
+}
+
+/* ---------- Lot 37 : suivi du parcours de réservation (funnel) ---------- */
+// Regroupe les événements funnel_events par client, triés du plus ancien au plus récent — le
+// DERNIER événement de chacun dit où il en est resté dans le parcours.
+function funnelEventsByUser(){
+  const byUser = {};
+  state.funnelEvents.slice().sort((a,b) => new Date(a.created_at) - new Date(b.created_at)).forEach(ev => {
+    (byUser[ev.username] = byUser[ev.username] || []).push(ev);
+  });
+  return byUser;
+}
+const FUNNEL_STEP_LABELS = {
+  model_selected: "A choisi un modèle",
+  dates_selected: "A choisi des dates",
+  booking_submitted: "A envoyé sa demande",
+};
+// Compte, pour chaque étape, le nombre de clients DISTINCTS l'ayant atteinte au moins une fois
+// (toutes périodes confondues) — c'est l'entonnoir affiché en haut du sous-onglet.
+function funnelSummaryCounts(){
+  const byUser = funnelEventsByUser();
+  let modelCount = 0, datesCount = 0, submittedCount = 0;
+  Object.values(byUser).forEach(events => {
+    const types = new Set(events.map(e => e.event_type));
+    if(types.has('model_selected')) modelCount++;
+    if(types.has('dates_selected')) datesCount++;
+    if(types.has('booking_submitted')) submittedCount++;
+  });
+  return { modelCount, datesCount, submittedCount };
+}
+// "Panier abandonné" = un client dont le DERNIER événement connu n'est pas "a envoyé sa demande" —
+// il s'est arrêté en cours de route (modèle choisi, parfois une date, jamais validé). C'est
+// exactement la demande de Luka : savoir quel compte client est arrivé où dans le cheminement,
+// sans validation à la fin.
+function funnelAbandonedList(){
+  const byUser = funnelEventsByUser();
+  const rows = [];
+  Object.keys(byUser).forEach(username => {
+    const events = byUser[username];
+    const last = events[events.length - 1];
+    if(last.event_type === 'booking_submitted') return;
+    rows.push({
+      username,
+      profile: state.profiles.find(p => p.username === username) || null,
+      step: last.event_type,
+      itemName: last.item_name,
+      startDate: last.start_date,
+      endDate: last.end_date,
+      lastAt: last.created_at,
+    });
+  });
+  return rows.sort((a,b) => new Date(b.lastAt) - new Date(a.lastAt));
+}
+function funnelAbandonedRowHtml(row){
+  const name = row.profile ? clientDisplayName(row.profile) : row.username;
+  const stepCls = row.step === 'dates_selected' ? 'info' : 'pending';
+  const periode = row.startDate && row.endDate
+    ? `${new Date(row.startDate+'T00:00:00').toLocaleDateString('fr-FR',{day:'2-digit',month:'2-digit'})} → ${new Date(row.endDate+'T00:00:00').toLocaleDateString('fr-FR',{day:'2-digit',month:'2-digit'})}`
+    : '—';
+  return `
+    <tr>
+      <td><div class="t-title">${esc(name)}</div><div class="t-desc">@${esc(row.username)}</div></td>
+      <td>${esc(row.itemName || '—')}</td>
+      <td>${periode}</td>
+      <td><span class="status-pill ${stepCls}">${esc(FUNNEL_STEP_LABELS[row.step] || row.step)}</span></td>
+      <td>${fmtDateTime(row.lastAt)}</td>
+      <td>${row.profile ? `<button class="btn btn-ghost btn-sm" onclick="openViewProfile('${esc(row.username)}')">Fiche</button>` : ''}</td>
+    </tr>`;
+}
+function renderUtilisateursFunnel(){
+  const counts = funnelSummaryCounts();
+  const abandoned = funnelAbandonedList();
+  const base = counts.modelCount || 1; // évite une division par 0 : les barres restent à 0 % si personne n'a encore rien choisi
+  const pct = (n) => Math.round(n / base * 100);
+  return `
+    <div class="topbar"><div><h1>Suivi réservation</h1><div class="desc">Où vos clients s'arrêtent dans le parcours de réservation, du choix du modèle jusqu'à l'envoi de la demande.</div></div></div>
+    <div class="panel" style="margin-bottom:18px;">
+      <h2 style="margin-bottom:4px;">Entonnoir</h2>
+      <div style="font-size:12.5px;color:var(--text-faint);margin-bottom:18px;">Nombre de clients ayant atteint chaque étape au moins une fois, toutes périodes confondues.</div>
+      <div class="funnel-step">
+        <div class="funnel-step-head"><span>1 · ${esc(FUNNEL_STEP_LABELS.model_selected)}</span><strong>${counts.modelCount}</strong></div>
+        <div class="xp-bar-track"><div class="xp-bar-fill" style="width:100%;"></div></div>
+      </div>
+      <div class="funnel-step">
+        <div class="funnel-step-head"><span>2 · ${esc(FUNNEL_STEP_LABELS.dates_selected)}</span><strong>${counts.datesCount}</strong></div>
+        <div class="xp-bar-track"><div class="xp-bar-fill" style="width:${pct(counts.datesCount)}%;background:linear-gradient(90deg, var(--blue), var(--blue));"></div></div>
+      </div>
+      <div class="funnel-step">
+        <div class="funnel-step-head"><span>3 · ${esc(FUNNEL_STEP_LABELS.booking_submitted)}</span><strong>${counts.submittedCount}</strong></div>
+        <div class="xp-bar-track"><div class="xp-bar-fill" style="width:${pct(counts.submittedCount)}%;"></div></div>
+      </div>
+    </div>
+    <div class="panel">
+      <h2 style="margin-bottom:4px;">Paniers abandonnés <span class="status-pill danger" style="margin-left:4px;">${abandoned.length}</span></h2>
+      <div style="font-size:12.5px;color:var(--text-faint);margin-bottom:16px;">Clients qui ont choisi un modèle — et souvent une date — mais n'ont jamais envoyé leur demande de réservation.</div>
+      <table class="tbl-compact"><thead><tr><th>Client</th><th>Modèle</th><th>Dates envisagées</th><th>Étape atteinte</th><th>Dernière activité</th><th></th></tr></thead>
+      <tbody>${abandoned.length ? abandoned.map(funnelAbandonedRowHtml).join('') : `<tr><td colspan="6"><div class="empty">Aucun panier abandonné pour l'instant — tous les clients qui ont commencé une réservation l'ont envoyée.</div></td></tr>`}</tbody></table>
+    </div>`;
 }
 
 /* ---------- Messagerie (chat direct client <-> équipe) ---------- */
@@ -8134,6 +8291,7 @@ function render(){
   else if(state.view === "missions-validation") content = renderMissionsValidation();
   else if(state.view === "missions-creation") content = renderMissionsCreation();
   else if(state.view === "utilisateurs") content = renderUtilisateurs();
+  else if(state.view === "utilisateurs-suivi") content = renderUtilisateursFunnel();
   else if(state.view === "finances") content = renderFinances();
   else if(state.view === "commercial") content = renderCommercial();
   else if(state.view === "commercial-taches") content = renderCommercialTaches();
@@ -8479,6 +8637,10 @@ window.openBookModal = (itemId) => {
     return;
   }
   state.bookingError = ""; state.modal = { type:"book", itemId }; render(); updateAvailabilityPreview(itemId);
+  // Lot 37 : étape 1 du suivi funnel — le client vient de choisir un modèle (fiche profil complète,
+  // le formulaire de réservation s'ouvre réellement). Pas d'await : ne doit jamais retarder l'ouverture
+  // du formulaire pour le client.
+  logFunnelEvent('model_selected', itemId);
 };
 window.openNewItemModal = () => { state.modal = { type:"newItem" }; render(); };
 window.openMoreGearModal = () => { state.modal = { type:"moreGear" }; render(); };
@@ -8693,6 +8855,11 @@ window.updateAvailabilityPreview = (itemId) => {
   const { text, danger } = computeAvailabilityText(itemId, s.value, en.value);
   out.textContent = text;
   out.style.color = danger ? 'var(--danger)' : 'var(--accent)';
+  // Lot 37 : étape 2 du suivi funnel — période de dates valide saisie (début ≤ fin), débounced
+  // puisque cette fonction tourne à chaque frappe/sélection dans les deux champs date.
+  if(s.value && en.value && s.value <= en.value){
+    logFunnelEventDebounced('dates_selected', itemId, s.value, en.value);
+  }
 };
 function addDaysStr(dateStr, n){
   const d = new Date(dateStr + 'T00:00:00');
