@@ -770,6 +770,10 @@
   .fin-tbl-wrap{max-height:280px;overflow-y:auto;border:1px solid var(--border-soft);border-radius: var(--r-sm);}
   .tag.fin-vente{background:var(--blue-soft);color:var(--blue);}
   .tag.fin-location{background:var(--violet-soft);color:var(--violet);}
+  /* Lot 36 : une ligne vente/charge s'ouvre en modification au clic — surlignage au survol pour que
+     ce soit visible sans avoir à deviner. */
+  .fin-row-clickable{cursor:pointer;}
+  .fin-row-clickable:hover{background:rgba(255,255,255,0.045);}
 
   .fin-period-bar{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;padding:14px 18px;margin-bottom:18px;}
   .fin-period-tabs{display:flex;gap:4px;background:rgba(255,255,255,0.05);border:1px solid var(--border-soft);border-radius: var(--r-pill);padding:4px;flex-wrap:wrap;}
@@ -1114,6 +1118,8 @@ let state = {
   financePeriod: null, // {mode,start,end} — initialisé au premier affichage de l'onglet (finEnsurePeriod)
   financeStatsOpen: false,
   financeTableView: { A: false, B: false },
+  finEditingSaleId: null, // Lot 35 : vente en cours de modification (clic sur une ligne du tableau)
+  finEditingChargeId: null, // idem pour une charge
   crmCompanies: [], crmActivities: [], crmTasks: [], crmTaskNotes: [],
   crmSearch: "",
   crmStatusFilter: "all",
@@ -1886,6 +1892,17 @@ async function cancelBooking(id){
     alert(t('reservations.cancel.blocked'));
     return;
   }
+  // Lot 36 : un seul bouton "Supprimer", avec une confirmation explicite — avant, cancelBooking()
+  // supprimait sans rien demander, et la facture liée (si elle existait) se supprimait séparément
+  // via un second bouton "✕" distinct, lui aussi sans confirmation. Un seul geste, un seul message
+  // clair sur ce qui disparaît pour de bon (pour Luka ET pour le client) et sur le sort du numéro de
+  // facture — demandé après qu'une facture supprimée via l'ancien bouton soit restée visible côté
+  // client (le bouton "✕" séparé a été retiré de gestionRowHtml, voir plus bas).
+  const linkedInvoice = state.invoices.find(x => x.booking_id === id);
+  const confirmMsg = linkedInvoice
+    ? `Supprimer cette réservation ? La facture ${linkedInvoice.invoice_number} liée sera supprimée avec elle, pour vous et pour le client (le PDF est effacé définitivement, sans trace). Si c'est la toute dernière facture émise, son numéro sera réutilisé pour la prochaine — sinon il reste consommé (trou normal légalement).`
+    : 'Supprimer cette réservation ?';
+  if(!confirm(confirmMsg)) return;
   // Lot 28 : on vérifie désormais l'erreur de suppression au lieu de l'ignorer — avant, si la
   // politique RLS bloquait la suppression côté base (ce qui était le cas tant que
   // migration_lot28_factures.sql n'avait pas été exécutée), l'affichage du master se mettait à
@@ -1894,7 +1911,6 @@ async function cancelBooking(id){
   // Lot 30 : si une facture était liée à cette réservation, on la supprime AUSSI (PDF + ligne,
   // numéro rendu si c'est la dernière émise) — sinon elle resterait une trace orpheline en base,
   // invisible et sans bouton pour la supprimer une fois la réservation elle-même effacée.
-  const linkedInvoice = state.invoices.find(x => x.booking_id === id);
   if(linkedInvoice) await deleteInvoiceRecord(linkedInvoice);
   const { error } = await sb.from('bookings').delete().eq('id', id);
   if(error){ alert("Erreur : " + error.message); return; }
@@ -3357,6 +3373,20 @@ async function confirmSendInvoice(event, bookingId){
     const { data, error } = await sb.from('invoices').insert(payload).select().single();
     if(error) throw error;
     state.invoices.push(data);
+    // Lot 36 : si la réservation avait déjà été marquée payée AVANT l'envoi de cette facture, la
+    // ligne finance_sales créée à ce moment-là (voir finSyncBookingToSales) portait encore le tarif
+    // catalogue plein — aucune facture n'existait alors pour lui faire connaître une remise. Une fois
+    // la facture émise, on aligne cette ligne sur le montant réellement facturé (remise déjà
+    // déduite), pour que la remise se répercute bien dans les ventes saisies et dans tout le reste
+    // des calculs Finances — exactement ce que Luka a signalé.
+    const linkedSale = state.financeSales.find(x => x.booking_id === b.id);
+    if(linkedSale && Math.abs(Number(linkedSale.ttc) - amountTtc) > 0.001){
+      const { data: updatedSale, error: saleErr } = await sb.from('finance_sales').update({ ttc: amountTtc }).eq('id', linkedSale.id).select().single();
+      if(!saleErr && updatedSale){
+        const idx = state.financeSales.findIndex(x => x.id === linkedSale.id);
+        if(idx > -1) state.financeSales[idx] = updatedSale;
+      }
+    }
     closeModal();
   }catch(e){
     if(errEl) errEl.innerHTML = `<div class="msg msg-error">${esc(t('common.error_prefix', { msg: e.message || String(e) }))}</div>`;
@@ -3388,11 +3418,15 @@ window.openInvoiceFile = openInvoiceFile;
    facture de test/erreur qu'on supprime pour la refaire aussitôt. Si une facture plus récente
    existe déjà, le numéro reste consommé : c'est un trou légal normal (annulation), pas une
    réutilisation après coup — voir migration_lot30_suppression_facture.sql pour le détail légal.
-   deleteInvoiceRecord() est la fonction partagée : masterDeleteInvoice() l'appelle depuis le bouton
-   facture, et cancelBooking() l'appelle automatiquement pour ne jamais laisser une facture
-   orpheline (sans trace) quand on supprime directement la réservation sans supprimer la facture
-   d'abord. Ne jette jamais : la suppression de la réservation ne doit pas être bloquée par un souci
-   sur la facture liée. */
+   deleteInvoiceRecord() est la fonction partagée, appelée depuis cancelBooking() pour ne jamais
+   laisser une facture orpheline (sans trace) quand on supprime la réservation. Ne jette jamais : la
+   suppression de la réservation ne doit pas être bloquée par un souci sur la facture liée.
+   Lot 36 : il existait auparavant un bouton "✕ Supprimer la facture" séparé (masterDeleteInvoice),
+   qui supprimait la facture SANS toucher à la réservation et sans confirmation — un second chemin
+   de suppression, distinct et plus discret que celui de la réservation, qui a semé la confusion
+   (Luka s'attendait à ce que tout disparaisse d'un coup). Il a été retiré : la seule façon de
+   supprimer une facture passe désormais par "Supprimer" sur la réservation, avec une confirmation
+   explicite (voir cancelBooking). */
 async function deleteInvoiceRecord(inv){
   if(!inv) return;
   try{
@@ -3412,14 +3446,6 @@ async function deleteInvoiceRecord(inv){
     console.error('deleteInvoiceRecord', e.message || e);
   }
 }
-window.masterDeleteInvoice = async (id) => {
-  if(!state.session.isMaster) return;
-  const inv = state.invoices.find(x => x.id === id);
-  if(!inv) return;
-  if(!confirm(`Supprimer la facture ${inv.invoice_number} ? Le PDF sera supprimé définitivement. Si c'est la toute dernière facture émise, son numéro sera réutilisé pour la prochaine — sinon il reste consommé (trou normal légalement).`)) return;
-  await deleteInvoiceRecord(inv);
-  render();
-};
 
 async function masterDeleteContract(username){
   if(!confirm(`Supprimer le contrat de "${username}" (original + version signée) ?`)) return;
@@ -4711,8 +4737,13 @@ function gestionRowHtml(b){
     if(c && c.signed_at){
       const inv = state.invoices.find(x => x.booking_id === b.id);
       if(inv){
+        // Lot 36 : le bouton "✕ Supprimer la facture" séparé a été retiré — il créait un deuxième
+        // chemin de suppression distinct du bouton "Supprimer" de la réservation (sans confirmation
+        // en plus), ce qui a conduit Luka à supprimer une facture d'un côté sans que la réservation
+        // concernée disparaisse de l'autre. Un seul bouton "Supprimer" (en bas de cette ligne) gère
+        // maintenant tout le cas : réservation + facture + PDF + numéro, avec une confirmation claire
+        // sur ce qui va disparaître (voir cancelBooking).
         actions.push(`<button class="btn btn-ghost btn-sm" onclick="openInvoiceFile('${esc(inv.pdf_path)}','${esc(inv.id)}')">Facture ${esc(inv.invoice_number)}</button>`);
-        actions.push(`<button class="btn btn-danger btn-sm" onclick="masterDeleteInvoice('${esc(inv.id)}')" title="Supprimer la facture (sans trace)" style="width:auto;padding:6px 9px;">✕</button>`);
         invoiceReadLineHtml = `<div style="font-size:11px;color:var(--text-faint);margin-top:4px;">${inv.read_at ? `Lu le ${esc(fmtDateTime(inv.read_at))}` : 'Non lu'}</div>`;
       } else {
         actions.push(`<button class="btn btn-primary btn-sm" onclick="openSendInvoiceModal('${esc(b.id)}')">Envoyer la facture</button>`);
@@ -6180,12 +6211,14 @@ function finSalesTbodyHtml(){
     // ne lui appartient pas.
     const tvaTag = s.tva_deductible ? `<span class="tag" style="background:var(--accent-soft);color:var(--accent);margin-left:6px;" title="TVA payée à l'achat, récupérée auprès de l'État">TVA récup.</span>` : '';
     const retroLine = retro > 0 ? `<div style="font-size:11px;color:var(--text-faint);margin-top:2px;">Reversé au propriétaire : ${finFmtEUR(retro)}</div>` : '';
-    return `<tr>
+    // Lot 36 : toute la ligne s'ouvre en modification au clic (demande explicite de Luka) — seul le
+    // bouton Supprimer coupe la propagation pour ne pas ouvrir la modif en même temps qu'on efface.
+    return `<tr class="fin-row-clickable" onclick="finOpenEditSale('${s.id}')" title="Cliquer pour modifier">
       <td>${dt}</td>
       <td><span class="tag ${s.type==='vente'?'fin-vente':'fin-location'}">${s.type==='vente'?'Vente':'Location'}</span> ${esc(s.label)}${autoTag}${tvaTag}${retroLine}</td>
       <td style="text-align:right;font-variant-numeric:tabular-nums;">${finFmtEUR(s.ttc)}</td>
       <td style="text-align:right;font-variant-numeric:tabular-nums;">${finFmtEUR(marge)}</td>
-      <td><button class="btn btn-danger btn-sm" onclick="finDeleteSale('${s.id}')" title="Supprimer" style="width:auto;padding:6px 9px;">✕</button></td>
+      <td><button class="btn btn-danger btn-sm" onclick="event.stopPropagation();finDeleteSale('${s.id}')" title="Supprimer" style="width:auto;padding:6px 9px;">✕</button></td>
     </tr>`;
   }).join('');
 }
@@ -6199,9 +6232,12 @@ function finChargesTbodyHtml(){
     const recurTag = c.recurring ? `<span class="tag" style="background:var(--accent-soft);color:var(--accent);margin-left:6px;" title="Se reporte automatiquement chaque mois">↻ récurrente</span>` : '';
     const deleteCell = c._recurringVirtual
       ? `<span style="font-size:11px;color:var(--text-faint);">auto</span>`
-      : `<button class="btn btn-danger btn-sm" onclick="finDeleteCharge('${c.id}')" title="Supprimer" style="width:auto;padding:6px 9px;">✕</button>`;
+      : `<button class="btn btn-danger btn-sm" onclick="event.stopPropagation();finDeleteCharge('${c.id}')" title="Supprimer" style="width:auto;padding:6px 9px;">✕</button>`;
     const dt = new Date(c.date+'T00:00:00').toLocaleDateString('fr-FR', { day:'2-digit', month:'2-digit' });
-    return `<tr>
+    // Lot 36 : une occurrence virtuelle n'existe pas en base — cliquer dessus ouvre la modification
+    // de la charge d'origine (même logique que pour la suppression, voir commentaire Lot 31).
+    const editId = c._recurringVirtual ? c._recurringSourceId : c.id;
+    return `<tr class="fin-row-clickable" onclick="finOpenEditCharge('${editId}')" title="Cliquer pour modifier">
       <td>${dt}</td>
       <td>${esc(c.label)}${recurTag}<div style="font-size:11px;color:var(--text-faint);margin-top:2px;">${esc(c.category)}</div></td>
       <td style="text-align:right;font-variant-numeric:tabular-nums;">${finFmtEUR(c.montant_ht)}</td>
@@ -6210,23 +6246,41 @@ function finChargesTbodyHtml(){
   }).join('');
 }
 function finVentesPanelHtml(){
+  // Lot 36 : cliquer sur une ligne du tableau (voir finSalesTbodyHtml) ouvre ce même formulaire en
+  // mode modification — préremplis avec les valeurs de la vente, bouton "Enregistrer les
+  // modifications" à la place de "+ Ajouter", et un lien pour annuler sans rien changer.
+  const editing = state.finEditingSaleId ? state.financeSales.find(s => s.id === state.finEditingSaleId) : null;
+  const dt = editing ? editing.date : todayStr();
+  const type = editing ? editing.type : 'vente';
+  const label = editing ? editing.label : '';
+  const ttc = editing && editing.ttc != null ? editing.ttc : '';
+  const cout = editing && editing.cout_ht != null ? editing.cout_ht : '';
+  const tvaSel = editing ? (editing.tva_deductible ? '1' : '0') : '1';
+  const retro = editing && editing.retribution_proprietaire ? editing.retribution_proprietaire : '';
+  const retroVisible = type === 'location';
+  const titleText = editing
+    ? `Modifier la vente du ${new Date(editing.date+'T00:00:00').toLocaleDateString('fr-FR', { day:'numeric', month:'long', year:'numeric' })}`
+    : 'Ventes — saisie jour par jour';
   return `
     <div class="panel">
-      <h2>Ventes — saisie jour par jour</h2>
-      <div style="font-size:12.5px;color:var(--text-faint);margin-bottom:10px;line-height:1.5;">Une ligne par vente ou location encaissée. Rien n'est obligatoire : laissez vide ce qui ne s'applique pas, l'outil compte 0 à sa place.</div>
+      <h2>${esc(titleText)}</h2>
+      <div style="font-size:12.5px;color:var(--text-faint);margin-bottom:10px;line-height:1.5;">Une ligne par vente ou location encaissée. Rien n'est obligatoire : laissez vide ce qui ne s'applique pas, l'outil compte 0 à sa place. Cliquez sur une ligne du tableau pour la modifier.</div>
       <div style="background:var(--accent-soft);border-radius:8px;padding:10px 14px;margin-bottom:14px;font-size:12.5px;color:var(--text-dim);line-height:1.5;">
         <div><strong>Vous avez payé de la TVA en achetant ce produit ?</strong> Répondez "Oui" plus bas — elle sera automatiquement déduite de la TVA que vous devez à l'État.</div>
         <div style="margin-top:6px;"><strong>C'est une location et le matériel ne vous appartient pas ?</strong> Choisissez "Location" comme type et indiquez ce que vous reversez au propriétaire — ce montant sera retiré de votre marge automatiquement.</div>
       </div>
       <form class="fin-entry-form" onsubmit="return finAddSale(event)">
-        <div class="field"><label for="fin-s-date">Date</label><input type="date" id="fin-s-date" value="${todayStr()}"></div>
-        <div class="field"><label for="fin-s-type">Type</label><select id="fin-s-type" onchange="finOnSaleTypeChange(this.value)"><option value="vente">Vente</option><option value="location">Location</option></select></div>
-        <div class="field fin-span2"><label for="fin-s-label">Désignation</label><input type="text" id="fin-s-label" placeholder="Ex. Argus 1431 Gen2+ complet"></div>
-        <div class="field"><label for="fin-s-ttc">Montant encaissé, TVA incluse (€)</label><input type="number" id="fin-s-ttc" min="0" step="0.01" placeholder="0"></div>
-        <div class="field"><label for="fin-s-cout">Ce que ce produit vous a coûté, hors TVA (€)</label><input type="number" id="fin-s-cout" min="0" step="0.01" placeholder="0"></div>
-        <div class="field"><label for="fin-s-tva">Vous récupérez la TVA de cet achat ?</label><select id="fin-s-tva"><option value="1">Oui</option><option value="0">Non</option></select></div>
-        <div class="field" id="fin-s-retro-field" style="display:none;"><label for="fin-s-retro">Part reversée au propriétaire du matériel (€)</label><input type="number" id="fin-s-retro" min="0" step="0.01" placeholder="0"></div>
-        <div class="fin-span2"><button type="submit" class="btn btn-primary btn-sm">+ Ajouter la vente</button></div>
+        <div class="field"><label for="fin-s-date">Date</label><input type="date" id="fin-s-date" value="${esc(dt)}"></div>
+        <div class="field"><label for="fin-s-type">Type</label><select id="fin-s-type" onchange="finOnSaleTypeChange(this.value)"><option value="vente"${type==='vente'?' selected':''}>Vente</option><option value="location"${type==='location'?' selected':''}>Location</option></select></div>
+        <div class="field fin-span2"><label for="fin-s-label">Désignation</label><input type="text" id="fin-s-label" placeholder="Ex. Argus 1431 Gen2+ complet" value="${esc(label)}"></div>
+        <div class="field"><label for="fin-s-ttc">Montant encaissé, TVA incluse (€)</label><input type="number" id="fin-s-ttc" min="0" step="0.01" placeholder="0" value="${esc(String(ttc))}"></div>
+        <div class="field"><label for="fin-s-cout">Ce que ce produit vous a coûté, hors TVA (€)</label><input type="number" id="fin-s-cout" min="0" step="0.01" placeholder="0" value="${esc(String(cout))}"></div>
+        <div class="field"><label for="fin-s-tva">Vous récupérez la TVA de cet achat ?</label><select id="fin-s-tva"><option value="1"${tvaSel==='1'?' selected':''}>Oui</option><option value="0"${tvaSel==='0'?' selected':''}>Non</option></select></div>
+        <div class="field" id="fin-s-retro-field" style="${retroVisible?'':'display:none;'}"><label for="fin-s-retro">Part reversée au propriétaire du matériel (€)</label><input type="number" id="fin-s-retro" min="0" step="0.01" placeholder="0" value="${esc(String(retro))}"></div>
+        <div class="fin-span2" style="display:flex;gap:10px;">
+          <button type="submit" class="btn btn-primary btn-sm">${editing ? 'Enregistrer les modifications' : '+ Ajouter la vente'}</button>
+          ${editing ? `<button type="button" class="btn btn-ghost btn-sm" onclick="finCancelEditSale()">Annuler</button>` : ''}
+        </div>
       </form>
       <div class="fin-tbl-wrap"><table><thead><tr><th>Date</th><th>Désignation</th><th style="text-align:right;">TTC</th><th style="text-align:right;">Marge</th><th></th></tr></thead>
       <tbody id="fin-sales-tbody">${finSalesTbodyHtml()}</tbody></table></div>
@@ -6234,18 +6288,34 @@ function finVentesPanelHtml(){
 }
 function finChargesPanelHtml(){
   const cats = ['Loyer','Assurance','Comptable','Abonnements & logiciels','Communication','Véhicule','Prestataires (Lamar / Le H)','Frais bancaires','Autre'];
+  // Lot 36 : même principe de modification au clic que pour les ventes (voir finVentesPanelHtml).
+  // Une occurrence récurrente virtuelle n'ayant pas d'id en base, finOpenEditCharge() redirige déjà
+  // vers l'id de la charge d'origine — c'est donc toujours une charge réelle qu'on retrouve ici.
+  const editing = state.finEditingChargeId ? state.financeCharges.find(c => c.id === state.finEditingChargeId) : null;
+  const dt = editing ? editing.date : todayStr();
+  const cat = editing ? editing.category : cats[0];
+  const label = editing ? editing.label : '';
+  const montant = editing && editing.montant_ht != null ? editing.montant_ht : '';
+  const tvaSel = editing ? (editing.tva_deductible ? '1' : '0') : '1';
+  const recurring = editing ? !!editing.recurring : false;
+  const titleText = editing
+    ? `Modifier la charge du ${new Date(editing.date+'T00:00:00').toLocaleDateString('fr-FR', { day:'numeric', month:'long', year:'numeric' })}`
+    : 'Charges';
   return `
     <div class="panel">
-      <h2>Charges</h2>
-      <div style="font-size:12.5px;color:var(--text-faint);margin-bottom:16px;line-height:1.5;">Loyer, assurances, abonnements, prestataires… La rémunération du président se règle plus bas et s'ajoute automatiquement ici.</div>
+      <h2>${esc(titleText)}</h2>
+      <div style="font-size:12.5px;color:var(--text-faint);margin-bottom:16px;line-height:1.5;">Loyer, assurances, abonnements, prestataires… La rémunération du président se règle plus bas et s'ajoute automatiquement ici. Cliquez sur une ligne du tableau pour la modifier.</div>
       <form class="fin-entry-form" onsubmit="return finAddCharge(event)">
-        <div class="field"><label for="fin-c-date">Date</label><input type="date" id="fin-c-date" value="${todayStr()}"></div>
-        <div class="field"><label for="fin-c-cat">Catégorie</label><select id="fin-c-cat">${cats.map(c => `<option>${esc(c)}</option>`).join('')}</select></div>
-        <div class="field fin-span2"><label for="fin-c-label">Libellé</label><input type="text" id="fin-c-label" placeholder="Ex. Loyer local Puget-sur-Argens"></div>
-        <div class="field"><label for="fin-c-montant">Montant HT (€)</label><input type="number" id="fin-c-montant" min="0" step="0.01" placeholder="0"></div>
-        <div class="field"><label for="fin-c-tva">TVA récupérable</label><select id="fin-c-tva"><option value="1">Oui</option><option value="0">Non</option></select></div>
-        <div class="fin-span2"><label style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text-dim);cursor:pointer;"><input type="checkbox" id="fin-c-recurring" style="width:16px;height:16px;cursor:pointer;"> Charge récurrente — se reporte automatiquement chaque mois, pas besoin de la ressaisir</label></div>
-        <div class="fin-span2"><button type="submit" class="btn btn-primary btn-sm">+ Ajouter la charge</button></div>
+        <div class="field"><label for="fin-c-date">Date</label><input type="date" id="fin-c-date" value="${esc(dt)}"></div>
+        <div class="field"><label for="fin-c-cat">Catégorie</label><select id="fin-c-cat">${cats.map(c => `<option${c===cat?' selected':''}>${esc(c)}</option>`).join('')}</select></div>
+        <div class="field fin-span2"><label for="fin-c-label">Libellé</label><input type="text" id="fin-c-label" placeholder="Ex. Loyer local Puget-sur-Argens" value="${esc(label)}"></div>
+        <div class="field"><label for="fin-c-montant">Montant HT (€)</label><input type="number" id="fin-c-montant" min="0" step="0.01" placeholder="0" value="${esc(String(montant))}"></div>
+        <div class="field"><label for="fin-c-tva">TVA récupérable</label><select id="fin-c-tva"><option value="1"${tvaSel==='1'?' selected':''}>Oui</option><option value="0"${tvaSel==='0'?' selected':''}>Non</option></select></div>
+        <div class="fin-span2"><label style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text-dim);cursor:pointer;"><input type="checkbox" id="fin-c-recurring" style="width:16px;height:16px;cursor:pointer;"${recurring?' checked':''}> Charge récurrente — se reporte automatiquement chaque mois, pas besoin de la ressaisir</label></div>
+        <div class="fin-span2" style="display:flex;gap:10px;">
+          <button type="submit" class="btn btn-primary btn-sm">${editing ? 'Enregistrer les modifications' : '+ Ajouter la charge'}</button>
+          ${editing ? `<button type="button" class="btn btn-ghost btn-sm" onclick="finCancelEditCharge()">Annuler</button>` : ''}
+        </div>
       </form>
       <div class="fin-tbl-wrap"><table><thead><tr><th>Date</th><th>Charge</th><th style="text-align:right;">HT</th><th></th></tr></thead>
       <tbody id="fin-charges-tbody">${finChargesTbodyHtml()}</tbody></table></div>
@@ -6539,6 +6609,17 @@ window.finOnSaleTypeChange = (val) => {
   const el = document.getElementById('fin-s-retro-field');
   if(el) el.style.display = val === 'location' ? '' : 'none';
 };
+// Lot 36 : clic sur une ligne du tableau Ventes -> le formulaire au-dessus s'ouvre en modification,
+// préchargé avec les valeurs de cette vente (voir finVentesPanelHtml). finRefreshInner() reconstruit
+// tout le bloc Finances, donc le formulaire réapparaît déjà prérempli sans étape supplémentaire.
+window.finOpenEditSale = (id) => {
+  state.finEditingSaleId = id;
+  finRefreshInner();
+};
+window.finCancelEditSale = () => {
+  state.finEditingSaleId = null;
+  finRefreshInner();
+};
 
 async function doFinAddSale(){
   // Lot 35 : plus aucun champ n'est obligatoire — un montant laissé vide compte pour 0 plutôt que de
@@ -6557,8 +6638,21 @@ async function doFinAddSale(){
     tva_deductible: document.getElementById('fin-s-tva').value === '1',
     retribution_proprietaire: retro,
   };
-  const { data, error } = await sb.from('finance_sales').insert(payload).select().single();
-  if(!error && data) state.financeSales.push(data);
+  // Lot 36 : si on modifie une vente existante (clic sur une ligne), on met à jour cette même ligne
+  // au lieu d'en créer une nouvelle — tout le reste (TVA, marge, cascade...) se recalcule déjà tout
+  // seul puisque c'est la même donnée en mémoire qui est relue partout.
+  const editId = state.finEditingSaleId;
+  if(editId){
+    const { data, error } = await sb.from('finance_sales').update(payload).eq('id', editId).select().single();
+    if(!error && data){
+      const idx = state.financeSales.findIndex(s => s.id === editId);
+      if(idx > -1) state.financeSales[idx] = data;
+    }
+    state.finEditingSaleId = null;
+  } else {
+    const { data, error } = await sb.from('finance_sales').insert(payload).select().single();
+    if(!error && data) state.financeSales.push(data);
+  }
   finRefreshInner();
 }
 window.finAddSale = (e) => { e.preventDefault(); doFinAddSale(); return false; };
@@ -6566,6 +6660,7 @@ window.finDeleteSale = async (id) => {
   if(!confirm('Supprimer cette vente ?')) return;
   await sb.from('finance_sales').delete().eq('id', id);
   state.financeSales = state.financeSales.filter(s => s.id !== id);
+  if(state.finEditingSaleId === id) state.finEditingSaleId = null;
   finRefreshInner();
 };
 
@@ -6581,8 +6676,21 @@ async function doFinAddCharge(){
     tva_deductible: document.getElementById('fin-c-tva').value === '1',
     recurring: !!document.getElementById('fin-c-recurring').checked,
   };
-  const { data, error } = await sb.from('finance_charges').insert(payload).select().single();
-  if(!error && data) state.financeCharges.push(data);
+  // Lot 36 : même logique de modification que pour les ventes — on met à jour la charge d'origine
+  // plutôt que d'en recréer une (une occurrence récurrente reporte alors le changement sur toutes
+  // ses occurrences futures, puisqu'elles sont générées à partir de cette même ligne).
+  const editId = state.finEditingChargeId;
+  if(editId){
+    const { data, error } = await sb.from('finance_charges').update(payload).eq('id', editId).select().single();
+    if(!error && data){
+      const idx = state.financeCharges.findIndex(c => c.id === editId);
+      if(idx > -1) state.financeCharges[idx] = data;
+    }
+    state.finEditingChargeId = null;
+  } else {
+    const { data, error } = await sb.from('finance_charges').insert(payload).select().single();
+    if(!error && data) state.financeCharges.push(data);
+  }
   finRefreshInner();
 }
 window.finAddCharge = (e) => { e.preventDefault(); doFinAddCharge(); return false; };
@@ -6590,6 +6698,16 @@ window.finDeleteCharge = async (id) => {
   if(!confirm('Supprimer cette charge ?')) return;
   await sb.from('finance_charges').delete().eq('id', id);
   state.financeCharges = state.financeCharges.filter(c => c.id !== id);
+  if(state.finEditingChargeId === id) state.finEditingChargeId = null;
+  finRefreshInner();
+};
+// Lot 36 : même principe que finOpenEditSale, pour les charges.
+window.finOpenEditCharge = (id) => {
+  state.finEditingChargeId = id;
+  finRefreshInner();
+};
+window.finCancelEditCharge = () => {
+  state.finEditingChargeId = null;
   finRefreshInner();
 };
 
