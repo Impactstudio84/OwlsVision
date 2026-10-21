@@ -775,12 +775,20 @@
   .fin-row-clickable{cursor:pointer;}
   .fin-row-clickable:hover{background:rgba(255,255,255,0.045);}
 
-  /* Lot 37 : entonnoir visuel du suivi de réservation (barres décroissantes, mêmes tokens que la
-     barre d'XP) dans Utilisateurs > Suivi réservation. */
-  .funnel-step{margin-bottom:16px;}
-  .funnel-step:last-child{margin-bottom:0;}
-  .funnel-step-head{display:flex;justify-content:space-between;align-items:baseline;font-size:13px;color:var(--text-dim);margin-bottom:6px;}
-  .funnel-step-head strong{font-size:17px;color:var(--text);font-variant-numeric:tabular-nums;}
+  /* Lot 37 : entonnoir visuel du suivi de réservation dans Utilisateurs > Suivi réservation — une
+     étape = une barre décroissante (mêmes tokens que la barre d'XP) dans un <details> repliable
+     (même mécanique que "Rémunération du président" dans Finances, voir .fin-details) : un clic
+     déroule la liste nominative des clients ayant atteint cette étape. */
+  details.funnel-details{background:rgba(255,255,255,0.03);border:1px solid var(--border-soft);border-radius: var(--r-sm);padding:14px 16px;margin-bottom:12px;}
+  details.funnel-details:last-child{margin-bottom:0;}
+  details.funnel-details summary{cursor:pointer;list-style:none;display:flex;align-items:center;gap:10px;}
+  details.funnel-details summary::-webkit-details-marker{display:none;}
+  details.funnel-details summary .chev{transition:transform .18s var(--ease);color:var(--text-faint);flex-shrink:0;}
+  details.funnel-details[open] summary .chev{transform:rotate(90deg);}
+  details.funnel-details summary .funnel-step-title{flex:1;font-size:13px;color:var(--text-dim);font-weight:600;}
+  details.funnel-details summary strong{font-size:17px;color:var(--text);font-variant-numeric:tabular-nums;}
+  details.funnel-details .xp-bar-track{margin:10px 0 2px 24px;}
+  details.funnel-details .funnel-step-clients{margin:14px 0 2px 24px;}
 
   .fin-period-bar{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;padding:14px 18px;margin-bottom:18px;}
   .fin-period-tabs{display:flex;gap:4px;background:rgba(255,255,255,0.05);border:1px solid var(--border-soft);border-radius: var(--r-pill);padding:4px;flex-wrap:wrap;}
@@ -5957,21 +5965,78 @@ function funnelAbandonedList(){
   });
   return rows.sort((a,b) => new Date(b.lastAt) - new Date(a.lastAt));
 }
+// Formatage commun "20/10 → 22/10" (ou "—" si pas de dates) pour les listes du funnel.
+function funnelFmtPeriode(startDate, endDate){
+  return startDate && endDate
+    ? `${new Date(startDate+'T00:00:00').toLocaleDateString('fr-FR',{day:'2-digit',month:'2-digit'})} → ${new Date(endDate+'T00:00:00').toLocaleDateString('fr-FR',{day:'2-digit',month:'2-digit'})}`
+    : '—';
+}
 function funnelAbandonedRowHtml(row){
   const name = row.profile ? clientDisplayName(row.profile) : row.username;
   const stepCls = row.step === 'dates_selected' ? 'info' : 'pending';
-  const periode = row.startDate && row.endDate
-    ? `${new Date(row.startDate+'T00:00:00').toLocaleDateString('fr-FR',{day:'2-digit',month:'2-digit'})} → ${new Date(row.endDate+'T00:00:00').toLocaleDateString('fr-FR',{day:'2-digit',month:'2-digit'})}`
-    : '—';
   return `
     <tr>
       <td><div class="t-title">${esc(name)}</div><div class="t-desc">@${esc(row.username)}</div></td>
       <td>${esc(row.itemName || '—')}</td>
-      <td>${periode}</td>
+      <td>${funnelFmtPeriode(row.startDate, row.endDate)}</td>
       <td><span class="status-pill ${stepCls}">${esc(FUNNEL_STEP_LABELS[row.step] || row.step)}</span></td>
       <td>${fmtDateTime(row.lastAt)}</td>
       <td>${row.profile ? `<button class="btn btn-ghost btn-sm" onclick="openViewProfile('${esc(row.username)}')">Fiche</button>` : ''}</td>
     </tr>`;
+}
+// Lot 37bis : Luka veut le détail nominatif à CHAQUE étape (pas seulement les paniers abandonnés) —
+// "je veux pareil pour les étapes d'avant, je veux pouvoir cliquer et voir quelle fiche client ça
+// concerne". Pour une étape donnée, un client y apparaît dès qu'il l'a atteinte au moins une fois,
+// qu'il ait continué le parcours ensuite ou non — contrairement à funnelAbandonedList() qui ne
+// retient que le DERNIER événement de chacun. On garde ici l'occurrence la plus récente de cette
+// étape précise pour chaque client (date/modèle affichés = ceux de cette dernière fois-là).
+function funnelClientsForStep(eventType){
+  const byUser = funnelEventsByUser();
+  const rows = [];
+  Object.keys(byUser).forEach(username => {
+    const events = byUser[username].filter(e => e.event_type === eventType);
+    if(!events.length) return;
+    const last = events[events.length - 1];
+    rows.push({
+      username,
+      profile: state.profiles.find(p => p.username === username) || null,
+      itemName: last.item_name,
+      startDate: last.start_date,
+      endDate: last.end_date,
+      lastAt: last.created_at,
+    });
+  });
+  return rows.sort((a,b) => new Date(b.lastAt) - new Date(a.lastAt));
+}
+function funnelStepRowHtml(row){
+  const name = row.profile ? clientDisplayName(row.profile) : row.username;
+  return `
+    <tr>
+      <td><div class="t-title">${esc(name)}</div><div class="t-desc">@${esc(row.username)}</div></td>
+      <td>${esc(row.itemName || '—')}</td>
+      <td>${funnelFmtPeriode(row.startDate, row.endDate)}</td>
+      <td>${fmtDateTime(row.lastAt)}</td>
+      <td>${row.profile ? `<button class="btn btn-ghost btn-sm" onclick="openViewProfile('${esc(row.username)}')">Fiche</button>` : ''}</td>
+    </tr>`;
+}
+// Un <details> par étape (même mécanique que "Rémunération du président" dans Finances, voir
+// finRemunerationPanelHtml) : repliée par défaut, un clic sur la barre déroule la liste nominative
+// des clients ayant atteint cette étape, avec un accès direct à leur fiche.
+function funnelStepDetailsHtml(stepNum, eventType, count, barColorCss){
+  const rows = funnelClientsForStep(eventType);
+  return `
+    <details class="funnel-details">
+      <summary>
+        <svg class="chev" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9.5 5 16 12l-6.5 7"/></svg>
+        <span class="funnel-step-title">${stepNum} · ${esc(FUNNEL_STEP_LABELS[eventType])}</span>
+        <strong>${count}</strong>
+      </summary>
+      <div class="xp-bar-track"><div class="xp-bar-fill" style="${barColorCss}"></div></div>
+      <div class="funnel-step-clients">
+        <table class="tbl-compact"><thead><tr><th>Client</th><th>Modèle</th><th>Dates envisagées</th><th>Dernière activité</th><th></th></tr></thead>
+        <tbody>${rows.length ? rows.map(funnelStepRowHtml).join('') : `<tr><td colspan="5"><div class="empty">Aucun client n'a encore atteint cette étape.</div></td></tr>`}</tbody></table>
+      </div>
+    </details>`;
 }
 function renderUtilisateursFunnel(){
   const counts = funnelSummaryCounts();
@@ -5982,19 +6047,10 @@ function renderUtilisateursFunnel(){
     <div class="topbar"><div><h1>Suivi réservation</h1><div class="desc">Où vos clients s'arrêtent dans le parcours de réservation, du choix du modèle jusqu'à l'envoi de la demande.</div></div></div>
     <div class="panel" style="margin-bottom:18px;">
       <h2 style="margin-bottom:4px;">Entonnoir</h2>
-      <div style="font-size:12.5px;color:var(--text-faint);margin-bottom:18px;">Nombre de clients ayant atteint chaque étape au moins une fois, toutes périodes confondues.</div>
-      <div class="funnel-step">
-        <div class="funnel-step-head"><span>1 · ${esc(FUNNEL_STEP_LABELS.model_selected)}</span><strong>${counts.modelCount}</strong></div>
-        <div class="xp-bar-track"><div class="xp-bar-fill" style="width:100%;"></div></div>
-      </div>
-      <div class="funnel-step">
-        <div class="funnel-step-head"><span>2 · ${esc(FUNNEL_STEP_LABELS.dates_selected)}</span><strong>${counts.datesCount}</strong></div>
-        <div class="xp-bar-track"><div class="xp-bar-fill" style="width:${pct(counts.datesCount)}%;background:linear-gradient(90deg, var(--blue), var(--blue));"></div></div>
-      </div>
-      <div class="funnel-step">
-        <div class="funnel-step-head"><span>3 · ${esc(FUNNEL_STEP_LABELS.booking_submitted)}</span><strong>${counts.submittedCount}</strong></div>
-        <div class="xp-bar-track"><div class="xp-bar-fill" style="width:${pct(counts.submittedCount)}%;"></div></div>
-      </div>
+      <div style="font-size:12.5px;color:var(--text-faint);margin-bottom:18px;">Nombre de clients ayant atteint chaque étape au moins une fois, toutes périodes confondues. Cliquez sur une étape pour voir qui, nommément.</div>
+      ${funnelStepDetailsHtml(1, 'model_selected', counts.modelCount, 'width:100%;')}
+      ${funnelStepDetailsHtml(2, 'dates_selected', counts.datesCount, `width:${pct(counts.datesCount)}%;background:linear-gradient(90deg, var(--blue), var(--blue));`)}
+      ${funnelStepDetailsHtml(3, 'booking_submitted', counts.submittedCount, `width:${pct(counts.submittedCount)}%;`)}
     </div>
     <div class="panel">
       <h2 style="margin-bottom:4px;">Paniers abandonnés <span class="status-pill danger" style="margin-left:4px;">${abandoned.length}</span></h2>
