@@ -264,9 +264,9 @@
   /* ---------- Poignée de réordonnancement (master, catalogue + missions) ---------- */
   .card-drag-handle{position:absolute;top:12px;right:12px;width:28px;height:28px;border-radius:50%;background:rgba(8,12,8,0.55);backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center;color:var(--text-dim);cursor:grab;opacity:0.65;transition:opacity .15s var(--ease), background .15s var(--ease);touch-action:none;z-index:2;}
   .card-drag-handle:hover{opacity:1;color:var(--accent);background:rgba(8,12,8,0.75);}
-  .card.drag-sortable{position:relative;}
-  .card.drag-sortable.dragging{opacity:0.4;}
-  .card.drag-sortable.drag-over{outline:2px dashed var(--accent-soft-2);outline-offset:-2px;}
+  .drag-sortable{position:relative;}
+  .drag-sortable.dragging{opacity:0.4;}
+  .drag-sortable.drag-over{outline:2px dashed var(--accent-soft-2);outline-offset:-2px;}
   .card h3{font-family:var(--font-disp);font-size:19px;font-weight:700;letter-spacing:0.005em;}
   .card .card-desc{font-size:13.5px;color:var(--text-dim);line-height:1.55;flex:1;}
   .card .card-photo{width:calc(100% + 44px);margin:-22px -22px 0;height:150px;object-fit:cover;display:block;border-radius:var(--r-md) var(--r-md) 0 0;}
@@ -313,6 +313,21 @@
   .mission-icon{width:44px;height:44px;border-radius:14px;background:var(--accent-soft);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;}
   .mission-card.done .mission-icon{background:rgba(255,255,255,0.06);}
   .task-xp{font-size:12.5px;color:var(--accent);font-weight:600;background:var(--accent-soft);padding:5px 11px;border-radius:var(--r-pill);white-space:nowrap;display:inline-block;margin-top:6px;}
+  /* Lot 38 : écran "Missions — Création" repris en grille de cartes alignée sur le visuel des
+     entreprises (crm-card) — même gabarit de carte, avatar/icône + nom en tête, pied de carte à
+     deux zones (stat à gauche, actions à droite). Garde .mission-icon/.task-xp (partagés avec la
+     carte client) pour une cohérence visuelle entre les deux rendus. */
+  .mission-card2{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-md);padding:18px 20px;transition:transform .18s var(--ease), background .18s var(--ease), box-shadow .18s var(--ease);}
+  .mission-card2:hover{background:var(--surface-hover);box-shadow:var(--shadow-2);}
+  .mission-card2-top{display:flex;align-items:flex-start;gap:12px;padding-right:34px;}
+  .mission-card2-name{font-size:15.5px;font-weight:700;letter-spacing:0.002em;line-height:1.3;}
+  .mission-card2-tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:7px;}
+  .tag-rdv{color:var(--amber);background:rgba(255,185,74,0.14);}
+  .mission-card2-desc{font-size:12.5px;color:var(--text-dim);line-height:1.5;margin-top:10px;}
+  .mission-card2-foot{display:flex;justify-content:space-between;align-items:flex-end;gap:10px;margin-top:14px;padding-top:12px;border-top:1px solid var(--border-soft);}
+  .mission-card2-stat{font-size:11.5px;color:var(--text-faint);line-height:1.4;}
+  .mission-card2-actions{display:flex;gap:6px;flex-shrink:0;}
+  .mission-card2-actions .btn{width:auto;}
   .submission-row{display:flex;justify-content:space-between;gap:10px;font-size:12.5px;color:var(--text-dim);padding:8px 0;border-top:1px solid var(--border-soft);}
   .history-list{display:flex;flex-direction:column;max-height:280px;overflow-y:auto;}
   .history-row{display:flex;gap:10px;padding:9px 0;border-top:1px solid var(--border-soft);}
@@ -604,6 +619,15 @@
      pour qu'on distingue un compte Propriétaire d'un simple client d'un coup d'œil, et que la
      recherche textuelle "propriétaire" ait quelque chose à retrouver visuellement dans la liste. */
   .owner-tag{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:600;padding:3px 9px 3px 7px;border-radius:var(--r-pill);background:var(--blue-soft);color:var(--blue);vertical-align:1px;white-space:nowrap;}
+  /* Lot 38 : boutons d'action de la ligne Utilisateurs > Comptes, en icônes carrées uniformes —
+     remplace les 5 boutons texte qui débordaient sur deux lignes inégales et rendaient la colonne
+     "Dernière connexion" illisible (retour de Luka). */
+  .row-icon-actions{display:flex;gap:6px;flex-wrap:wrap;}
+  .icon-btn{width:30px;height:30px;flex-shrink:0;border-radius:var(--r-sm);border:1px solid var(--border-soft);background:rgba(255,255,255,0.03);color:var(--text-dim);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:15px;font-weight:700;line-height:1;padding:0;transition:all .15s var(--ease);}
+  .icon-btn:hover{background:rgba(255,255,255,0.08);color:var(--text);border-color:var(--border);}
+  .icon-btn.active{background:var(--blue-soft);color:var(--blue);border-color:transparent;}
+  .icon-btn.danger{color:#FFB3A6;}
+  .icon-btn.danger:hover{background:var(--danger-soft);border-color:transparent;}
   .file-btn{position:relative;overflow:hidden;}
   .file-btn input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;}
   .checkbox-field{display:flex;align-items:center;gap:10px;font-size:13.5px;color:var(--text-dim);margin:4px 0 16px;}
@@ -781,13 +805,13 @@
      déroule la liste nominative des clients ayant atteint cette étape. */
   details.funnel-details{background:rgba(255,255,255,0.03);border:1px solid var(--border-soft);border-radius: var(--r-sm);padding:14px 16px;margin-bottom:12px;}
   details.funnel-details:last-child{margin-bottom:0;}
-  details.funnel-details summary{cursor:pointer;list-style:none;display:flex;align-items:center;gap:10px;}
+  details.funnel-details summary{cursor:pointer;list-style:none;display:flex;align-items:flex-start;gap:10px;}
   details.funnel-details summary::-webkit-details-marker{display:none;}
-  details.funnel-details summary .chev{transition:transform .18s var(--ease);color:var(--text-faint);flex-shrink:0;}
+  details.funnel-details summary .chev{transition:transform .18s var(--ease);color:var(--text-faint);flex-shrink:0;margin-top:4px;}
   details.funnel-details[open] summary .chev{transform:rotate(90deg);}
-  details.funnel-details summary .funnel-step-title{flex:1;font-size:13px;color:var(--text-dim);font-weight:600;}
-  details.funnel-details summary strong{font-size:17px;color:var(--text);font-variant-numeric:tabular-nums;}
-  details.funnel-details .xp-bar-track{margin:10px 0 2px 24px;}
+  details.funnel-details .funnel-step-summary-body{flex:1;min-width:0;}
+  details.funnel-details .funnel-step-head{display:flex;justify-content:space-between;align-items:baseline;font-size:13px;color:var(--text-dim);margin-bottom:8px;}
+  details.funnel-details .funnel-step-head strong{font-size:17px;color:var(--text);font-variant-numeric:tabular-nums;}
   details.funnel-details .funnel-step-clients{margin:14px 0 2px 24px;}
 
   .fin-period-bar{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;padding:14px 18px;margin-bottom:18px;}
@@ -982,6 +1006,12 @@ const todayStr = () => new Date().toISOString().slice(0,10);
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const fmtDate = (iso) => iso ? new Date(iso).toLocaleDateString(effectiveLocale()) : '—';
 const fmtDateTime = (iso) => iso ? new Date(iso).toLocaleString(effectiveLocale()) : t('common.never_logged_in');
+// Lot 38 : rdv_at est un timestamp "naïf" (sans fuseau) — on le retranscrit tel quel dans le champ
+// datetime-local du formulaire, sans conversion UTC, comme toutes les dates de l'appli.
+function isoToDatetimeLocal(v){
+  if(!v) return '';
+  return String(v).replace(' ', 'T').slice(0,16);
+}
 
 /* =========================================================
    Internationalisation (Lot 20) — écrans CLIENT uniquement.
@@ -2112,7 +2142,7 @@ async function deleteMissionGroup(id){
 }
 
 /* ---------- Tasks / missions ---------- */
-async function createTask(title, description, xpReward, requiresAnswer, answerLabel, groupId, isRecurring, requiresDate, requiresBooking){
+async function createTask(title, description, xpReward, requiresAnswer, answerLabel, groupId, isRecurring, requiresDate, requiresBooking, isRdv, rdvAt){
   if(!title.trim()) return;
   const nextSortOrder = state.tasks.reduce((m,t) => Math.max(m, t.sort_order||0), 0) + 1;
   const { data, error } = await sb.from('tasks').insert({
@@ -2123,6 +2153,7 @@ async function createTask(title, description, xpReward, requiresAnswer, answerLa
     // redevenir disponible à chaque nouveau contrat) : voir confirmNewTask, qui force la case
     // "récurrente" dès que celle-ci est cochée.
     requires_booking: !!requiresBooking,
+    is_rdv: !!isRdv, rdv_at: isRdv ? (rdvAt || null) : null,
     group_id: groupId || null, is_recurring: !!isRecurring || !!requiresBooking, sort_order: nextSortOrder
   }).select().single();
   if(error){ alert("Erreur : " + error.message); return; }
@@ -3523,7 +3554,7 @@ async function masterRemoveSignature(username){
   render();
 }
 
-/* ---------- Documents fiche membre (pièce d'identité / justificatif de domicile) ----------
+/* ---------- Documents fiche membre (pièce d'identité / attestation d'assurance habitation) ----------
    Réactivé (lot 18) : le client dépose à nouveau ses documents directement dans l'appli (upload
    dans le bucket "documents", déjà sécurisé — voir migration_lot10_securite.sql : chaque fichier
    n'est lisible que par son propriétaire ou l'équipe, jamais public). Le message "envoyez-les-nous
@@ -3617,14 +3648,14 @@ async function openMemberDoc(kind, username){
 
 // Remplace le panneau "Documents" (upload dans l'appli) désactivé ci-dessus : une fois la fiche
 // membre complète, on demande simplement au client de nous envoyer ses documents par email —
-// pas de stockage de pièce d'identité / justificatif de domicile côté appli (RGPD).
+// pas de stockage de pièce d'identité / attestation d'assurance habitation côté appli (RGPD).
 const CONTACT_EMAIL = 'contact@owlsvision.fr';
 function emailDocsNoticeHtml(){
   return `
     <div class="panel email-docs-notice">
       <div class="section-title">Documents à nous transmettre</div>
       <p style="font-size:13px;line-height:1.6;color:var(--text-dim);margin:0 0 14px;">
-        Les documents obligatoires pour la location (pièce d'identité, justificatif de domicile de moins de 3 mois et attestation d'assurance habitation) ne se déposent pas ici : merci de nous les transmettre directement par email à l'adresse ci-dessous.
+        Les documents obligatoires pour la location (pièce d'identité et attestation d'assurance habitation) ne se déposent pas ici : merci de nous les transmettre directement par email à l'adresse ci-dessous.
       </p>
       <button type="button" class="email-copy-btn" onclick="copyContactEmail()" title="Copier l'adresse dans le presse-papiers">
         ${tacticalIconSvg('mail',{size:17})}<span>${CONTACT_EMAIL}</span>${tacticalIconSvg('copy',{size:14})}
@@ -4457,13 +4488,13 @@ function masterNavDef(){
       ] },
     // Lot 37 : "Utilisateurs" passe en groupe avec deux sous-onglets — "Comptes" (liste existante,
     // inchangée) et "Suivi réservation" (nouveau : où les clients s'arrêtent dans le parcours de
-    // réservation). La pastille du groupe reprend le nombre de paniers abandonnés, pour que Luka la
-    // voie sans avoir à ouvrir l'onglet.
+    // réservation). La pastille reprend le nombre de paniers abandonnés NON ENCORE VUS (et non le
+    // total) — elle se vide à l'ouverture de l'onglet, voir markFunnelAbandonedSeen dans goto().
     { id: "utilisateurs-group", label: "Utilisateurs", shortLabel: "Clients", icon: "utilisateurs",
-      badge: () => funnelAbandonedList().length,
+      badge: () => funnelUnseenAbandonedCount(),
       sub: [
         { id: "utilisateurs", label: "Comptes" },
-        { id: "utilisateurs-suivi", label: "Suivi réservation", badge: () => funnelAbandonedList().length },
+        { id: "utilisateurs-suivi", label: "Suivi réservation", badge: () => funnelUnseenAbandonedCount() },
       ] },
     { id: "finances", label: "Finances", icon: "finances" },
     { id: "commercial-group", label: "Commercial", icon: "commercial",
@@ -5040,6 +5071,70 @@ function bookingCalendarModalHtml(){
     </div></div>`;
 }
 
+/* ---------- Lot 38 : calendrier des rendez-vous (missions marquées is_rdv) ----------
+   Même composant visuel que le calendrier des locations ci-dessus (cal-*), réutilise aussi la
+   grille de mois (calendarMonthDays) et la navigation (calendarShiftMonth/calendarGoToday) qui
+   opèrent génériquement sur state.calendarMonth et re-render() le modal courant quel qu'il soit —
+   seule la source de données (missions au lieu de locations) et le contenu du modal changent. */
+function dayRdvSummary(dateStr){
+  const dayTasks = state.tasks.filter(t => t.is_rdv && t.rdv_at && String(t.rdv_at).slice(0,10) === dateStr);
+  const items = dayTasks.map(t => ({ title: t.title, time: String(t.rdv_at).slice(11,16) })).sort((a,b) => a.time.localeCompare(b.time));
+  return { total: items.length, items };
+}
+window.openTasksCalendarModal = () => {
+  if(!state.calendarMonth){
+    const now = new Date();
+    state.calendarMonth = { year: now.getFullYear(), month: now.getMonth() };
+  }
+  state.modal = { type: "tasksCalendar" };
+  render();
+};
+function tasksCalendarModalHtml(){
+  const { year, month } = state.calendarMonth;
+  const cells = calendarMonthDays(year, month);
+  const todayStrVal = todayStr();
+  const dayCellsHtml = cells.map(c => {
+    const summary = c.inMonth ? dayRdvSummary(c.dateStr) : { total: 0, items: [] };
+    const isToday = c.dateStr === todayStrVal;
+    const cls = ['cal-day'];
+    if(!c.inMonth) cls.push('outside');
+    if(isToday) cls.push('today');
+    if(c.inMonth && summary.total > 0) cls.push('has-bookings');
+    const tooltip = (c.inMonth && summary.total > 0) ? `
+      <div class="cal-tooltip">
+        <div class="cal-tooltip-date">${fmtDate(c.dateStr)}</div>
+        ${summary.items.map(it => `<div class="cal-tooltip-row"><span>${esc(it.title)}</span><b>${esc(it.time)}</b></div>`).join('')}
+      </div>` : '';
+    return `
+      <div class="${cls.join(' ')}">
+        <span class="cal-day-num">${c.day}</span>
+        ${c.inMonth && summary.total > 0 ? `<span class="cal-day-badge">${summary.total}</span>` : ''}
+        ${tooltip}
+      </div>`;
+  }).join('');
+  return `
+    <div class="modal-bg" onclick="closeModalBg(event)"><div class="modal" style="max-width:680px;">
+      <div class="cal-head">
+        <div>
+          <h3 style="margin-bottom:2px;">${tacticalIconSvg('calendar',{size:19,style:'vertical-align:-3px;margin-right:6px;'})}Calendrier des rendez-vous</h3>
+          <div class="section-title" style="margin-bottom:0;">Missions marquées « Rendez-vous », avec leur date et heure</div>
+        </div>
+      </div>
+      <div class="cal-head" style="margin-top:2px;">
+        <div class="cal-nav">
+          <button type="button" class="cal-nav-btn" onclick="calendarShiftMonth(-1)" title="Mois précédent">${tacticalIconSvg('chevron-left',{size:17})}</button>
+          <div class="cal-month-label">${MONTH_LABELS_FR[month]} ${year}</div>
+          <button type="button" class="cal-nav-btn" onclick="calendarShiftMonth(1)" title="Mois suivant">${tacticalIconSvg('chevron-right',{size:17})}</button>
+        </div>
+        <button type="button" class="cal-today-btn" onclick="calendarGoToday()">Aujourd'hui</button>
+      </div>
+      <div class="cal-weekdays">${CAL_WEEKDAYS.map(w => `<div class="cal-weekday">${w}</div>`).join('')}</div>
+      <div class="cal-grid">${dayCellsHtml}</div>
+      <div class="cal-legend"><span class="cal-legend-swatch"></span>Jour avec au moins un rendez-vous — survolez pour le détail</div>
+      <div class="modal-actions"><button class="btn btn-ghost" style="width:100%;" onclick="closeModal()">Fermer</button></div>
+    </div></div>`;
+}
+
 function renderGestionLocation(){
   const groups = gestionGroupedByDate();
   const totalCount = groups.reduce((sum, g) => sum + g.bookings.length, 0);
@@ -5507,7 +5602,7 @@ function missionCardHtml(task, isMaster, u){
       <div class="mission-head">
         <div class="mission-icon" style="color:${iconInfo.color};background:${iconInfo.bg};">${icon}</div>
         <div style="flex:1;min-width:0;">
-          <h3 style="font-size:16.5px;">${esc(trField(task,'title'))}${task.is_recurring ? ` <span class="tag" style="margin-left:4px;">${esc(t('missions.recurring'))}</span>` : ''}</h3>
+          <h3 style="font-size:16.5px;">${esc(trField(task,'title'))}${task.is_recurring ? ` <span class="tag" style="margin-left:4px;">${esc(t('missions.recurring'))}</span>` : ''}${task.is_rdv ? ` <span class="tag tag-rdv" style="margin-left:4px;">${tacticalIconSvg('calendar',{size:12})} Rendez-vous${task.rdv_at ? ' · '+esc(fmtDateTime(task.rdv_at)) : ''}</span>` : ''}</h3>
           <span class="task-xp">+${task.xp_reward} XP</span>
         </div>
       </div>
@@ -5611,22 +5706,33 @@ function missionManageCardHtml(t, groupKey){
   // Glisser-déposer : réordonne uniquement à l'intérieur du même groupe (ou parmi les
   // missions sans groupe) — impossible de changer le groupe d'une mission par ce geste,
   // et aucun numéro de position n'apparaît jamais dans le rendu.
+  // Lot 38 : une mission "rendez-vous" (t.is_rdv) affiche une pastille ambre bien visible avec
+  // l'horodatage, et son icône de carte devient un calendrier plutôt que le réticule générique.
   return `
-    <div class="card drag-sortable" ondragover="rowDragOver(event)" ondragleave="rowDragLeave(event)" ondrop="rowDrop(event,'task','${t.id}','${gk}')">
+    <div class="mission-card2 drag-sortable" ondragover="rowDragOver(event)" ondragleave="rowDragLeave(event)" ondrop="rowDrop(event,'task','${t.id}','${gk}')">
       <div class="card-drag-handle" draggable="true" ondragstart="rowDragStart(event,'task','${t.id}','${gk}')" ondragend="rowDragEnd(event)" title="Glisser pour réordonner">${tacticalIconSvg('grip',{size:18})}</div>
-      <div class="mission-head">
-        <div class="mission-icon">${tacticalIconSvg('reticle',{size:21})}</div>
+      <div class="mission-card2-top">
+        <div class="mission-icon"${t.is_rdv ? ' style="color:var(--amber);background:rgba(255,185,74,0.14);"' : ''}>${tacticalIconSvg(t.is_rdv ? 'calendar' : 'reticle',{size:21})}</div>
         <div style="flex:1;min-width:0;">
-          <h3 style="font-size:16.5px;">${esc(t.title)}${t.is_recurring ? ' <span class="tag" style="margin-left:4px;">Récurrente</span>' : ''}</h3>
-          <span class="task-xp">+${t.xp_reward} XP</span>
+          <div class="mission-card2-name">${esc(t.title)}</div>
+          <div class="mission-card2-tags">
+            <span class="task-xp" style="margin-top:0;">+${t.xp_reward} XP</span>
+            ${t.is_recurring ? '<span class="tag">Récurrente</span>' : ''}
+            ${t.is_rdv ? `<span class="tag tag-rdv">${tacticalIconSvg('calendar',{size:12})} Rendez-vous${t.rdv_at ? ' · '+esc(fmtDateTime(t.rdv_at)) : ''}</span>` : ''}
+          </div>
         </div>
       </div>
-      ${t.description ? `<div class="card-desc">${esc(t.description)}</div>` : ''}
-      ${t.requires_answer ? `<div class="card-desc" style="flex:0;">Champ demandé : ${esc(t.answer_label)}</div>` : ''}
-      ${t.requires_date ? `<div class="card-desc" style="flex:0;">Date de location demandée (à partir du 15/08/2026)</div>` : ''}
-      ${t.requires_booking ? `<div class="card-desc" style="flex:0;color:var(--accent);">Plafonnée aux locations confirmées — 1 crédit max. par contrat</div>` : ''}
-      <div class="card-desc" style="flex:0;color:var(--text-faint);">${submissionsCount} soumission${submissionsCount>1?'s':''} au total</div>
-      <div class="card-foot"><button class="btn btn-ghost btn-sm" onclick="openEditTaskModal('${t.id}')">Modifier</button><button class="btn btn-danger btn-sm" onclick="deleteTask('${t.id}')">Supprimer</button></div>
+      ${t.description ? `<div class="mission-card2-desc">${esc(t.description)}</div>` : ''}
+      ${t.requires_answer ? `<div class="mission-card2-desc">Champ demandé : ${esc(t.answer_label)}</div>` : ''}
+      ${t.requires_date ? `<div class="mission-card2-desc">Date de location demandée (à partir du 15/08/2026)</div>` : ''}
+      ${t.requires_booking ? `<div class="mission-card2-desc" style="color:var(--accent);">Plafonnée aux locations confirmées — 1 crédit max. par contrat</div>` : ''}
+      <div class="mission-card2-foot">
+        <div class="mission-card2-stat">${submissionsCount} soumission${submissionsCount>1?'s':''} au total</div>
+        <div class="mission-card2-actions">
+          <button class="btn btn-ghost btn-sm" onclick="openEditTaskModal('${t.id}')">Modifier</button>
+          <button class="btn btn-danger btn-sm" onclick="deleteTask('${t.id}')">Supprimer</button>
+        </div>
+      </div>
     </div>`;
 }
 function renderMissionsCreation(){
@@ -5649,7 +5755,7 @@ function renderMissionsCreation(){
           </div>
           ${groupId ? `<button class="btn btn-ghost btn-sm" onclick="deleteMissionGroup('${groupId}')">Supprimer le groupe</button>` : ''}
         </div>
-        ${sorted.length ? `<div class="grid">${cards}</div>` : `<div class="empty">Aucune mission dans ce groupe.</div>`}
+        ${sorted.length ? `<div class="crm-grid">${cards}</div>` : `<div class="empty">Aucune mission dans ce groupe.</div>`}
       </div>`;
   };
 
@@ -5662,7 +5768,10 @@ function renderMissionsCreation(){
   if(!state.tasks.length) body = `<div class="empty">Aucune mission créée pour le moment.</div>`;
 
   return `
-    <div class="topbar"><div><h1>Missions — Création</h1><div class="desc">Créez des missions, regroupez-les par thème. La validation des soumissions se fait dans le sous-onglet « Validation ».</div></div></div>
+    <div class="topbar">
+      <div><h1>Missions — Création</h1><div class="desc">Créez des missions, regroupez-les par thème. La validation des soumissions se fait dans le sous-onglet « Validation ».</div></div>
+      <button type="button" class="btn btn-ghost" style="width:auto;" onclick="openTasksCalendarModal()" title="Calendrier des rendez-vous">${tacticalIconSvg('calendar',{size:16})} Calendrier des rendez-vous</button>
+    </div>
     <div style="display:flex;gap:10px;margin-bottom:18px;flex-wrap:wrap;">
       <button class="btn btn-primary btn-sm" style="width:auto;" onclick="openNewTaskModal()">+ Créer une mission</button>
       <button class="btn btn-ghost btn-sm" style="width:auto;" onclick="openNewGroupModal()">+ Créer un groupe</button>
@@ -5881,12 +5990,12 @@ function usersRowHtml(p){
       <td>${p.is_master ? '—' : `${p.xp} XP · Niv. ${levelFor(p.xp)}`}</td>
       <td>${fmtDate(p.created_at)}</td>
       <td>${fmtDateTime(p.last_login)}</td>
-      <td><div style="display:flex;gap:5px;flex-wrap:wrap;">
-        ${!p.is_master ? `<button class="btn btn-ghost btn-sm" onclick="openViewProfile('${esc(p.username)}')">Fiche</button>` : ''}
-        ${!p.is_master ? `<button class="btn btn-ghost btn-sm" onclick="openAddXpModal('${esc(p.username)}')">Ajouter XP</button>` : ''}
-        ${!p.is_master ? `<button class="btn btn-ghost btn-sm" onclick="resetUserToLevel1('${esc(p.username)}')">Reset XP</button>` : ''}
-        ${!p.is_master ? `<button class="btn btn-ghost btn-sm" onclick="openMarkAsOwnerModal('${esc(p.username)}')">${p.is_owner ? 'Propriétaire' : 'Marquer Propriétaire'}</button>` : ''}
-        ${!p.is_master ? `<button class="btn btn-danger btn-sm" onclick="deleteProfile('${esc(p.username)}')">Supprimer</button>` : ''}
+      <td><div class="row-icon-actions">
+        ${!p.is_master ? `<button type="button" class="icon-btn" title="Voir la fiche" onclick="openViewProfile('${esc(p.username)}')">${tacticalIconSvg('id-badge',{size:16})}</button>` : ''}
+        ${!p.is_master ? `<button type="button" class="icon-btn" title="Ajouter de l'XP" onclick="openAddXpModal('${esc(p.username)}')">${tacticalIconSvg('coins',{size:16})}</button>` : ''}
+        ${!p.is_master ? `<button type="button" class="icon-btn" title="Réinitialiser l'XP au niveau 1" onclick="resetUserToLevel1('${esc(p.username)}')">↺</button>` : ''}
+        ${!p.is_master ? `<button type="button" class="icon-btn${p.is_owner ? ' active' : ''}" title="${p.is_owner ? 'Compte marqué Propriétaire' : 'Marquer comme Propriétaire'}" onclick="openMarkAsOwnerModal('${esc(p.username)}')">${tacticalIconSvg('house',{size:16})}</button>` : ''}
+        ${!p.is_master ? `<button type="button" class="icon-btn danger" title="Supprimer ce compte" onclick="deleteProfile('${esc(p.username)}')">✕</button>` : ''}
       </div></td>
     </tr>`;
 }
@@ -5955,6 +6064,8 @@ function funnelAbandonedList(){
     if(last.event_type === 'booking_submitted') return;
     rows.push({
       username,
+      eventId: last.id,
+      seenByMaster: !!last.seen_by_master,
       profile: state.profiles.find(p => p.username === username) || null,
       step: last.event_type,
       itemName: last.item_name,
@@ -5964,6 +6075,23 @@ function funnelAbandonedList(){
     });
   });
   return rows.sort((a,b) => new Date(b.lastAt) - new Date(a.lastAt));
+}
+// Pastille de nav (rouge, "3") = paniers abandonnés pas encore VUS par le master — pas le total
+// (celui-ci reste affiché en toutes lettres dans le panneau, voir renderUtilisateursFunnel). Se vide
+// à l'ouverture de l'onglet (markFunnelAbandonedSeen, appelé depuis goto()) et se remplit à nouveau
+// dès qu'un client a une nouvelle activité (un nouvel événement = une nouvelle ligne, forcément non
+// vue) — même logique que les pastilles Messages/Contrats/Missions existantes.
+function funnelUnseenAbandonedCount(){
+  return funnelAbandonedList().filter(r => !r.seenByMaster).length;
+}
+function markFunnelAbandonedSeen(){
+  const toMark = funnelAbandonedList().filter(r => !r.seenByMaster);
+  if(!toMark.length) return;
+  toMark.forEach(r => {
+    const ev = state.funnelEvents.find(e => e.id === r.eventId);
+    if(ev) ev.seen_by_master = true;
+    sb.from('funnel_events').update({ seen_by_master: true }).eq('id', r.eventId).then(()=>{});
+  });
 }
 // Formatage commun "20/10 → 22/10" (ou "—" si pas de dates) pour les listes du funnel.
 function funnelFmtPeriode(startDate, endDate){
@@ -6024,14 +6152,18 @@ function funnelStepRowHtml(row){
 // des clients ayant atteint cette étape, avec un accès direct à leur fiche.
 function funnelStepDetailsHtml(stepNum, eventType, count, barColorCss){
   const rows = funnelClientsForStep(eventType);
+  // La barre DOIT être à l'intérieur de <summary> (et non juste dans <details>) : tout ce qui est
+  // enfant de <details> mais hors <summary> est masqué par le navigateur tant que l'accordéon est
+  // fermé — sinon on perd le côté "visuel en un coup d'œil" repliée (régression repérée par Luka).
   return `
     <details class="funnel-details">
       <summary>
         <svg class="chev" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9.5 5 16 12l-6.5 7"/></svg>
-        <span class="funnel-step-title">${stepNum} · ${esc(FUNNEL_STEP_LABELS[eventType])}</span>
-        <strong>${count}</strong>
+        <div class="funnel-step-summary-body">
+          <div class="funnel-step-head"><span class="funnel-step-title">${stepNum} · ${esc(FUNNEL_STEP_LABELS[eventType])}</span><strong>${count}</strong></div>
+          <div class="xp-bar-track"><div class="xp-bar-fill" style="${barColorCss}"></div></div>
+        </div>
       </summary>
-      <div class="xp-bar-track"><div class="xp-bar-fill" style="${barColorCss}"></div></div>
       <div class="funnel-step-clients">
         <table class="tbl-compact"><thead><tr><th>Client</th><th>Modèle</th><th>Dates envisagées</th><th>Dernière activité</th><th></th></tr></thead>
         <tbody>${rows.length ? rows.map(funnelStepRowHtml).join('') : `<tr><td colspan="5"><div class="empty">Aucun client n'a encore atteint cette étape.</div></td></tr>`}</tbody></table>
@@ -7707,7 +7839,7 @@ function clientHistoryEntries(username){
   const p = state.profiles.find(x => x.username === username);
   if(p && p.created_at) entries.push({ date: p.created_at, icon: tacticalIconSvg('id-badge',{size:15}), label: 'Compte créé' });
   if(MEMBER_DOC_UPLOAD_ENABLED && p && p.id_doc_uploaded_at) entries.push({ date: p.id_doc_uploaded_at, icon: tacticalIconSvg('doc',{size:15}), label: "Pièce d'identité envoyée" });
-  if(MEMBER_DOC_UPLOAD_ENABLED && p && p.address_doc_uploaded_at) entries.push({ date: p.address_doc_uploaded_at, icon: tacticalIconSvg('doc',{size:15}), label: 'Justificatif de domicile envoyé' });
+  if(MEMBER_DOC_UPLOAD_ENABLED && p && p.address_doc_uploaded_at) entries.push({ date: p.address_doc_uploaded_at, icon: tacticalIconSvg('doc',{size:15}), label: "Attestation d'assurance habitation envoyée" });
   state.bookings.filter(b => b.username === username).forEach(b => {
     const item = state.items.find(i => i.id === b.item_id);
     entries.push({ date: b.start_date, icon: tacticalIconSvg('package',{size:15}), label: `Réservation ${esc(item ? item.name : 'matériel supprimé')} — ${fmtDate(b.start_date)} → ${fmtDate(b.end_date)} · ${STATUS_LABELS[b.status] || b.status}` });
@@ -7745,6 +7877,9 @@ function clientHistoryHtml(username){
 function renderModal(){
   if(!state.modal) return "";
   const m = state.modal;
+  if(m.type === "tasksCalendar"){
+    return tasksCalendarModalHtml();
+  }
   if(m.type === "bookingCalendar"){
     return bookingCalendarModalHtml();
   }
@@ -8083,6 +8218,12 @@ function renderModal(){
       <label class="checkbox-field"><input type="checkbox" id="tk-requires-date" ${editing && t.requires_date?'checked':''}> Demander la date de la location (bloquée avant le 15/08/2026, lancement de l'app)</label>
       <label class="checkbox-field"><input type="checkbox" id="tk-recurring" ${editing && (t.is_recurring||t.requires_booking)?'checked':''} ${editing && t.requires_booking?'disabled':''}> Mission récurrente — redevient disponible pour le client dès qu'elle est validée et l'XP créditée</label>
       <label class="checkbox-field"><input type="checkbox" id="tk-requires-booking" ${editing && t.requires_booking?'checked':''} onchange="const r=document.getElementById('tk-recurring'); if(this.checked){ r.checked=true; r.disabled=true; } else { r.disabled=false; }"> Plafonner aux locations confirmées — créditée UNE SEULE FOIS par contrat de location (jamais par jour, jamais de façon illimitée) ; nécessite une location au statut « Acceptée » ou « Louée » par crédit</label>
+      <div style="background:rgba(255,185,74,0.08);border:1px solid rgba(255,185,74,0.3);border-radius:var(--r-sm);padding:12px 14px;margin:4px 0 2px;">
+        <label class="checkbox-field" style="margin:0;align-items:flex-start;"><input type="checkbox" id="tk-rdv" style="margin-top:2px;" ${editing && t.is_rdv?'checked':''} onchange="document.getElementById('tk-rdv-wrap').style.display=this.checked?'block':'none'"><span style="display:flex;flex-direction:column;gap:2px;"><span style="color:var(--amber);display:inline-flex;align-items:center;gap:6px;font-weight:600;">${tacticalIconSvg('calendar',{size:15})} Créer comme un rendez-vous</span><span style="color:var(--text-faint);font-size:12px;">Ajoute un badge bien visible sur la carte de la mission</span></span></label>
+        <div id="tk-rdv-wrap" style="display:${editing && t.is_rdv?'block':'none'};margin-top:10px;">
+          <div class="field" style="margin:0;"><label>Date et heure du rendez-vous</label><input id="tk-rdv-at" type="datetime-local" value="${editing && t.rdv_at ? isoToDatetimeLocal(t.rdv_at) : ''}"></div>
+        </div>
+      </div>
       <div class="modal-actions"><button class="btn btn-ghost" onclick="closeModal()">Annuler</button><button class="btn btn-primary" onclick="confirmNewTask(${editing?`'${t.id}'`:'null'})">${editing?'Enregistrer':'Créer'}</button></div>
     </div></div>`;
   }
@@ -8181,7 +8322,7 @@ function renderModal(){
       <p style="font-size:12px;line-height:1.5;color:var(--text-faint);margin:0 0 8px;">Une fois le document récupéré et archivé de ton côté, pense à le supprimer d'ici.</p>
       ${docRowHtml('id', p, false, true)}
       ${docRowHtml('address', p, false, true)}` : `
-      <p style="font-size:12.5px;line-height:1.55;color:var(--text-faint);margin:0;">Pièce d'identité, justificatif de domicile et attestation d'assurance habitation ne sont plus déposés dans l'appli (RGPD) : demandés au client par email à ${esc(CONTACT_EMAIL)}.</p>`}
+      <p style="font-size:12.5px;line-height:1.55;color:var(--text-faint);margin:0;">Pièce d'identité et attestation d'assurance habitation ne sont plus déposés dans l'appli (RGPD) : demandés au client par email à ${esc(CONTACT_EMAIL)}.</p>`}
       <div class="section-title" style="margin-top:6px;">Historique du compte (missions, locations, récompenses, contrat...)</div>
       ${clientHistoryHtml(p.username)}
       <div class="section-title" style="margin-top:6px;">Note interne (visible équipe uniquement)</div>
@@ -8424,6 +8565,7 @@ window.goto = (view) => {
   if(u && !u.is_master && view === 'missions') markMissionsSeen(u.username);
   if(u && u.is_master && view === 'contrats') markContractsSeen();
   if(u && u.is_master && view === 'gestion-proprietaires') markOwnerContractsSeen();
+  if(u && u.is_master && view === 'utilisateurs-suivi') markFunnelAbandonedSeen();
   if(u && !u.is_master && view === 'recompenses') markRedemptionsSeen(u.username);
   if(u && !u.is_master && view === 'messages') markMessagesSeenByClient(u.username);
   if(u && u.is_master && view === 'messages'){
@@ -8795,16 +8937,20 @@ window.confirmNewTask = (taskId) => {
   // est auto-cochée et désactivée par tk-requires-booking (voir modal), mais on sécurise ici aussi
   // au cas où l'utilisateur aurait quand même réussi à la décocher.
   const isRecurring = document.getElementById("tk-recurring").checked || requiresBooking;
+  const isRdv = document.getElementById("tk-rdv").checked;
+  const rdvAtRaw = document.getElementById("tk-rdv-at")?.value || '';
+  const rdvAt = isRdv && rdvAtRaw ? (rdvAtRaw.length === 16 ? rdvAtRaw + ':00' : rdvAtRaw) : null;
   if(taskId){
     updateTask(taskId, {
       title, description: desc, xp_reward: Number(xp)||10,
       requires_answer: !!requiresAnswer, answer_label: requiresAnswer ? (answerLabel || "Votre réponse") : null,
       requires_date: !!requiresDate,
       requires_booking: !!requiresBooking,
+      is_rdv: !!isRdv, rdv_at: isRdv ? rdvAt : null,
       group_id: groupId, is_recurring: !!isRecurring
     }).then(ok => { if(ok) state.modal = null; render(); });
   } else {
-    createTask(title, desc, xp, requiresAnswer, answerLabel, groupId, isRecurring, requiresDate, requiresBooking);
+    createTask(title, desc, xp, requiresAnswer, answerLabel, groupId, isRecurring, requiresDate, requiresBooking, isRdv, rdvAt);
   }
 };
 window.openEditTaskModal = (taskId) => { state.modal = { type:"editTask", taskId }; render(); };
@@ -9081,7 +9227,7 @@ fr: {
   'profil.docs.delete.confirm': "Supprimer {{label}} ?",
   'profil.docs.err.badFormat': "Format non supporté (image ou PDF uniquement).",
   'profil.docs.id.label': "Pièce d'identité",
-  'profil.docs.address.label': "Justificatif de domicile",
+  'profil.docs.address.label': "Attestation d'assurance habitation",
   'profil.docs.none': "Non envoyé",
   'profil.docs.notYet': "Ces documents ne sont pas encore disponibles.",
   'profil.docs.replace': "Remplacer",
@@ -9324,7 +9470,7 @@ en: {
   'profil.docs.delete.confirm': "Delete {{label}}?",
   'profil.docs.err.badFormat': "Unsupported format (image or PDF only).",
   'profil.docs.id.label': "ID document",
-  'profil.docs.address.label': "Proof of address",
+  'profil.docs.address.label': "Home insurance certificate",
   'profil.docs.none': "Not sent",
   'profil.docs.notYet': "These documents are not yet available.",
   'profil.docs.replace': "Replace",
@@ -9567,7 +9713,7 @@ es: {
   'profil.docs.delete.confirm': "¿Eliminar {{label}}?",
   'profil.docs.err.badFormat': "Formato no compatible (solo imagen o PDF).",
   'profil.docs.id.label': "Documento de identidad",
-  'profil.docs.address.label': "Justificante de domicilio",
+  'profil.docs.address.label': "Certificado de seguro del hogar",
   'profil.docs.none': "No enviado",
   'profil.docs.notYet': "Estos documentos aún no están disponibles.",
   'profil.docs.replace': "Reemplazar",
@@ -9810,7 +9956,7 @@ it: {
   'profil.docs.delete.confirm': "Eliminare {{label}}?",
   'profil.docs.err.badFormat': "Formato non supportato (solo immagine o PDF).",
   'profil.docs.id.label': "Documento d'identità",
-  'profil.docs.address.label': "Prova di domicilio",
+  'profil.docs.address.label': "Certificato di assicurazione casa",
   'profil.docs.none': "Non inviato",
   'profil.docs.notYet': "Questi documenti non sono ancora disponibili.",
   'profil.docs.replace': "Sostituisci",
@@ -10053,7 +10199,7 @@ de: {
   'profil.docs.delete.confirm': "{{label}} löschen?",
   'profil.docs.err.badFormat': "Nicht unterstütztes Format (nur Bild oder PDF).",
   'profil.docs.id.label': "Ausweisdokument",
-  'profil.docs.address.label': "Wohnsitznachweis",
+  'profil.docs.address.label': "Wohngebäudeversicherungsnachweis",
   'profil.docs.none': "Nicht gesendet",
   'profil.docs.notYet': "Diese Dokumente sind noch nicht verfügbar.",
   'profil.docs.replace': "Ersetzen",
@@ -10296,7 +10442,7 @@ lb: {
   'profil.docs.delete.confirm': "{{label}} läschen?",
   'profil.docs.err.badFormat': "Net ënnerstëtzt Format (nëmmen Bild oder PDF).",
   'profil.docs.id.label': "Identitéitsbeleeg",
-  'profil.docs.address.label': "Wunnsëtznoweis",
+  'profil.docs.address.label': "Wunnengsversécherungsnoweis",
   'profil.docs.none': "Net geschéckt",
   'profil.docs.notYet': "Dës Dokumenter si nach net verfügbar.",
   'profil.docs.replace': "Ersetzen",
