@@ -777,6 +777,34 @@
     .fin-period-sep{display:none;}
     .fin-chart-card{padding:16px 14px 12px;}
     .fin-chart-legend{gap:10px 16px;}
+    /* Lot 39 : .fin-mini-stats n'avait aucun palier mobile (toujours 6 colonnes, même sur un
+       téléphone de 390px) — 6 chiffres écrasés et illisibles, repéré comme un vrai bug distinct de
+       la demande initiale. */
+    .fin-mini-stats{grid-template-columns:repeat(3,1fr);}
+
+    /* ---------- Lot 39 : tableaux en cartes sur mobile ----------
+       Le défilement horizontal (règle `table{...}` plus haut) reste la solution pour LA PLUPART des
+       tableaux (listes compactes, beaucoup de colonnes de détail) — on ne touche à rien pour eux.
+       Mais "Gestion > Réservations" est l'écran le plus consulté du master depuis son téléphone
+       (retour direct de Luka : "j'ai beaucoup de mal à gérer depuis mon téléphone"), et y faire
+       défiler une ligne à la fois pour lire Matériel/Client/Fin/Prix/Statut/Actions était le coeur
+       du problème. Cette classe (posée uniquement sur CE tableau, voir gestionDateGroupHtml) le
+       transforme en pile de cartes : chaque <tr> devient une carte, chaque <td> affiche son
+       libellé (data-label, posé dans gestionRowHtml) à gauche et sa valeur à droite, et la
+       dernière cellule (actions) repasse en bloc pleine largeur plutôt qu'en ligne label/valeur,
+       puisque des boutons empilés n'ont pas besoin d'étiquette. */
+    table.tbl-cards-mobile{display:block;overflow-x:visible;white-space:normal;}
+    table.tbl-cards-mobile thead{display:none;}
+    table.tbl-cards-mobile tbody{display:block;}
+    table.tbl-cards-mobile tr{display:block;background:rgba(255,255,255,0.03);border:1px solid var(--border-soft);border-radius:var(--r-md);padding:2px 14px;margin-bottom:12px;}
+    table.tbl-cards-mobile tr:last-child{margin-bottom:0;}
+    table.tbl-cards-mobile td{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border-soft);text-align:right;white-space:normal;}
+    table.tbl-cards-mobile td::before{content:attr(data-label);font-size:11px;font-weight:600;color:var(--text-faint);text-align:left;flex-shrink:0;}
+    table.tbl-cards-mobile td:last-child{display:block;text-align:left;border-bottom:none;padding-top:12px;}
+    table.tbl-cards-mobile td:last-child::before{content:none;}
+  }
+  @media (max-width:480px){
+    .fin-mini-stats{grid-template-columns:repeat(2,1fr);}
   }
 
   /* ---------- Finances (Lot 19) ---------- */
@@ -1159,6 +1187,13 @@ let state = {
   fatalError: null,
   session: null, // {username(=email pour les clients), isMaster}
   profiles: [], items: [], bookings: [], tasks: [], completions: [], contracts: [], mission_groups: [], rewards: [], redemptions: [], rank_config: [], messages: [],
+  // Lot 39 : canaux de discussion de groupe (en plus des messages 1-à-1 ci-dessus).
+  channels: [], channelMembers: [], channelMessages: [],
+  channelsSelectedId: null, // (master) canal actuellement ouvert dans le volet de droite
+  channelsMobileOpen: false, // (master, mobile) bascule liste <-> conversation, même principe que messagesMobileOpen
+  channelError: "",
+  clientActiveThread: 'team', // (client) 'team' = fil privé avec l'équipe, sinon l'id d'un canal
+  clientMessagesMobileOpen: false, // (client, mobile) même principe que messagesMobileOpen/channelsMobileOpen
   financeSales: [], financeCharges: [], financeSettings: null,
   funnelEvents: [], // Lot 37 : journal des étapes du parcours de réservation (voir fetchAll)
   financePeriod: null, // {mode,start,end} — initialisé au premier affichage de l'onglet (finEnsurePeriod)
@@ -1435,7 +1470,7 @@ function logFunnelEventDebounced(eventType, itemId, start, end){
 
 /* ---------- Boot & data ---------- */
 async function fetchAll(){
-  const [profiles, items, bookings, tasks, completions, contracts, groups, rewards, redemptions, ownerContracts, platformDocs, rankConfig, messages, financeSales, financeCharges, financeSettings, crmCompanies, crmActivities, crmTasks, bookingDateLabels, invoices, crmTaskNotes, funnelEvents] = await Promise.all([
+  const [profiles, items, bookings, tasks, completions, contracts, groups, rewards, redemptions, ownerContracts, platformDocs, rankConfig, messages, financeSales, financeCharges, financeSettings, crmCompanies, crmActivities, crmTasks, bookingDateLabels, invoices, crmTaskNotes, funnelEvents, channels, channelMembers, channelMessages] = await Promise.all([
     sb.from('profiles').select('*'),
     sb.from('items').select('*').order('sort_order', { ascending: true, nullsFirst: false }).order('created_at', { ascending: true }),
     sb.from('bookings').select('*'),
@@ -1459,6 +1494,9 @@ async function fetchAll(){
     sb.from('invoices').select('*'),
     sb.from('crm_task_notes').select('*').order('created_at', { ascending: false }),
     sb.from('funnel_events').select('*').order('created_at', { ascending: true }),
+    sb.from('channels').select('*').order('created_at', { ascending: true }),
+    sb.from('channel_members').select('*'),
+    sb.from('channel_messages').select('*').order('created_at', { ascending: true }),
   ]);
   state.profiles = profiles.data || [];
   state.items = items.data || [];
@@ -1508,6 +1546,12 @@ async function fetchAll(){
   // propres événements, jamais la lecture — cette liste reste donc vide pour un compte client,
   // volontairement (le suivi est un outil réservé à l'équipe).
   state.funnelEvents = funnelEvents.data || [];
+  // Lot 39 (canaux de discussion de groupe) : même principe, tant que migration_lot39_canaux.sql
+  // n'a pas été exécutée, ces trois lectures échouent silencieusement — l'onglet "Canaux" reste
+  // juste vide côté master, et aucun client ne voit de canal, rien ne casse.
+  state.channels = channels.data || [];
+  state.channelMembers = channelMembers.data || [];
+  state.channelMessages = channelMessages.data || [];
 }
 
 async function boot(){
@@ -1604,7 +1648,7 @@ function renderUnlessTyping(){
 // rouges de la nav, ex. "Contrats propriétaire" et "Commercial", sont recalculées à chaque render()
 // depuis state, donc elles se remettent à jour toutes seules dès que la bonne table est synchronisée
 // ici — inutile d'y toucher séparément).
-const OV_REALTIME_TABLES = ['items','bookings','tasks','task_completions','contracts','owner_contracts','profiles','mission_groups','rewards','reward_redemptions','messages','finance_sales','finance_charges','finance_settings','invoices','crm_task_notes','crm_companies','crm_activities','crm_tasks','booking_date_labels','platform_docs','rank_config','funnel_events'];
+const OV_REALTIME_TABLES = ['items','bookings','tasks','task_completions','contracts','owner_contracts','profiles','mission_groups','rewards','reward_redemptions','messages','finance_sales','finance_charges','finance_settings','invoices','crm_task_notes','crm_companies','crm_activities','crm_tasks','booking_date_labels','platform_docs','rank_config','funnel_events','channels','channel_members','channel_messages'];
 function subscribeRealtime(){
   const channel = sb.channel('ov-sync');
   OV_REALTIME_TABLES.forEach(table => {
@@ -3536,6 +3580,23 @@ async function deleteInvoiceRecord(inv){
   }
 }
 
+/* ---------- Réémission de facture (Lot 39) ----------
+   Besoin distinct de la suppression de réservation (Lot 30/36) : corriger une facture déjà envoyée
+   (erreur de montant, remise oubliée...) SANS perdre la réservation elle-même — dates, matériel,
+   client restent. Réutilise deleteInvoiceRecord() telle quelle (même suppression propre des deux
+   côtés + PDF + réutilisation du numéro si c'est la dernière facture émise), puis rouvre aussitôt
+   la modale "Envoyer la facture" sur la même réservation pour générer la version corrigée. Pas de
+   nouveau chemin de suppression parallèle : un seul endroit sait supprimer une facture
+   (deleteInvoiceRecord), ce qui évite de reproduire le bug corrigé au Lot 36. */
+window.reissueInvoice = async (bookingId) => {
+  if(!state.session.isMaster) return;
+  const inv = state.invoices.find(x => x.booking_id === bookingId);
+  if(!inv) return;
+  if(!confirm(`Réémettre la facture ${inv.invoice_number} ? L'ancienne facture est supprimée définitivement (PDF effacé, pour vous et pour le client) et vous allez générer une version corrigée à la place. La réservation n'est pas touchée.`)) return;
+  await deleteInvoiceRecord(inv);
+  openSendInvoiceModal(bookingId);
+};
+
 async function masterDeleteContract(username){
   if(!confirm(`Supprimer le contrat de "${username}" (original + version signée) ?`)) return;
   await sb.storage.from('contracts').remove([`${username}/original.pdf`, `${username}/signed.pdf`]);
@@ -4503,8 +4564,23 @@ function masterNavDef(){
         { id: "commercial", label: "Entreprises" },
         { id: "commercial-taches", label: "Tâches", badge: () => crmOpenTasksDueCount() },
       ] },
-    { id: "messages", label: "Messages", icon: "messages",
-      badge: () => state.messages.filter(m => !m.sender_is_master && !m.seen_by_master).length },
+    // Lot 39 : "Messages" devient un groupe avec deux sous-onglets — "Conversations" (fils privés
+    // 1-à-1, inchangé) et "Canaux" (nouveau : fils de groupe pour donner les mêmes directives à
+    // plusieurs clients concernés par une même opération). La pastille du groupe additionne les deux.
+    { id: "messages-group", label: "Messages", icon: "messages",
+      badge: () => {
+        const privateUnread = state.messages.filter(m => !m.sender_is_master && !m.seen_by_master).length;
+        const u = currentProfile();
+        const channelsUnread = u ? channelsForUser(u.username).reduce((sum, c) => sum + channelUnreadCount(c.id, u.username), 0) : 0;
+        return privateUnread + channelsUnread;
+      },
+      sub: [
+        { id: "messages", label: "Conversations", badge: () => state.messages.filter(m => !m.sender_is_master && !m.seen_by_master).length },
+        { id: "canaux", label: "Canaux", badge: () => {
+          const u = currentProfile();
+          return u ? channelsForUser(u.username).reduce((sum, c) => sum + channelUnreadCount(c.id, u.username), 0) : 0;
+        } },
+      ] },
     { id: "missions-group", label: "Missions", icon: "missions",
       badge: () => state.completions.filter(c => c.status === 'attente').length,
       sub: [
@@ -4842,6 +4918,10 @@ function gestionRowHtml(b){
         // maintenant tout le cas : réservation + facture + PDF + numéro, avec une confirmation claire
         // sur ce qui va disparaître (voir cancelBooking).
         actions.push(`<button class="btn btn-ghost btn-sm" onclick="openInvoiceFile('${esc(inv.pdf_path)}','${esc(inv.id)}')">Facture ${esc(inv.invoice_number)}</button>`);
+        // Lot 39 : bouton "Réémettre" — corrige une facture déjà envoyée (montant, remise) sans
+        // toucher à la réservation. Supprime l'ancienne facture (deleteInvoiceRecord, chemin sûr
+        // du Lot 36) puis rouvre immédiatement la modale d'envoi pour générer la version corrigée.
+        actions.push(`<button class="btn btn-ghost btn-sm" onclick="reissueInvoice('${esc(b.id)}')" title="Supprime cette facture et permet d'en générer une corrigée, sans annuler la réservation">Réémettre</button>`);
         invoiceReadLineHtml = `<div style="font-size:11px;color:var(--text-faint);margin-top:4px;">${inv.read_at ? `Lu le ${esc(fmtDateTime(inv.read_at))}` : 'Non lu'}</div>`;
       } else {
         actions.push(`<button class="btn btn-primary btn-sm" onclick="openSendInvoiceModal('${esc(b.id)}')">Envoyer la facture</button>`);
@@ -4860,11 +4940,11 @@ function gestionRowHtml(b){
   actions.push(`<button class="btn btn-danger btn-sm" onclick="cancelBooking('${b.id}')">Supprimer</button>`);
   return `
     <tr>
-      <td>${esc(item?.name || "Matériel supprimé")}</td>
-      <td><button class="btn btn-ghost btn-sm" style="padding:6px 12px;" onclick="openViewProfile('${esc(p?.username||b.username)}')">${esc(p ? clientDisplayName(p) : b.username)}</button></td>
-      <td>${fmtDate(b.end_date)}</td>
-      <td>${fmtPrice(price)}</td>
-      <td>${statusPillHtml(b.status)}</td>
+      <td data-label="Matériel">${esc(item?.name || "Matériel supprimé")}</td>
+      <td data-label="Client"><button class="btn btn-ghost btn-sm" style="padding:6px 12px;" onclick="openViewProfile('${esc(p?.username||b.username)}')">${esc(p ? clientDisplayName(p) : b.username)}</button></td>
+      <td data-label="Fin">${fmtDate(b.end_date)}</td>
+      <td data-label="Prix estimé">${fmtPrice(price)}</td>
+      <td data-label="Statut">${statusPillHtml(b.status)}</td>
       <td><div class="btn-row" style="display:flex;gap:6px;flex-wrap:wrap;">${actions.join('')}</div>${invoiceReadLineHtml}</td>
     </tr>`;
 }
@@ -4914,7 +4994,7 @@ function gestionDateGroupHtml(group){
         <button type="button" class="gestion-date-rename" onclick="event.stopPropagation(); openRenameBookingDateGroup('${date}')" title="Renommer ce groupe">✎</button>
         <span class="gestion-date-count">${bookings.length} location${bookings.length>1?'s':''}</span>
       </div>
-      ${!collapsed ? `<div class="gestion-date-body"><table><thead>${gestionTheadHtml()}</thead><tbody>${bookings.map(gestionRowHtml).join('')}</tbody></table></div>` : ''}
+      ${!collapsed ? `<div class="gestion-date-body"><table class="tbl-cards-mobile"><thead>${gestionTheadHtml()}</thead><tbody>${bookings.map(gestionRowHtml).join('')}</tbody></table></div>` : ''}
     </div>`;
 }
 window.toggleGestionDateGroup = (date) => {
@@ -6268,18 +6348,75 @@ function chatBubbleHtml(m, isMasterViewer){
 }
 function renderMessagesClient(){
   const u = currentProfile();
-  const msgs = state.messages.filter(m => m.username === u.username);
+  const myChannels = channelsForUser(u.username);
+  // Lot 39 : tant que ce client n'appartient à aucun canal (cas le plus fréquent), l'écran reste
+  // EXACTEMENT ce qu'il était avant — un seul fil, sans volet de liste. Rien ne change pour lui.
+  if(!myChannels.length){
+    const msgs = state.messages.filter(m => m.username === u.username);
+    return `
+      <div class="topbar"><div><h1>${esc(t('messages.title'))}</h1><div class="desc">${esc(t('messages.desc'))}</div></div></div>
+      <div class="chat-wrap thread-open">
+        <div class="chat-thread-pane">
+          <div class="chat-thread-header"><div class="t-title">${esc(t('messages.teamName'))}</div></div>
+          <div class="chat-messages" id="chat-messages">${msgs.length ? msgs.map(m => chatBubbleHtml(m, false)).join('') : `<div class="chat-empty-thread"><div class="empty">${esc(t('messages.empty'))}</div></div>`}</div>
+          <div class="chat-compose">
+            <textarea id="chat-input" rows="1" placeholder="${esc(t('messages.placeholder'))}" onkeydown="onChatKeydown(event,'${esc(u.username)}')" oninput="autoGrowChatInput(this)"></textarea>
+            <button type="button" class="btn btn-primary btn-sm" onclick="sendMessage('${esc(u.username)}')">${esc(t('messages.send'))}</button>
+          </div>
+        </div>
+      </div>`;
+  }
+  // Dès qu'un canal existe pour ce client, on bascule sur liste + fil : le fil privé ("Équipe")
+  // reste toujours en première position, suivi de ses canaux — voir state.clientActiveThread.
+  const active = state.clientActiveThread || 'team';
+  const teamMsgs = state.messages.filter(m => m.username === u.username);
+  const teamUnread = teamMsgs.filter(m => m.sender_is_master && !m.seen_by_client).length;
+  const teamLast = teamMsgs.length ? teamMsgs[teamMsgs.length - 1] : null;
+  let teamPreview = "Aucun message pour le moment";
+  if(teamLast){
+    const raw = (teamLast.sender_is_master ? "" : "Vous : ") + teamLast.body.replace(/\n/g, " ");
+    teamPreview = raw.length > 54 ? raw.slice(0, 54) + "…" : raw;
+  }
+  const rows = [`
+    <button type="button" class="chat-conv-row ${active==='team'?'active':''}" onclick="selectClientThread('team')">
+      <div class="avatar">${tacticalIconSvg('messages',{size:16})}</div>
+      <div class="chat-conv-info">
+        <div class="chat-conv-name">${esc(t('messages.teamName'))}</div>
+        <div class="chat-conv-preview">${esc(teamPreview)}</div>
+      </div>
+      ${teamUnread>0 ? `<span class="badge-dot">${teamUnread>99?'99+':teamUnread}</span>` : ''}
+    </button>`].concat(myChannels.map(c => channelConvRowHtml(c, u.username)));
+  let threadHtml;
+  if(active === 'team'){
+    threadHtml = `
+      <div class="chat-thread-header">
+        <button type="button" class="chat-back-btn" onclick="closeClientThread()">${tacticalIconSvg('chevron-left',{size:19})}</button>
+        <div class="t-title">${esc(t('messages.teamName'))}</div>
+      </div>
+      <div class="chat-messages" id="chat-messages">${teamMsgs.length ? teamMsgs.map(m => chatBubbleHtml(m, false)).join('') : `<div class="chat-empty-thread"><div class="empty">${esc(t('messages.empty'))}</div></div>`}</div>
+      <div class="chat-compose">
+        <textarea id="chat-input" rows="1" placeholder="${esc(t('messages.placeholder'))}" onkeydown="onChatKeydown(event,'${esc(u.username)}')" oninput="autoGrowChatInput(this)"></textarea>
+        <button type="button" class="btn btn-primary btn-sm" onclick="sendMessage('${esc(u.username)}')">${esc(t('messages.send'))}</button>
+      </div>`;
+  } else {
+    const channel = state.channels.find(c => c.id === active);
+    const msgs = channel ? state.channelMessages.filter(m => m.channel_id === channel.id) : [];
+    threadHtml = channel ? `
+      <div class="chat-thread-header">
+        <button type="button" class="chat-back-btn" onclick="closeClientThread()">${tacticalIconSvg('chevron-left',{size:19})}</button>
+        <div class="t-title" style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${esc(channel.name)}</div>
+      </div>
+      <div class="chat-messages" id="chat-messages">${msgs.length ? msgs.map(m => channelBubbleHtml(m, u.username, false)).join('') : `<div class="chat-empty-thread"><div class="empty">Aucun message dans ce canal pour le moment.</div></div>`}</div>
+      <div class="chat-compose">
+        <textarea id="channel-input" rows="1" placeholder="Écrire au canal…" onkeydown="onChannelKeydown(event,'${esc(channel.id)}')" oninput="autoGrowChatInput(this)"></textarea>
+        <button type="button" class="btn btn-primary btn-sm" onclick="sendChannelMessage('${esc(channel.id)}')">Envoyer</button>
+      </div>` : `<div class="chat-empty-thread"><div class="empty">Ce canal n'existe plus.</div></div>`;
+  }
   return `
     <div class="topbar"><div><h1>${esc(t('messages.title'))}</h1><div class="desc">${esc(t('messages.desc'))}</div></div></div>
-    <div class="chat-wrap thread-open">
-      <div class="chat-thread-pane">
-        <div class="chat-thread-header"><div class="t-title">${esc(t('messages.teamName'))}</div></div>
-        <div class="chat-messages" id="chat-messages">${msgs.length ? msgs.map(m => chatBubbleHtml(m, false)).join('') : `<div class="chat-empty-thread"><div class="empty">${esc(t('messages.empty'))}</div></div>`}</div>
-        <div class="chat-compose">
-          <textarea id="chat-input" rows="1" placeholder="${esc(t('messages.placeholder'))}" onkeydown="onChatKeydown(event,'${esc(u.username)}')" oninput="autoGrowChatInput(this)"></textarea>
-          <button type="button" class="btn btn-primary btn-sm" onclick="sendMessage('${esc(u.username)}')">${esc(t('messages.send'))}</button>
-        </div>
-      </div>
+    <div class="chat-wrap ${state.clientMessagesMobileOpen?'thread-open':''}">
+      <div class="chat-list-pane"><div class="chat-conv-list">${rows.join('')}</div></div>
+      <div class="chat-thread-pane">${threadHtml}</div>
     </div>`;
 }
 function renderMessagesMaster(){
@@ -6322,6 +6459,241 @@ function scrollChatToBottom(){
   const el = document.getElementById('chat-messages');
   if(el) el.scrollTop = el.scrollHeight;
 }
+
+/* ==========================================================================
+   Canaux de discussion de groupe (Lot 39) — en plus de la messagerie 1-à-1 ci-dessus.
+   Besoin : pouvoir sélectionner plusieurs clients concernés par une même opération (ex. tous ceux
+   qui louent le même week-end) et leur donner des directives en direct, dans un fil partagé, avec
+   un nom de canal modifiable. Réutilise au maximum le même gabarit visuel que la messagerie 1-à-1
+   (chat-wrap / chat-list-pane / chat-thread-pane / chat-bubble, déjà optimisés mobile) plutôt que
+   d'inventer une nouvelle UI — voir migration_lot39_canaux.sql pour les tables (channels,
+   channel_members, channel_messages). Le master est lui-même ajouté comme membre à la création
+   (voir confirmCreateChannel) : cela permet de réutiliser EXACTEMENT le même mécanisme de "dernière
+   lecture" (channel_members.last_read_at) pour le master et pour chaque client, sans code séparé.
+   ========================================================================== */
+function channelMemberProfiles(channelId){
+  const usernames = state.channelMembers.filter(cm => cm.channel_id === channelId).map(cm => cm.username);
+  return state.profiles.filter(p => usernames.includes(p.username));
+}
+function channelUnreadCount(channelId, username){
+  const member = state.channelMembers.find(cm => cm.channel_id === channelId && cm.username === username);
+  const lastRead = member && member.last_read_at ? new Date(member.last_read_at).getTime() : 0;
+  return state.channelMessages.filter(m => m.channel_id === channelId && m.sender !== username && new Date(m.created_at).getTime() > lastRead).length;
+}
+// Canaux auxquels appartient cet utilisateur (master ou client), triés non-lus d'abord puis par
+// activité la plus récente — même logique que messagesConversations().
+function channelsForUser(username){
+  const ids = new Set(state.channelMembers.filter(cm => cm.username === username).map(cm => cm.channel_id));
+  return state.channels.filter(c => !c.archived && ids.has(c.id)).map(c => {
+    const msgs = state.channelMessages.filter(m => m.channel_id === c.id);
+    const lastAt = msgs.length ? new Date(msgs[msgs.length - 1].created_at).getTime() : new Date(c.created_at).getTime();
+    return { channel: c, unread: channelUnreadCount(c.id, username), lastAt };
+  }).sort((a, b) => {
+    if(!!a.unread !== !!b.unread) return a.unread ? -1 : 1;
+    return b.lastAt - a.lastAt;
+  }).map(x => x.channel);
+}
+function markChannelSeen(channelId, username){
+  const member = state.channelMembers.find(cm => cm.channel_id === channelId && cm.username === username);
+  if(!member) return;
+  if(channelUnreadCount(channelId, username) === 0 && member.last_read_at) return;
+  const now = new Date().toISOString();
+  member.last_read_at = now;
+  sb.from('channel_members').update({ last_read_at: now }).eq('channel_id', channelId).eq('username', username).then(()=>{});
+}
+function channelConvRowHtml(channel, viewerUsername){
+  const active = state.channelsSelectedId === channel.id;
+  const unread = channelUnreadCount(channel.id, viewerUsername);
+  const msgs = state.channelMessages.filter(m => m.channel_id === channel.id);
+  const last = msgs.length ? msgs[msgs.length - 1] : null;
+  const memberCount = state.channelMembers.filter(cm => cm.channel_id === channel.id).length;
+  let preview = `${memberCount} membre${memberCount===1?'':'s'}`;
+  if(last){
+    const raw = (last.sender === viewerUsername ? "Vous : " : "") + last.body.replace(/\n/g, " ");
+    preview = raw.length > 54 ? raw.slice(0, 54) + "…" : raw;
+  }
+  return `
+    <button type="button" class="chat-conv-row ${active?'active':''}" onclick="openChannelThread('${esc(channel.id)}')">
+      <div class="avatar">${esc((channel.name||'?').slice(0,2).toUpperCase())}</div>
+      <div class="chat-conv-info">
+        <div class="chat-conv-name">${esc(channel.name)}</div>
+        <div class="chat-conv-preview">${esc(preview)}</div>
+      </div>
+      ${unread > 0 ? `<span class="badge-dot">${unread>99?'99+':unread}</span>` : ''}
+    </button>`;
+}
+// isMasterViewer régit uniquement le bouton de suppression (réservé à l'équipe), comme pour
+// chatBubbleHtml. "mine" compare au SENDER (pas à is_master) car un canal a plusieurs membres :
+// le nom de l'auteur est affiché sur les messages des autres, pour qu'on sache toujours qui parle.
+function channelBubbleHtml(m, viewerUsername, isMasterViewer){
+  const mine = m.sender === viewerUsername;
+  const senderProfile = state.profiles.find(p => p.username === m.sender);
+  const senderLabel = m.sender_is_master ? 'Owls Vision' : (senderProfile ? clientDisplayName(senderProfile) : m.sender);
+  return `
+    <div class="chat-bubble-row ${mine?'mine':''}">
+      <div class="chat-bubble">
+        ${isMasterViewer ? `
+        <div class="chat-bubble-actions">
+          <button type="button" class="chat-bubble-del" title="Supprimer ce message" onclick="deleteChannelMessage('${m.id}')">${tacticalIconSvg('x-circle',{size:13})}</button>
+        </div>` : ''}
+        ${!mine ? `<div style="font-size:10.5px;font-weight:700;color:var(--accent);margin-bottom:3px;">${esc(senderLabel)}</div>` : ''}
+        <div class="chat-bubble-text">${esc(m.body)}</div>
+        <div class="chat-bubble-meta">${fmtDateTime(m.created_at)}</div>
+      </div>
+    </div>`;
+}
+function renderChannelsMaster(){
+  const u = currentProfile();
+  const channels = channelsForUser(u.username);
+  const sel = state.channelsSelectedId ? state.channels.find(c => c.id === state.channelsSelectedId) : null;
+  const selMembers = sel ? channelMemberProfiles(sel.id).filter(p => p.username !== u.username) : [];
+  const msgs = sel ? state.channelMessages.filter(m => m.channel_id === sel.id) : [];
+  return `
+    <div class="topbar"><div><h1>Canaux</h1><div class="desc">Regroupez les clients concernés par une même opération pour leur donner des directives en direct, à tous à la fois.</div></div></div>
+    <div class="chat-wrap ${state.channelsMobileOpen?'thread-open':''}">
+      <div class="chat-list-pane">
+        <div style="padding:12px 12px 0;"><button type="button" class="btn btn-primary btn-sm" style="width:100%;" onclick="openNewChannelModal()">+ Nouveau canal</button></div>
+        <div class="chat-conv-list" id="channel-conv-list">${channels.length ? channels.map(c => channelConvRowHtml(c, u.username)).join('') : `<div class="empty" style="margin:16px;">Aucun canal pour le moment — créez-en un avec "+ Nouveau canal".</div>`}</div>
+      </div>
+      <div class="chat-thread-pane">
+        ${sel ? `
+          <div class="chat-thread-header">
+            <button type="button" class="chat-back-btn" onclick="closeChannelThread()">${tacticalIconSvg('chevron-left',{size:19})}</button>
+            <div style="flex:1;min-width:0;overflow:hidden;">
+              <div class="t-title" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${esc(sel.name)}</div>
+              <div style="font-size:11px;color:var(--text-faint);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${selMembers.length ? selMembers.map(p=>esc(clientDisplayName(p))).join(', ') : 'Aucun client membre'}</div>
+            </div>
+            <button type="button" class="btn btn-ghost btn-sm" style="width:auto;flex-shrink:0;" onclick="openChannelSettingsModal('${esc(sel.id)}')">Gérer</button>
+          </div>
+          <div class="chat-messages" id="chat-messages">${msgs.length ? msgs.map(m => channelBubbleHtml(m, u.username, true)).join('') : `<div class="chat-empty-thread"><div class="empty">Aucun message dans ce canal pour le moment.</div></div>`}</div>
+          <div class="chat-compose">
+            <textarea id="channel-input" rows="1" placeholder="Message à tous les membres du canal…" onkeydown="onChannelKeydown(event,'${esc(sel.id)}')" oninput="autoGrowChatInput(this)"></textarea>
+            <button type="button" class="btn btn-primary btn-sm" onclick="sendChannelMessage('${esc(sel.id)}')">Envoyer</button>
+          </div>
+        ` : `<div class="chat-empty-thread"><div class="empty">Sélectionnez un canal pour l'ouvrir, ou créez-en un nouveau.</div></div>`}
+      </div>
+    </div>`;
+}
+window.openChannelThread = (channelId) => {
+  state.channelsSelectedId = channelId;
+  state.channelsMobileOpen = true;
+  const u = currentProfile();
+  if(u) markChannelSeen(channelId, u.username);
+  render();
+};
+window.closeChannelThread = () => { state.channelsMobileOpen = false; render(); };
+window.openNewChannelModal = () => { state.modal = { type: "newChannel" }; state.channelError = ""; render(); };
+window.confirmCreateChannel = async () => {
+  const nameInput = document.getElementById('channel-name-input');
+  const name = nameInput ? nameInput.value.trim() : '';
+  if(!name){ state.channelError = "Merci de donner un nom au canal."; render(); return; }
+  const selected = Array.from(document.querySelectorAll('.channel-member-checkbox:checked')).map(el => el.value);
+  if(!selected.length){ state.channelError = "Sélectionnez au moins un client concerné."; render(); return; }
+  const u = currentProfile();
+  const { data: channelRow, error } = await sb.from('channels').insert({ name, created_by: u.username }).select().single();
+  if(error){ state.channelError = "Erreur : " + error.message; render(); return; }
+  const now = new Date().toISOString();
+  // Le master est ajouté comme membre (last_read_at déjà à jour, puisqu'il vient de créer le canal) —
+  // voir le commentaire en tête de cette section sur pourquoi ça simplifie le suivi des non-lus.
+  const memberRows = [{ channel_id: channelRow.id, username: u.username, last_read_at: now }]
+    .concat(selected.map(username => ({ channel_id: channelRow.id, username, last_read_at: null })));
+  const { data: insertedMembers, error: memErr } = await sb.from('channel_members').insert(memberRows).select();
+  if(memErr){
+    // Le canal a été créé mais pas ses membres : on le supprime plutôt que de laisser un canal
+    // fantôme sans personne dedans.
+    await sb.from('channels').delete().eq('id', channelRow.id);
+    state.channelError = "Erreur lors de l'ajout des membres : " + memErr.message;
+    render();
+    return;
+  }
+  state.channels.push(channelRow);
+  state.channelMembers.push(...insertedMembers);
+  state.modal = null;
+  state.channelError = "";
+  state.channelsSelectedId = channelRow.id;
+  state.channelsMobileOpen = true;
+  render();
+};
+window.openChannelSettingsModal = (channelId) => { state.modal = { type: "channelSettings", channelId }; state.channelError = ""; render(); };
+window.confirmRenameChannel = async (channelId) => {
+  const input = document.getElementById('channel-rename-input');
+  const name = input ? input.value.trim() : '';
+  if(!name){ state.channelError = "Le nom du canal ne peut pas être vide."; render(); return; }
+  const channel = state.channels.find(c => c.id === channelId);
+  if(!channel) return;
+  channel.name = name; // optimiste, comme ailleurs dans l'appli (ex. renameChannel/finances)
+  state.channelError = "";
+  render();
+  const { error } = await sb.from('channels').update({ name }).eq('id', channelId);
+  if(error) showErrorToast("Erreur lors du renommage : " + error.message);
+};
+window.toggleChannelMember = async (channelId, username, checked) => {
+  if(checked){
+    const { data, error } = await sb.from('channel_members').insert({ channel_id: channelId, username, last_read_at: null }).select().single();
+    if(error){ showErrorToast("Erreur : " + error.message); render(); return; }
+    state.channelMembers.push(data);
+  } else {
+    const { error } = await sb.from('channel_members').delete().eq('channel_id', channelId).eq('username', username);
+    if(error){ showErrorToast("Erreur : " + error.message); render(); return; }
+    state.channelMembers = state.channelMembers.filter(cm => !(cm.channel_id === channelId && cm.username === username));
+  }
+  render();
+};
+window.deleteChannel = async (channelId) => {
+  const channel = state.channels.find(c => c.id === channelId);
+  if(!confirm(`Supprimer le canal "${channel ? channel.name : ''}" ? Tous les messages de ce canal seront définitivement supprimés, pour vous et pour tous ses membres. Action irréversible.`)) return;
+  const { error } = await sb.from('channels').delete().eq('id', channelId);
+  if(error){ alert("Erreur : " + error.message); return; }
+  state.channels = state.channels.filter(c => c.id !== channelId);
+  state.channelMembers = state.channelMembers.filter(cm => cm.channel_id !== channelId);
+  state.channelMessages = state.channelMessages.filter(m => m.channel_id !== channelId);
+  if(state.channelsSelectedId === channelId){ state.channelsSelectedId = null; state.channelsMobileOpen = false; }
+  if(state.clientActiveThread === channelId) state.clientActiveThread = 'team';
+  state.modal = null;
+  render();
+};
+window.onChannelKeydown = (e, channelId) => {
+  if(e.key === 'Enter' && !e.shiftKey){ e.preventDefault(); sendChannelMessage(channelId); }
+};
+window.sendChannelMessage = async (channelId) => {
+  const ta = document.getElementById('channel-input');
+  if(!ta) return;
+  const body = ta.value.trim();
+  if(!body) return;
+  const u = currentProfile();
+  if(!u) return;
+  const isMaster = !!u.is_master;
+  ta.disabled = true;
+  const { data, error } = await sb.from('channel_messages').insert({ channel_id: channelId, sender: u.username, sender_is_master: isMaster, body }).select().single();
+  if(error){ ta.disabled = false; showErrorToast("Message non envoyé : " + error.message); return; }
+  state.channelMessages.push(data);
+  const member = state.channelMembers.find(cm => cm.channel_id === channelId && cm.username === u.username);
+  if(member) member.last_read_at = data.created_at;
+  render();
+  const ta2 = document.getElementById('channel-input');
+  if(ta2) ta2.focus();
+};
+window.deleteChannelMessage = async (id) => {
+  if(!confirm("Supprimer ce message ? Il disparaît aussi pour tous les membres du canal. Action irréversible.")) return;
+  const { error } = await sb.from('channel_messages').delete().eq('id', id);
+  if(error){ alert("Erreur : " + error.message); return; }
+  state.channelMessages = state.channelMessages.filter(m => m.id !== id);
+  render();
+};
+// Côté client : bascule entre le fil privé avec l'équipe ('team') et un canal précis, dans la vue
+// liste+fil combinée affichée uniquement quand le client appartient à au moins un canal (voir
+// renderMessagesClient).
+window.selectClientThread = (threadId) => {
+  state.clientActiveThread = threadId;
+  state.clientMessagesMobileOpen = true;
+  const u = currentProfile();
+  if(u){
+    if(threadId === 'team') markMessagesSeenByClient(u.username);
+    else markChannelSeen(threadId, u.username);
+  }
+  render();
+};
+window.closeClientThread = () => { state.clientMessagesMobileOpen = false; render(); };
 
 /* ==========================================================================
    Finances (Lot 19) — master uniquement. Saisie ventes/charges jour par jour,
@@ -8460,6 +8832,50 @@ function renderModal(){
       <div class="modal-actions"><button class="btn btn-ghost" onclick="closeModal()">Fermer</button></div>
     </div></div>`;
   }
+  if(m.type === "newChannel"){
+    const clients = state.profiles.filter(p => !p.is_master).sort((a,b) => clientDisplayName(a).localeCompare(clientDisplayName(b)));
+    return `
+    <div class="modal-bg" onclick="closeModalBg(event)"><div class="modal" style="max-width:460px;text-align:left;">
+      <h3>Nouveau canal de discussion</h3>
+      <div style="font-size:12.5px;color:var(--text-faint);margin-bottom:12px;">Pour donner les mêmes directives à plusieurs clients concernés par la même opération (ex. tous ceux qui louent le même week-end).</div>
+      <div class="field"><label>Nom du canal *</label><input id="channel-name-input" placeholder="Ex. Location du 14-15 juin" autofocus></div>
+      <div style="font-size:12.5px;color:var(--text-faint);margin:14px 0 8px;">Clients concernés</div>
+      <div style="display:flex;flex-direction:column;gap:2px;max-height:260px;overflow-y:auto;border:1px solid var(--border-soft);border-radius:var(--r-sm);padding:6px;">
+        ${clients.length ? clients.map(p => `
+          <label style="display:flex;align-items:center;gap:9px;padding:8px;border-radius:var(--r-sm);cursor:pointer;font-size:13.5px;">
+            <input type="checkbox" class="channel-member-checkbox" value="${esc(p.username)}" style="width:17px;height:17px;flex-shrink:0;cursor:pointer;">
+            ${esc(clientDisplayName(p))}
+          </label>`).join('') : `<div class="empty" style="padding:6px;">Aucun client enregistré.</div>`}
+      </div>
+      ${state.channelError ? `<div class="msg msg-error" style="margin-top:10px;">${esc(state.channelError)}</div>` : ''}
+      <div class="modal-actions"><button class="btn btn-ghost" onclick="closeModal()">Annuler</button><button class="btn btn-primary" onclick="confirmCreateChannel()">Créer le canal</button></div>
+    </div></div>`;
+  }
+  if(m.type === "channelSettings"){
+    const channel = state.channels.find(c => c.id === m.channelId);
+    if(!channel) return "";
+    const memberUsernames = state.channelMembers.filter(cm => cm.channel_id === channel.id).map(cm => cm.username);
+    const clients = state.profiles.filter(p => !p.is_master).sort((a,b) => clientDisplayName(a).localeCompare(clientDisplayName(b)));
+    return `
+    <div class="modal-bg" onclick="closeModalBg(event)"><div class="modal" style="max-width:460px;text-align:left;">
+      <h3>Paramètres du canal</h3>
+      <div class="field"><label>Nom du canal</label><input id="channel-rename-input" value="${esc(channel.name)}"></div>
+      <div class="modal-actions" style="justify-content:flex-start;margin-bottom:18px;"><button class="btn btn-primary btn-sm" style="width:auto;" onclick="confirmRenameChannel('${esc(channel.id)}')">Renommer</button></div>
+      <div style="font-size:12.5px;color:var(--text-faint);margin-bottom:8px;">Clients concernés — cochez ou décochez pour ajouter/retirer immédiatement.</div>
+      <div style="display:flex;flex-direction:column;gap:2px;max-height:240px;overflow-y:auto;border:1px solid var(--border-soft);border-radius:var(--r-sm);padding:6px;">
+        ${clients.length ? clients.map(p => `
+          <label style="display:flex;align-items:center;gap:9px;padding:8px;border-radius:var(--r-sm);cursor:pointer;font-size:13.5px;">
+            <input type="checkbox" ${memberUsernames.includes(p.username)?'checked':''} onchange="toggleChannelMember('${esc(channel.id)}','${esc(p.username)}',this.checked)" style="width:17px;height:17px;flex-shrink:0;cursor:pointer;">
+            ${esc(clientDisplayName(p))}
+          </label>`).join('') : `<div class="empty" style="padding:6px;">Aucun client enregistré.</div>`}
+      </div>
+      ${state.channelError ? `<div class="msg msg-error" style="margin-top:10px;">${esc(state.channelError)}</div>` : ''}
+      <div class="modal-actions">
+        <button class="btn btn-danger" onclick="deleteChannel('${esc(channel.id)}')">Supprimer le canal</button>
+        <button class="btn btn-ghost" onclick="closeModal()">Fermer</button>
+      </div>
+    </div></div>`;
+  }
   return "";
 }
 
@@ -8493,6 +8909,7 @@ function render(){
   else if(state.view === "commercial") content = renderCommercial();
   else if(state.view === "commercial-taches") content = renderCommercialTaches();
   else if(state.view === "messages") content = u.is_master ? renderMessagesMaster() : renderMessagesClient();
+  else if(state.view === "canaux") content = renderChannelsMaster();
   else if(state.view === "contrats") content = renderContratsAdmin();
   else if(state.view === "contrat") content = renderContratClient();
   else if(state.view === "gestion-proprietaires") content = renderGestionProprietaires();
@@ -8567,13 +8984,22 @@ window.goto = (view) => {
   if(u && u.is_master && view === 'gestion-proprietaires') markOwnerContractsSeen();
   if(u && u.is_master && view === 'utilisateurs-suivi') markFunnelAbandonedSeen();
   if(u && !u.is_master && view === 'recompenses') markRedemptionsSeen(u.username);
-  if(u && !u.is_master && view === 'messages') markMessagesSeenByClient(u.username);
+  if(u && !u.is_master && view === 'messages'){
+    markMessagesSeenByClient(u.username);
+    state.clientMessagesMobileOpen = false;
+    if(state.clientActiveThread && state.clientActiveThread !== 'team') markChannelSeen(state.clientActiveThread, u.username);
+  }
   if(u && u.is_master && view === 'messages'){
     // Sur mobile on revient toujours à la liste des conversations en arrivant sur l'onglet (l'ouverture
     // d'UNE conversation précise se fait ensuite via openConversation) ; sur desktop ce flag n'a pas
     // d'effet visuel (les deux volets sont toujours affichés côte à côte), donc rien à préserver.
     state.messagesMobileOpen = false;
     if(state.messagesSelectedUser) markMessagesSeenByMaster(state.messagesSelectedUser);
+  }
+  // Lot 39 : même principe que "messages" ci-dessus, pour l'onglet "Canaux" du master.
+  if(u && u.is_master && view === 'canaux'){
+    state.channelsMobileOpen = false;
+    if(state.channelsSelectedId) markChannelSeen(state.channelsSelectedId, u.username);
   }
   render();
 };
@@ -8879,7 +9305,7 @@ window.confirmAddXp = async (username) => {
     addXpInFlight = false;
   }
 };
-window.closeModal = () => { state.modal = null; state.bookingError = ""; state.answerError = ""; state.addXpError = ""; render(); };
+window.closeModal = () => { state.modal = null; state.bookingError = ""; state.answerError = ""; state.addXpError = ""; state.channelError = ""; render(); };
 window.closeModalBg = (e) => { if(e.target.classList.contains('modal-bg')) window.closeModal(); };
 window.confirmBooking = (itemId) => {
   const start = document.getElementById("bk-start").value;
