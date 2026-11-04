@@ -608,6 +608,21 @@
   .chat-compose .btn{width:auto;flex-shrink:0;}
   .chat-empty-thread{flex:1;display:flex;align-items:center;justify-content:center;padding:24px;}
 
+  /* ---------- Lot 40 : panneau de détail d'un canal, grand écran uniquement ----------
+     Cache (display:none) en dessous de 1180px — c'est le bouton "Gérer" dans l'en-tête du fil
+     (classe .channel-manage-btn) qui ouvre alors la même fenêtre de paramètres. Au-dessus de
+     1180px c'est l'inverse : le panneau est visible en permanence et .channel-manage-btn
+     disparaît — un seul chemin pour gérer un canal à la fois, jamais les deux ensemble. */
+  .chat-detail-pane{display:none;width:230px;flex-shrink:0;border-left:1px solid var(--border-soft);padding:18px 16px;overflow-y:auto;}
+  .cdp-label{font-size:10.5px;font-weight:700;letter-spacing:0.04em;text-transform:uppercase;color:var(--text-faint);margin-bottom:8px;}
+  .cdp-name{font-family:var(--font-disp);font-weight:700;font-size:16px;margin-bottom:20px;overflow-wrap:break-word;}
+  .cdp-members{display:flex;flex-direction:column;gap:2px;}
+  .cdp-member{display:flex;align-items:center;gap:9px;padding:6px 2px;font-size:12.5px;}
+  @media (min-width:1180px){
+    .chat-detail-pane{display:block;}
+    .channel-manage-btn{display:none;}
+  }
+
   .status-pill{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;font-weight:600;padding:5px 12px;border-radius:var(--r-pill);white-space:nowrap;}
   .status-pill.ok{background:var(--accent-soft);color:var(--accent);}
   .status-pill.pending{background: var(--amber-soft);color:var(--amber);}
@@ -697,6 +712,13 @@
   .mission-spotlight-row:hover{background:rgba(143,239,61,0.06);transform:translateY(-1px);}
   .list-row{transition:background .2s var(--ease),transform .18s var(--ease),box-shadow .18s var(--ease);}
   .list-row:hover{transform:translateY(-1px);box-shadow:0 0 0 1px var(--accent-soft-2);}
+
+  /* Lot 40 : boutons secondaires compactés en icône+tooltip sur desktop (Facture/Réémettre dans
+     Gestion réservations) — le libellé texte (.btn-label) reste dans le DOM pour le mode mobile
+     (tbl-cards-mobile, voir plus bas) mais est masqué ici ; seule l'icône + le title (tooltip
+     navigateur) restent visibles, ce qui désencombre la ligne d'actions sans retirer d'information. */
+  .btn-compact-icon{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:8px;width:34px;height:34px;}
+  .btn-compact-icon .btn-label{display:none;}
 
   @media (prefers-reduced-motion: reduce){
     *{transition-duration:.001s !important;}
@@ -802,6 +824,15 @@
     table.tbl-cards-mobile td::before{content:attr(data-label);font-size:11px;font-weight:600;color:var(--text-faint);text-align:left;flex-shrink:0;}
     table.tbl-cards-mobile td:last-child{display:block;text-align:left;border-bottom:none;padding-top:12px;}
     table.tbl-cards-mobile td:last-child::before{content:none;}
+    /* Variante pour une cellule au contenu trop riche pour tenir à droite d'une étiquette (ex. la
+       désignation d'une vente, avec ses tags et sa sous-ligne) : étiquette au-dessus, contenu en
+       dessous sur toute la largeur, plutôt que coincé à droite. */
+    table.tbl-cards-mobile td.td-block{display:block;text-align:left;}
+    table.tbl-cards-mobile td.td-block::before{display:block;margin-bottom:4px;}
+    /* Lot 40 : sur mobile on repasse les boutons Facture/Réémettre en forme normale (icône + texte),
+       le gain de place de la version icône seule n'a de sens que sur la ligne desktop condensée. */
+    .btn-compact-icon{width:auto;height:auto;padding:10px 16px;}
+    .btn-compact-icon .btn-label{display:inline;}
   }
   @media (max-width:480px){
     .fin-mini-stats{grid-template-columns:repeat(2,1fr);}
@@ -1239,7 +1270,9 @@ let state = {
   // Lot 26 : regroupement par date de location dans Gestion location. Purement visuel côté client
   // (quel groupe est replié) — voir bookingDateLabels pour les noms personnalisés, qui eux sont
   // partagés/persistés (state.bookingDateLabels, table booking_date_labels).
-  gestionCollapsedDates: {},
+  // Lot 40 : lu depuis localStorage au démarrage (voir loadGestionCollapsedDates / toggleGestionDateGroup
+  // plus bas) pour que l'état replié/déplié survive à la fermeture de l'appli.
+  gestionCollapsedDates: loadGestionCollapsedDates(),
   bookingDateLabels: [],
   invoices: [],
   contratsSort: "client_asc",
@@ -4328,6 +4361,8 @@ function tacticalIconSvg(name, opts){
     'chevron-right': '<path d="M9.5 5 16 12l-6.5 7"/>',
     'trending-up': '<path d="M3 17l6-6 4 4 8-9"/><path d="M15 6h6v6"/>',
     bell: '<path d="M12 3a5 5 0 0 0-5 5v3.4c0 .9-.35 1.75-1 2.4L4.5 15.3c-.6.6-.2 1.7.7 1.7h13.6c.9 0 1.3-1.1.7-1.7l-1.5-1.5c-.65-.65-1-1.5-1-2.4V8a5 5 0 0 0-5-5Z"/><path d="M9.5 19a2.5 2.5 0 0 0 5 0"/>',
+    // Lot 40 : icône "réémettre" (flèche de reprise) — version compacte desktop du bouton Réémettre.
+    refresh: '<path d="M3 12a9 9 0 1 1 2.6 6.3"/><path d="M3 21v-6h6"/>',
   };
   return `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;${opts.style||''}">${paths[name] || ''}</svg>`;
 }
@@ -4640,6 +4675,15 @@ function saveMasterNavOrder(order){
     if(error) console.warn("Ordre des onglets : synchronisation serveur ignorée (migration_lot8.sql exécutée ?)", error.message);
   });
 }
+// Lot 40 : persistance du repli/dépli des groupes de date dans Gestion réservations — un simple
+// confort d'affichage par appareil (comme ov_master_nav_order plus haut), pas une donnée partagée
+// entre master et clients : localStorage seul suffit, pas besoin de colonne Supabase ni de sync.
+function loadGestionCollapsedDates(){
+  try { return JSON.parse(localStorage.getItem('ov_gestion_collapsed_dates') || '{}'); } catch(e){ return {}; }
+}
+function saveGestionCollapsedDates(obj){
+  try { localStorage.setItem('ov_gestion_collapsed_dates', JSON.stringify(obj)); } catch(e){}
+}
 function navFor(isMaster){
   if(!isMaster) return clientNavDef();
   const def = masterNavDef();
@@ -4917,11 +4961,14 @@ function gestionRowHtml(b){
         // concernée disparaisse de l'autre. Un seul bouton "Supprimer" (en bas de cette ligne) gère
         // maintenant tout le cas : réservation + facture + PDF + numéro, avec une confirmation claire
         // sur ce qui va disparaître (voir cancelBooking).
-        actions.push(`<button class="btn btn-ghost btn-sm" onclick="openInvoiceFile('${esc(inv.pdf_path)}','${esc(inv.id)}')">Facture ${esc(inv.invoice_number)}</button>`);
+        // Lot 40 : sur desktop (≥860px) ces deux boutons secondaires passent en icône + tooltip
+        // (btn-compact-icon / .btn-label caché par CSS) pour désencombrer la ligne d'actions — sur
+        // mobile (<860px, voir tbl-cards-mobile) le libellé texte reste affiché normalement.
+        actions.push(`<button class="btn btn-ghost btn-sm btn-compact-icon" onclick="openInvoiceFile('${esc(inv.pdf_path)}','${esc(inv.id)}')" title="Facture ${esc(inv.invoice_number)}">${tacticalIconSvg('doc',{size:15})}<span class="btn-label">Facture ${esc(inv.invoice_number)}</span></button>`);
         // Lot 39 : bouton "Réémettre" — corrige une facture déjà envoyée (montant, remise) sans
         // toucher à la réservation. Supprime l'ancienne facture (deleteInvoiceRecord, chemin sûr
         // du Lot 36) puis rouvre immédiatement la modale d'envoi pour générer la version corrigée.
-        actions.push(`<button class="btn btn-ghost btn-sm" onclick="reissueInvoice('${esc(b.id)}')" title="Supprime cette facture et permet d'en générer une corrigée, sans annuler la réservation">Réémettre</button>`);
+        actions.push(`<button class="btn btn-ghost btn-sm btn-compact-icon" onclick="reissueInvoice('${esc(b.id)}')" title="Réémettre : supprime cette facture et permet d'en générer une corrigée, sans annuler la réservation">${tacticalIconSvg('refresh',{size:15})}<span class="btn-label">Réémettre</span></button>`);
         invoiceReadLineHtml = `<div style="font-size:11px;color:var(--text-faint);margin-top:4px;">${inv.read_at ? `Lu le ${esc(fmtDateTime(inv.read_at))}` : 'Non lu'}</div>`;
       } else {
         actions.push(`<button class="btn btn-primary btn-sm" onclick="openSendInvoiceModal('${esc(b.id)}')">Envoyer la facture</button>`);
@@ -4999,6 +5046,7 @@ function gestionDateGroupHtml(group){
 }
 window.toggleGestionDateGroup = (date) => {
   state.gestionCollapsedDates[date] = !state.gestionCollapsedDates[date];
+  saveGestionCollapsedDates(state.gestionCollapsedDates);
   refreshGestionView();
 };
 window.openRenameBookingDateGroup = (date) => {
@@ -6066,10 +6114,10 @@ function usersTheadHtml(){
 function usersRowHtml(p){
   return `
     <tr>
-      <td><div class="t-title">${esc(clientDisplayName(p))}${p.is_master?` <span style="display:inline-flex;vertical-align:-2px;color:var(--amber);">${tacticalIconSvg('rank-star',{size:13})}</span>`:''}${p.is_owner?` <span class="owner-tag">${tacticalIconSvg('house',{size:11})}Propriétaire</span>`:''}</div>${p.prenom||p.nom ? `<div class="t-desc">@${esc(p.username)}</div>` : ''}</td>
-      <td>${p.is_master ? '—' : `${p.xp} XP · Niv. ${levelFor(p.xp)}`}</td>
-      <td>${fmtDate(p.created_at)}</td>
-      <td>${fmtDateTime(p.last_login)}</td>
+      <td data-label="Compte" class="td-block"><div class="t-title">${esc(clientDisplayName(p))}${p.is_master?` <span style="display:inline-flex;vertical-align:-2px;color:var(--amber);">${tacticalIconSvg('rank-star',{size:13})}</span>`:''}${p.is_owner?` <span class="owner-tag">${tacticalIconSvg('house',{size:11})}Propriétaire</span>`:''}</div>${p.prenom||p.nom ? `<div class="t-desc">@${esc(p.username)}</div>` : ''}</td>
+      <td data-label="XP">${p.is_master ? '—' : `${p.xp} XP · Niv. ${levelFor(p.xp)}`}</td>
+      <td data-label="Inscrit le">${fmtDate(p.created_at)}</td>
+      <td data-label="Dernière connexion">${fmtDateTime(p.last_login)}</td>
       <td><div class="row-icon-actions">
         ${!p.is_master ? `<button type="button" class="icon-btn" title="Voir la fiche" onclick="openViewProfile('${esc(p.username)}')">${tacticalIconSvg('id-badge',{size:16})}</button>` : ''}
         ${!p.is_master ? `<button type="button" class="icon-btn" title="Ajouter de l'XP" onclick="openAddXpModal('${esc(p.username)}')">${tacticalIconSvg('coins',{size:16})}</button>` : ''}
@@ -6099,7 +6147,7 @@ function renderUtilisateurs(){
     <div class="filter-bar">
       <input type="text" placeholder="Nom, pseudo... ou tapez « propriétaire » pour filtrer les comptes Propriétaire" value="${esc(state.usersSearch)}" oninput="onUsersSearch(this.value)">
     </div>
-    <div class="panel"><table class="tbl-compact"><thead id="users-thead">${usersTheadHtml()}</thead><tbody id="users-tbody">${list.length ? list.map(usersRowHtml).join('') : `<tr><td colspan="5"><div class="empty">Aucun compte ne correspond à cette recherche.</div></td></tr>`}</tbody></table></div>
+    <div class="panel"><table class="tbl-compact tbl-cards-mobile"><thead id="users-thead">${usersTheadHtml()}</thead><tbody id="users-tbody">${list.length ? list.map(usersRowHtml).join('') : `<tr><td colspan="5"><div class="empty">Aucun compte ne correspond à cette recherche.</div></td></tr>`}</tbody></table></div>
   `;
 }
 
@@ -6404,7 +6452,7 @@ function renderMessagesClient(){
     threadHtml = channel ? `
       <div class="chat-thread-header">
         <button type="button" class="chat-back-btn" onclick="closeClientThread()">${tacticalIconSvg('chevron-left',{size:19})}</button>
-        <div class="t-title" style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${esc(channel.name)}</div>
+        <div class="t-title" style="flex:1;min-width:0;overflow-wrap:break-word;">${esc(channel.name)}</div>
       </div>
       <div class="chat-messages" id="chat-messages">${msgs.length ? msgs.map(m => channelBubbleHtml(m, u.username, false)).join('') : `<div class="chat-empty-thread"><div class="empty">Aucun message dans ce canal pour le moment.</div></div>`}</div>
       <div class="chat-compose">
@@ -6550,20 +6598,20 @@ function renderChannelsMaster(){
   const msgs = sel ? state.channelMessages.filter(m => m.channel_id === sel.id) : [];
   return `
     <div class="topbar"><div><h1>Canaux</h1><div class="desc">Regroupez les clients concernés par une même opération pour leur donner des directives en direct, à tous à la fois.</div></div></div>
-    <div class="chat-wrap ${state.channelsMobileOpen?'thread-open':''}">
+    <div class="chat-wrap ${state.channelsMobileOpen?'thread-open':''} ${sel?'has-detail':''}">
       <div class="chat-list-pane">
         <div style="padding:12px 12px 0;"><button type="button" class="btn btn-primary btn-sm" style="width:100%;" onclick="openNewChannelModal()">+ Nouveau canal</button></div>
         <div class="chat-conv-list" id="channel-conv-list">${channels.length ? channels.map(c => channelConvRowHtml(c, u.username)).join('') : `<div class="empty" style="margin:16px;">Aucun canal pour le moment — créez-en un avec "+ Nouveau canal".</div>`}</div>
       </div>
       <div class="chat-thread-pane">
         ${sel ? `
-          <div class="chat-thread-header">
+          <div class="chat-thread-header" style="align-items:flex-start;flex-wrap:wrap;">
             <button type="button" class="chat-back-btn" onclick="closeChannelThread()">${tacticalIconSvg('chevron-left',{size:19})}</button>
-            <div style="flex:1;min-width:0;overflow:hidden;">
-              <div class="t-title" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${esc(sel.name)}</div>
+            <div style="flex:1;min-width:120px;overflow-wrap:break-word;">
+              <div class="t-title">${esc(sel.name)}</div>
               <div style="font-size:11px;color:var(--text-faint);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${selMembers.length ? selMembers.map(p=>esc(clientDisplayName(p))).join(', ') : 'Aucun client membre'}</div>
             </div>
-            <button type="button" class="btn btn-ghost btn-sm" style="width:auto;flex-shrink:0;" onclick="openChannelSettingsModal('${esc(sel.id)}')">Gérer</button>
+            <button type="button" class="btn btn-ghost btn-sm channel-manage-btn" style="width:auto;flex-shrink:0;" onclick="openChannelSettingsModal('${esc(sel.id)}')">Gérer</button>
           </div>
           <div class="chat-messages" id="chat-messages">${msgs.length ? msgs.map(m => channelBubbleHtml(m, u.username, true)).join('') : `<div class="chat-empty-thread"><div class="empty">Aucun message dans ce canal pour le moment.</div></div>`}</div>
           <div class="chat-compose">
@@ -6572,6 +6620,21 @@ function renderChannelsMaster(){
           </div>
         ` : `<div class="chat-empty-thread"><div class="empty">Sélectionnez un canal pour l'ouvrir, ou créez-en un nouveau.</div></div>`}
       </div>
+      ${sel ? `
+      <!-- Lot 40 : panneau de détail, visible uniquement sur grand écran (voir .chat-detail-pane dans
+           le CSS). Remplace le bouton "Gérer" + sa fenêtre sur desktop : nom et membres restent
+           visibles en permanence, un seul bouton "Modifier" rouvre la même fenêtre existante
+           (channelSettingsModal) pour renommer/ajouter/retirer un membre ou supprimer le canal — on
+           réutilise exactement la même logique testée plutôt que de la dupliquer ici. -->
+      <div class="chat-detail-pane">
+        <div class="cdp-label">Nom du canal</div>
+        <div class="cdp-name">${esc(sel.name)}</div>
+        <div class="cdp-label">Membres · ${selMembers.length}</div>
+        <div class="cdp-members">
+          ${selMembers.length ? selMembers.map(p => `<div class="cdp-member"><div class="avatar" style="width:26px;height:26px;font-size:10px;">${esc(clientDisplayName(p).slice(0,2).toUpperCase())}</div><span>${esc(clientDisplayName(p))}</span></div>`).join('') : `<div class="empty" style="padding:10px;">Aucun client membre.</div>`}
+        </div>
+        <button type="button" class="btn btn-ghost btn-sm" style="width:100%;margin-top:14px;" onclick="openChannelSettingsModal('${esc(sel.id)}')">Modifier le canal</button>
+      </div>` : ''}
     </div>`;
 }
 window.openChannelThread = (channelId) => {
@@ -6582,6 +6645,53 @@ window.openChannelThread = (channelId) => {
   render();
 };
 window.closeChannelThread = () => { state.channelsMobileOpen = false; render(); };
+// Lot 40 : recommandation de membres par "opération" dans la création d'un canal — au lieu
+// d'aller chercher chaque client un par un, on choisit une opération (un groupe de date de
+// réservation, le même concept que dans Gestion > Réservations, avec son libellé personnalisé s'il
+// existe) et l'appli coche automatiquement les clients concernés. Délibérément une fonction séparée
+// de gestionGroupedByDate() : celle-ci dépend du filtre/recherche actifs dans l'onglet Gestion
+// (state.gestionSearch/gestionFilter) — une recherche oubliée là-bas ferait sinon disparaître des
+// opérations ici, un effet de bord qui n'a rien à voir avec la création d'un canal. Les refusées
+// sont exclues (jamais une vraie opération) ; seules les réservations confirmées (acceptée / louée /
+// retournée) comptent comme membres recommandés — une demande encore en attente n'est pas un
+// client sûr à inviter à cette étape.
+function channelOperationGroups(){
+  const byDate = new Map();
+  state.bookings.forEach(b => {
+    if(b.status === 'refuse') return;
+    if(!byDate.has(b.start_date)) byDate.set(b.start_date, []);
+    byDate.get(b.start_date).push(b);
+  });
+  return Array.from(byDate.keys()).sort().map(date => ({ date, bookings: byDate.get(date) }));
+}
+function channelOperationRecommendedUsernames(date){
+  return new Set(
+    state.bookings.filter(b => b.start_date === date && ['accepte','loue','retourne'].includes(b.status)).map(b => b.username)
+  );
+}
+function channelOperationOptionsHtml(){
+  const groups = channelOperationGroups();
+  if(!groups.length) return '';
+  return `<option value="">— Sélection manuelle —</option>` + groups.map(g => {
+    const n = channelOperationRecommendedUsernames(g.date).size;
+    return `<option value="${esc(g.date)}">${esc(bookingDateLabel(g.date))} — ${n} client${n===1?'':'s'}</option>`;
+  }).join('');
+}
+// Coche automatiquement les clients recommandés pour l'opération choisie (et préremplit le nom du
+// canal, seulement s'il est encore vide, pour ne jamais écraser un nom déjà tapé à la main) —
+// manipulation directe du DOM, sans passer par render(), pour ne perdre aucune saisie en cours
+// (même principe que les autres modales : champs texte non contrôlés par l'état, lus au clic sur
+// "Créer le canal").
+window.onChannelOperationChange = (dateValue) => {
+  const nameInput = document.getElementById('channel-name-input');
+  if(dateValue){
+    const recommended = channelOperationRecommendedUsernames(dateValue);
+    document.querySelectorAll('.channel-member-checkbox').forEach(cb => { cb.checked = recommended.has(cb.value); });
+    if(nameInput && !nameInput.value.trim()) nameInput.value = bookingDateLabel(dateValue);
+  } else {
+    document.querySelectorAll('.channel-member-checkbox').forEach(cb => { cb.checked = false; });
+  }
+};
 window.openNewChannelModal = () => { state.modal = { type: "newChannel" }; state.channelError = ""; render(); };
 window.confirmCreateChannel = async () => {
   const nameInput = document.getElementById('channel-name-input');
@@ -6931,10 +7041,10 @@ function finSalesTbodyHtml(){
     // Lot 36 : toute la ligne s'ouvre en modification au clic (demande explicite de Luka) — seul le
     // bouton Supprimer coupe la propagation pour ne pas ouvrir la modif en même temps qu'on efface.
     return `<tr class="fin-row-clickable" onclick="finOpenEditSale('${s.id}')" title="Cliquer pour modifier">
-      <td>${dt}</td>
-      <td><span class="tag ${s.type==='vente'?'fin-vente':'fin-location'}">${s.type==='vente'?'Vente':'Location'}</span> ${esc(s.label)}${autoTag}${tvaTag}${retroLine}</td>
-      <td style="text-align:right;font-variant-numeric:tabular-nums;">${finFmtEUR(s.ttc)}</td>
-      <td style="text-align:right;font-variant-numeric:tabular-nums;">${finFmtEUR(marge)}</td>
+      <td data-label="Date">${dt}</td>
+      <td data-label="Désignation" class="td-block"><span class="tag ${s.type==='vente'?'fin-vente':'fin-location'}">${s.type==='vente'?'Vente':'Location'}</span> ${esc(s.label)}${autoTag}${tvaTag}${retroLine}</td>
+      <td data-label="TTC" style="text-align:right;font-variant-numeric:tabular-nums;">${finFmtEUR(s.ttc)}</td>
+      <td data-label="Marge" style="text-align:right;font-variant-numeric:tabular-nums;">${finFmtEUR(marge)}</td>
       <td><button class="btn btn-danger btn-sm" onclick="event.stopPropagation();finDeleteSale('${s.id}')" title="Supprimer" style="width:auto;padding:6px 9px;">✕</button></td>
     </tr>`;
   }).join('');
@@ -6955,9 +7065,9 @@ function finChargesTbodyHtml(){
     // de la charge d'origine (même logique que pour la suppression, voir commentaire Lot 31).
     const editId = c._recurringVirtual ? c._recurringSourceId : c.id;
     return `<tr class="fin-row-clickable" onclick="finOpenEditCharge('${editId}')" title="Cliquer pour modifier">
-      <td>${dt}</td>
-      <td>${esc(c.label)}${recurTag}<div style="font-size:11px;color:var(--text-faint);margin-top:2px;">${esc(c.category)}</div></td>
-      <td style="text-align:right;font-variant-numeric:tabular-nums;">${finFmtEUR(c.montant_ht)}</td>
+      <td data-label="Date">${dt}</td>
+      <td data-label="Charge" class="td-block">${esc(c.label)}${recurTag}<div style="font-size:11px;color:var(--text-faint);margin-top:2px;">${esc(c.category)}</div></td>
+      <td data-label="HT" style="text-align:right;font-variant-numeric:tabular-nums;">${finFmtEUR(c.montant_ht)}</td>
       <td>${deleteCell}</td>
     </tr>`;
   }).join('');
@@ -6999,7 +7109,7 @@ function finVentesPanelHtml(){
           ${editing ? `<button type="button" class="btn btn-ghost btn-sm" onclick="finCancelEditSale()">Annuler</button>` : ''}
         </div>
       </form>
-      <div class="fin-tbl-wrap"><table><thead><tr><th>Date</th><th>Désignation</th><th style="text-align:right;">TTC</th><th style="text-align:right;">Marge</th><th></th></tr></thead>
+      <div class="fin-tbl-wrap"><table class="tbl-cards-mobile"><thead><tr><th>Date</th><th>Désignation</th><th style="text-align:right;">TTC</th><th style="text-align:right;">Marge</th><th></th></tr></thead>
       <tbody id="fin-sales-tbody">${finSalesTbodyHtml()}</tbody></table></div>
     </div>`;
 }
@@ -7034,7 +7144,7 @@ function finChargesPanelHtml(){
           ${editing ? `<button type="button" class="btn btn-ghost btn-sm" onclick="finCancelEditCharge()">Annuler</button>` : ''}
         </div>
       </form>
-      <div class="fin-tbl-wrap"><table><thead><tr><th>Date</th><th>Charge</th><th style="text-align:right;">HT</th><th></th></tr></thead>
+      <div class="fin-tbl-wrap"><table class="tbl-cards-mobile"><thead><tr><th>Date</th><th>Charge</th><th style="text-align:right;">HT</th><th></th></tr></thead>
       <tbody id="fin-charges-tbody">${finChargesTbodyHtml()}</tbody></table></div>
     </div>`;
 }
@@ -8834,10 +8944,17 @@ function renderModal(){
   }
   if(m.type === "newChannel"){
     const clients = state.profiles.filter(p => !p.is_master).sort((a,b) => clientDisplayName(a).localeCompare(clientDisplayName(b)));
+    const operationOptions = channelOperationOptionsHtml();
     return `
     <div class="modal-bg" onclick="closeModalBg(event)"><div class="modal" style="max-width:460px;text-align:left;">
       <h3>Nouveau canal de discussion</h3>
       <div style="font-size:12.5px;color:var(--text-faint);margin-bottom:12px;">Pour donner les mêmes directives à plusieurs clients concernés par la même opération (ex. tous ceux qui louent le même week-end).</div>
+      ${operationOptions ? `
+      <div class="field"><label>Opération</label>
+        <select id="channel-operation-select" onchange="onChannelOperationChange(this.value)">${operationOptions}</select>
+      </div>
+      <div style="font-size:11.5px;color:var(--text-faint);margin:-6px 0 14px;">Choisissez une opération pour cocher automatiquement les clients concernés — modifiable ensuite à la main.</div>
+      ` : ''}
       <div class="field"><label>Nom du canal *</label><input id="channel-name-input" placeholder="Ex. Location du 14-15 juin" autofocus></div>
       <div style="font-size:12.5px;color:var(--text-faint);margin:14px 0 8px;">Clients concernés</div>
       <div style="display:flex;flex-direction:column;gap:2px;max-height:260px;overflow-y:auto;border:1px solid var(--border-soft);border-radius:var(--r-sm);padding:6px;">
