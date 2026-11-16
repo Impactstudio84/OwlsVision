@@ -958,6 +958,107 @@
   .fin-tooltip .ctt-label{flex:1;color:var(--text-dim);}
   .fin-tooltip .ctt-val{font-weight:700;color:var(--text);font-variant-numeric:tabular-nums;white-space:nowrap;}
 </style>
+<style id="lot40-css">
+/* ===== Lot 40 : fiche membre, écran bloquant, Utilisateurs, paniers ===== */
+.pfx-wrap{max-width:760px;}
+.pfx-hero{display:flex;align-items:center;gap:16px;padding:18px 20px;margin-bottom:14px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r-md);}
+.pfx-avatar{width:58px;height:58px;border-radius:18px;background:var(--accent-soft);border:1px solid var(--accent-soft-2);color:var(--accent);display:flex;align-items:center;justify-content:center;font-family:var(--font-disp);font-weight:700;font-size:23px;flex-shrink:0;}
+.pfx-hero-main{flex:1;min-width:0;}
+.pfx-hero-name{font-family:var(--font-disp);font-size:22px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.pfx-hero-mail{font-size:13px;color:var(--text-faint);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.pfx-meter{margin-top:12px;}
+.pfx-meter-track{height:6px;border-radius:99px;background:rgba(255,255,255,0.08);overflow:hidden;}
+.pfx-meter-fill{height:100%;border-radius:99px;background:var(--amber);transition:width .35s var(--ease);}
+.pfx-meter-fill.done{background:var(--accent);}
+.pfx-meter-label{font-size:12px;color:var(--text-dim);margin-top:7px;line-height:1.4;}
+.pfx-section{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-md);padding:20px 22px 8px;margin-bottom:14px;}
+.pfx-section h3{font-family:var(--font-disp);font-size:15px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;margin:0 0 4px;color:var(--text);}
+.pfx-sub{font-size:12.5px;color:var(--text-faint);margin-bottom:16px;line-height:1.5;}
+.pfx-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 14px;}
+.pfx-grid > .full{grid-column:1 / -1;}
+.pfx-cpville{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,2fr);gap:0 14px;}
+.pfx-seg{display:flex;gap:8px;}
+.pfx-seg button{flex:1;min-height:46px;border-radius:var(--r-sm);border:1px solid var(--border-soft);background:rgba(255,255,255,0.04);color:var(--text-dim);font-weight:600;font-size:15px;cursor:pointer;transition:background .15s,border-color .15s,color .15s;}
+.pfx-seg button:hover{background:rgba(255,255,255,0.08);color:var(--text);}
+.pfx-seg button.on{background:var(--accent-soft);border-color:var(--accent-soft-2);color:var(--accent);}
+.pfx-req{color:var(--accent);}
+.pfx-opt{color:var(--text-faint);font-weight:400;font-size:11.5px;}
+.pfx-field-err input,.pfx-field-err .pfx-seg button{border-color:rgba(255,107,87,0.65) !important;}
+.pfx-err-msg{font-size:12px;color:#FFB3A6;margin-top:6px;line-height:1.4;}
+.pfx-hint{font-size:12px;color:var(--amber);margin-top:6px;line-height:1.4;}
+.pfx-hint-dim{color:var(--text-faint);}
+.field input.pfx-locked{opacity:.65;cursor:not-allowed;}
+.pfx-save{margin:6px 0 18px;min-height:50px;font-size:15px;}
+.gate.pfx-gate{align-items:flex-start;overflow-y:auto;padding:68px 16px 40px;}
+.pfx-gate-card{width:100%;max-width:640px;margin:0 auto;}
+.pfx-gate-title{font-family:var(--font-disp);font-size:26px;font-weight:700;text-align:center;margin:0 0 8px;}
+.pfx-gate-sub{font-size:14px;color:var(--text-dim);text-align:center;line-height:1.55;margin:0 auto 20px;max-width:480px;}
+@media (max-width:620px){
+  .pfx-grid{grid-template-columns:minmax(0,1fr);}
+  .pfx-section{padding:18px 16px 6px;}
+  .pfx-hero{padding:16px;}
+  .pfx-cpville{grid-template-columns:minmax(0,.9fr) minmax(0,1.6fr);}
+}
+
+/* --- Liste Utilisateurs / paniers : une seule grille partagée par l'en-tête et les lignes --- */
+.ul-panel{padding:6px 0 0;overflow:hidden;}
+.ul{--cols:minmax(0,2.4fr) minmax(0,.9fr) minmax(0,1fr) minmax(0,1.4fr) 318px;}
+.ul-funnel{--cols:minmax(0,2fr) minmax(0,1.8fr) minmax(0,1.1fr) minmax(0,1.2fr) 196px;}
+.ul-head,.ul-row{display:grid;grid-template-columns:var(--cols);gap:14px;align-items:center;padding-left:18px;padding-right:18px;}
+.ul-head{min-height:40px;font-size:11px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--text-faint);border-bottom:1px solid var(--border-soft);}
+.ul-head button{all:unset;cursor:pointer;display:inline-flex;align-items:center;gap:4px;}
+.ul-head button:hover,.ul-head button.on{color:var(--text);}
+.ul-head .sort-arrow{opacity:.7;font-size:9px;}
+.ul-row{min-height:68px;padding-top:11px;padding-bottom:11px;border-bottom:1px solid var(--border-soft);}
+.ul-row:last-child{border-bottom:none;}
+.ul-row:hover{background:rgba(255,255,255,0.025);}
+.ul-who{display:flex;align-items:center;gap:12px;min-width:0;}
+.ul-who-txt{min-width:0;}
+.ul-av{width:38px;height:38px;border-radius:12px;background:rgba(255,255,255,0.06);border:1px solid var(--border-soft);color:var(--text-dim);display:flex;align-items:center;justify-content:center;font-family:var(--font-disp);font-weight:700;font-size:15px;flex-shrink:0;position:relative;}
+.ul-av.online{border-color:var(--accent-soft-2);color:var(--accent);}
+.ul-av.online::after{content:"";position:absolute;right:-3px;bottom:-3px;width:10px;height:10px;border-radius:50%;background:var(--accent);box-shadow:0 0 0 3px var(--bg);}
+.ul-name{font-weight:600;font-size:14px;line-height:1.35;display:flex;align-items:center;flex-wrap:wrap;gap:4px 8px;}
+.ul-tags{display:inline-flex;gap:5px;flex-wrap:wrap;}
+.ul-sub{font-size:12px;color:var(--text-faint);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-top:1px;}
+.ul-tag{display:inline-flex;align-items:center;font-size:10.5px;font-weight:700;padding:2px 8px;border-radius:99px;letter-spacing:.02em;white-space:nowrap;}
+.ul-tag.warn{background:var(--amber-soft);color:var(--amber);}
+.ul-tag.danger{background:var(--danger-soft);color:#FFB3A6;}
+.ul-tag.amber{background:var(--amber-soft);color:var(--amber);}
+.ul-cell{min-width:0;font-size:13px;line-height:1.35;}
+.ul-cell b{display:block;font-weight:600;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.ul-cell b.ul-live{color:var(--accent);}
+.ul-cell small{display:block;font-size:11.5px;color:var(--text-faint);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.ul-never{color:var(--text-faint);}
+.ul-act{display:flex;align-items:center;justify-content:flex-end;gap:6px;flex-wrap:wrap;}
+.ul-act .btn.ul-msg{display:inline-flex;align-items:center;gap:6px;box-shadow:none;}
+.ul-tel{color:var(--accent);text-decoration:none;font-weight:600;}
+.ul-steps{display:inline-flex;gap:4px;margin-bottom:5px;}
+.ul-steps i{width:20px;height:5px;border-radius:99px;background:rgba(255,255,255,0.12);}
+.ul-steps i.on{background:var(--accent);}
+.ul-chips{display:flex;flex-wrap:wrap;align-items:center;gap:7px;margin-bottom:10px;}
+.ul-chips-label{font-size:11px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--text-faint);margin-right:4px;}
+.ul-chip{border:1px solid var(--border-soft);background:rgba(255,255,255,0.04);color:var(--text-dim);font-size:12.5px;font-weight:600;padding:7px 12px;border-radius:99px;cursor:pointer;transition:background .15s,color .15s,border-color .15s;}
+.ul-chip b{font-weight:700;color:var(--text-faint);margin-left:3px;font-variant-numeric:tabular-nums;}
+.ul-chip:hover{background:rgba(255,255,255,0.08);color:var(--text);}
+.ul-chip.on{background:var(--accent-soft);border-color:var(--accent-soft-2);color:var(--accent);}
+.ul-chip.on b{color:var(--accent);}
+.ul-sortchips{display:none;}
+.ul-h2{display:flex;align-items:center;gap:10px;margin:0 0 4px;}
+.ul-h2-sub{font-size:12.5px;color:var(--text-faint);margin-bottom:14px;line-height:1.5;max-width:720px;}
+details.ul-old > summary{cursor:pointer;list-style:none;display:flex;align-items:center;}
+details.ul-old > summary::-webkit-details-marker{display:none;}
+.funnel-step-clients .ul{margin:0 -4px;}
+@media (max-width:1100px){
+  .ul-sortchips{display:flex;}
+  .ul-head{display:none;}
+  .ul-row{grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:12px 14px;padding:16px;}
+  .ul-row > .ul-who,.ul-row > .ul-act{grid-column:1 / -1;}
+  .ul-act{justify-content:flex-start;}
+  .ul-cell::before{content:attr(data-label);display:block;font-size:10.5px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--text-faint);margin-bottom:3px;}
+  .ul-cell b,.ul-cell small{white-space:normal;}
+}
+</style>
+
 </head>
 <body>
 <div id="app"></div>
@@ -1265,7 +1366,9 @@ let state = {
   gestionFilter: "all",
   validationSearch: "",
   usersSearch: "",
-  usersSort: { field: "xp", dir: "desc" },
+  usersSort: { field: "last_login", dir: "desc" },
+  usersFilter: "all",
+  profileDraft: null, profileFieldErrors: {}, regDraft: {},
   gestionSort: { field: "start_date", dir: "asc" },
   // Lot 26 : regroupement par date de location dans Gestion location. Purement visuel côté client
   // (quel groupe est replié) — voir bookingDateLabels pour les noms personnalisés, qui eux sont
@@ -1458,9 +1561,88 @@ function statusPillHtml(status){
   const cls = { demande:"pending", accepte:"info", loue:"active", retourne:"ok", refuse:"danger" }[status] || "none";
   return `<span class="status-pill ${cls}">${STATUS_LABELS[status] || status}</span>`;
 }
-function isProfileComplete(p){
-  return !!(p && p.nom && p.prenom && p.date_naissance && p.telephone && p.adresse);
+/* ===== Lot 40 : fiche membre obligatoire, e-mails jetables, helpers communs ===== */
+// Domaines refusés à l'inscription (jetables, alias masqués, Proton). Même liste que la table
+// blocked_email_domains de migration_lot40_comptes.sql : la liste ci-dessous donne le message
+// immédiat à l'écran, la table SQL est le vrai verrou côté serveur. Pour en ajouter un : l'ajouter
+// ICI et dans la table (insert into public.blocked_email_domains values ('exemple.com');).
+const BLOCKED_EMAIL_DOMAINS = [
+  'yopmail.com','yopmail.fr','yopmail.net','cool.fr.nf','jetable.fr.nf','nospam.ze.tc','nomail.xl.cx','mega.zik.dj','speed.1s.fr','courriel.fr.nf','moncourrier.fr.nf','monemail.fr.nf','monmail.fr.nf',
+  'mailinator.com','guerrillamail.com','guerrillamail.net','guerrillamail.org','guerrillamail.biz','guerrillamail.de','guerrillamail.info','sharklasers.com','grr.la',
+  '10minutemail.com','10minutemail.net','temp-mail.org','temp-mail.io','tempmail.com','tempmail.net','throwaway.email','trashmail.com','trashmail.net','trashmail.de',
+  'getnada.com','nada.email','maildrop.cc','dispostable.com','fakeinbox.com','mailnesia.com','mintemail.com','spamgourmet.com','tempinbox.com','emailondeck.com','mohmal.com',
+  'burnermail.io','discard.email','mytemp.email','tmpmail.org','tmail.ws','inboxkitten.com','33mail.com',
+  'simplelogin.com','simplelogin.co','slmail.me','aleeas.com','anonaddy.com','anonaddy.me','relay.firefox.com','mozmail.com','privaterelay.appleid.com',
+  'proton.me','protonmail.com','protonmail.ch','pm.me'
+];
+function isBlockedEmail(email){
+  const d = String(email || '').toLowerCase().split('@')[1] || '';
+  if(!d) return false;
+  return BLOCKED_EMAIL_DOMAINS.some(b => d === b || d.endsWith('.' + b));
 }
+// Texte bilingue : français pour la langue FR, anglais pour toutes les autres langues de l'appli.
+function tx(fr, en){ return effectiveLang() === 'fr' ? fr : en; }
+
+// Portable valide : mobile français (06/07, avec ou sans +33/0033) ou numéro international (+CC...).
+// Retourne le numéro nettoyé ("06 12 34 56 78" ou "+32470123456"), ou null s'il n'est pas valable.
+function normalizeMobile(raw){
+  let s = String(raw || '').replace(/[\s.\-()]/g, '');
+  if(/^(\+33|0033)/.test(s)) s = s.replace(/^(\+33|0033)0?/, '0');
+  else if(/^00\d/.test(s)) s = '+' + s.slice(2);
+  if(/^0[67]\d{8}$/.test(s)) return s.replace(/(\d{2})(?=\d)/g, '$1 ');
+  if(/^\+(?!33)\d{8,14}$/.test(s)) return s;
+  return null;
+}
+
+// Informations obligatoires pour avoir une fiche membre exploitable (contrat, livraison, contact).
+const PROFILE_REQUIRED = [
+  ['civilite',       'Civilité',            'Title'],
+  ['prenom',         'Prénom',              'First name'],
+  ['nom',            'Nom',                 'Last name'],
+  ['date_naissance', 'Date de naissance',   'Date of birth'],
+  ['telephone',      'Portable',            'Mobile phone'],
+  ['adresse',        'Adresse',             'Address'],
+  ['code_postal',    'Code postal',         'Postal code'],
+  ['ville',          'Ville',               'City'],
+];
+function profileMissingFields(p){
+  return PROFILE_REQUIRED.filter(([k]) => {
+    const v = p ? p[k] : null;
+    if(v == null || !String(v).trim()) return true;
+    if(k === 'telephone') return !normalizeMobile(v);
+    return false;
+  }).map(([key, fr, en]) => ({ key, label: tx(fr, en) }));
+}
+function isProfileComplete(p){
+  return !!p && profileMissingFields(p).length === 0;
+}
+// Ancienne fiche : l'adresse tenait dans un seul champ ("12 rue X, 83480 Puget-sur-Argens"). On en
+// tire une SUGGESTION de rue / code postal / ville, affichée pré-remplie et à vérifier par le client.
+function parseAddressSuggestion(adresse){
+  const m = String(adresse || '').trim().match(/^(.*?)[,\s]+(\d{5})\s+([^\d,][^,]*?)(?:,\s*France)?$/i);
+  if(!m || !m[1].trim()) return null;
+  return { street: m[1].trim().replace(/[,\s]+$/, ''), cp: m[2], ville: m[3].trim() };
+}
+function userInitials(p){
+  const a = ((p && p.prenom) || '').trim()[0] || '';
+  const b = ((p && p.nom) || '').trim()[0] || '';
+  const s = (a + b) || ((p && p.username) || '?').trim()[0] || '?';
+  return s.toUpperCase();
+}
+// "il y a 3 h" — pour l'écran Utilisateurs et le suivi des paniers.
+function fmtAgo(iso){
+  if(!iso) return 'Jamais';
+  const s = (Date.now() - new Date(iso).getTime()) / 1000;
+  if(s < 90) return "À l'instant";
+  if(s < 3600) return `il y a ${Math.round(s / 60)} min`;
+  if(s < 86400) return `il y a ${Math.round(s / 3600)} h`;
+  const d = Math.round(s / 86400);
+  if(d < 45) return `il y a ${d} j`;
+  if(d < 365) return `il y a ${Math.round(d / 30)} mois`;
+  const y = Math.floor(d / 365);
+  return `il y a ${y} an${y > 1 ? 's' : ''}`;
+}
+
 function clientDisplayName(p){
   if(!p) return "";
   const full = [p.prenom, p.nom].filter(Boolean).join(" ");
@@ -1481,6 +1663,12 @@ async function logFunnelEvent(eventType, itemId, start, end){
   try{
     const u = currentProfile();
     if(!u || u.is_master) return;
+    // Lot 40 : même événement (type + modèle + dates) déjà enregistré il y a moins de 30 min
+    // dans cette session = ignoré, pour ne plus empiler des dizaines de lignes identiques.
+    const dedupKey = [eventType, itemId || '', start || '', end || ''].join('|');
+    window.__funnelSent = window.__funnelSent || {};
+    if(window.__funnelSent[dedupKey] && Date.now() - window.__funnelSent[dedupKey] < 30 * 60 * 1000) return;
+    window.__funnelSent[dedupKey] = Date.now();
     const item = itemId ? state.items.find(i => i.id === itemId) : null;
     await sb.from('funnel_events').insert({
       username: u.username,
@@ -1606,8 +1794,10 @@ async function boot(){
     const { data: { session } } = await sb.auth.getSession();
     if(session?.user?.email){
       await fetchAll();
-      const prof = await ensureClientProfile(session.user.email.toLowerCase());
-      state.session = { username: prof.username, isMaster: !!prof.is_master };
+      let prof = null;
+      try{ prof = await ensureClientProfile(session.user.email.toLowerCase(), session.user.user_metadata); }
+      catch(pe){ if(!(pe && pe.code === 'PROFILE_REFUSED')) throw pe; }
+      if(prof) state.session = { username: prof.username, isMaster: !!prof.is_master };
     }
   }catch(e){
     state.loading = false;
@@ -1644,7 +1834,9 @@ sb.auth.onAuthStateChange((event, session) => {
   if(event === 'SIGNED_IN' && session?.user?.email && (!state.session || state.session.isMaster === false)){
     (async () => {
       await fetchAll();
-      const prof = await ensureClientProfile(session.user.email.toLowerCase());
+      let prof = null;
+      try{ prof = await ensureClientProfile(session.user.email.toLowerCase(), session.user.user_metadata); }
+      catch(pe){ return; }
       state.session = { username: prof.username, isMaster: !!prof.is_master };
       maybeShowPaymentReminder();
       maybeShowNotifPrompt();
@@ -1663,7 +1855,33 @@ sb.auth.onAuthStateChange((event, session) => {
 // re-rend jamais tant qu'un champ a le focus — on retente juste un peu plus tard.
 function isTypingInField(){
   const el = document.activeElement;
-  return !!(el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA'));
+  // SELECT inclus (lot 40) : un menu déroulant ouvert (civilité, langue...) est refermé par un
+  // re-rendu, et c'est ce qui "fermait tout" à la création de compte.
+  return !!(el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.tagName === 'SELECT' || el.isContentEditable));
+}
+// Filet de sécurité en plus du focus : mémorise ce que la personne a déjà saisi (champs avec un id,
+// modifiés par rapport à leur valeur d'origine) pour le remettre après un re-rendu automatique
+// (Realtime, rafraîchissement 30 s). Ne sert QUE pour les rafraîchissements automatiques : un
+// render() déclenché par une action (enregistrer, changer d'onglet) repart toujours de zéro.
+function snapshotFormFields(){
+  const snap = [];
+  document.querySelectorAll('#app input[id], #app textarea[id], #app select[id]').forEach(el => {
+    if(el.type === 'file') return;
+    let dirty;
+    if(el.tagName === 'SELECT') dirty = Array.from(el.options).some(o => o.selected !== o.defaultSelected);
+    else if(el.type === 'checkbox' || el.type === 'radio') dirty = el.checked !== el.defaultChecked;
+    else dirty = el.value !== el.defaultValue;
+    if(dirty) snap.push({ id: el.id, value: el.value, checked: el.checked });
+  });
+  return snap;
+}
+function restoreFormFields(snap){
+  snap.forEach(s => {
+    const el = document.getElementById(s.id);
+    if(!el) return;
+    if(el.type === 'checkbox' || el.type === 'radio') el.checked = s.checked;
+    else el.value = s.value;
+  });
 }
 function renderUnlessTyping(){
   if(isTypingInField()){
@@ -1671,7 +1889,9 @@ function renderUnlessTyping(){
     window.__ovDeferredRenderTimer = setTimeout(renderUnlessTyping, 1500);
     return;
   }
+  const snap = snapshotFormFields();
   render();
+  if(snap.length) restoreFormFields(snap);
 }
 // Lot 34 : la liste ci-dessous DOIT couvrir toutes les tables lues par fetchAll() — toute table
 // absente d'ici ne se met à jour, sur un autre onglet/appareil que celui qui a fait l'action, qu'au
@@ -1731,16 +1951,37 @@ function startRealtimeFallbackRefresh(){
 }
 
 /* ---------- Auth : clients (Supabase Auth + email) ---------- */
-async function ensureClientProfile(email){
+async function ensureClientProfile(email, meta){
   const key = email.toLowerCase();
+  meta = meta || {};
   let prof = state.profiles.find(p => p.username.toLowerCase() === key);
   const now = new Date().toISOString();
+  // Informations saisies à l'inscription (stockées dans les métadonnées du compte Supabase Auth,
+  // puisqu'aucune session n'existe encore avant la confirmation de l'e-mail).
+  const fromMeta = {};
+  if(meta.civilite === 'M.' || meta.civilite === 'Mme') fromMeta.civilite = meta.civilite;
+  if(meta.prenom && String(meta.prenom).trim()) fromMeta.prenom = String(meta.prenom).trim().slice(0, 80);
+  if(meta.nom && String(meta.nom).trim()) fromMeta.nom = String(meta.nom).trim().slice(0, 80);
+  const tel = normalizeMobile(meta.telephone);
+  if(tel) fromMeta.telephone = tel;
   if(!prof){
-    const { data, error } = await sb.from('profiles').insert({ username: email, is_master:false, xp:0, created_at: now, last_login: now }).select().single();
-    if(!error){ state.profiles.push(data); prof = data; }
+    const base = { username: email, is_master:false, xp:0, created_at: now, last_login: now };
+    let { data, error } = await sb.from('profiles').insert(Object.assign({}, base, fromMeta)).select().single();
+    if(error && Object.keys(fromMeta).length){
+      ({ data, error } = await sb.from('profiles').insert(base).select().single());
+    }
+    if(error || !data){
+      // Aucune fiche ne peut être créée (ex. compte supprimé par l'équipe) : on ferme la session
+      // plutôt que de laisser une personne connectée sans fiche.
+      try{ await sb.auth.signOut(); }catch(e){}
+      const err = new Error('PROFILE_REFUSED'); err.code = 'PROFILE_REFUSED'; throw err;
+    }
+    state.profiles.push(data); prof = data;
   } else {
-    await sb.from('profiles').update({ last_login: now }).eq('username', prof.username);
-    prof.last_login = now;
+    const patch = { last_login: now };
+    ['civilite','prenom','nom','telephone'].forEach(k => { if(!prof[k] && fromMeta[k]) patch[k] = fromMeta[k]; });
+    await sb.from('profiles').update(patch).eq('username', prof.username);
+    Object.assign(prof, patch);
   }
   return prof;
 }
@@ -1755,7 +1996,9 @@ async function doClientLogin(email, password){
     render(); return;
   }
   await fetchAll();
-  const prof = await ensureClientProfile(email);
+  let prof;
+  try{ prof = await ensureClientProfile(email, data && data.user && data.user.user_metadata); }
+  catch(e){ state.authError = t('auth.err.badCredentials'); render(); return; }
   state.session = { username: prof.username, isMaster: !!prof.is_master };
   state.authError = ""; state.authNotice = ""; state.profileNotice = ""; state.docError = "";
   state.view = state.session.isMaster ? "dashboard" : "accueil";
@@ -1764,27 +2007,41 @@ async function doClientLogin(email, password){
   render();
 }
 
-async function doClientRegister(email, password, password2){
-  email = email.trim().toLowerCase();
-  if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){ state.authError = t('auth.err.invalidEmail'); render(); return; }
-  if(password.length < 6){ state.authError = t('auth.err.shortPassword'); render(); return; }
-  if(password !== password2){ state.authError = t('auth.err.passwordMismatch'); render(); return; }
+async function doClientRegister(f){
+  const email = String(f.email || '').trim().toLowerCase();
+  state.regDraft = { email, civilite: f.civilite || '', prenom: f.prenom || '', nom: f.nom || '', tel: f.tel || '' };
+  const fail = (msg) => { state.authError = msg; render(); };
+  if(!f.civilite) return fail(tx('Choisissez votre civilité (M. ou Mme).', 'Choose your title (Mr or Mrs).'));
+  if(!String(f.prenom || '').trim() || !String(f.nom || '').trim()) return fail(tx('Indiquez votre prénom et votre nom.', 'Enter your first and last name.'));
+  const tel = normalizeMobile(f.tel);
+  if(!tel) return fail(tx('Indiquez un numéro de portable valide (ex. 06 12 34 56 78).', 'Enter a valid mobile number (e.g. +33 6 12 34 56 78).'));
+  if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return fail(t('auth.err.invalidEmail'));
+  if(isBlockedEmail(email)) return fail(tx(
+    "Les adresses e-mail jetables ou masquées (Yopmail, Proton, alias...) ne sont pas acceptées. Utilisez votre adresse personnelle (Gmail, Outlook, Orange, Free...).",
+    'Disposable or masked e-mail addresses (Yopmail, Proton, aliases...) are not accepted. Please use your personal address.'));
+  if(f.password.length < 6) return fail(t('auth.err.shortPassword'));
+  if(f.password !== f.password2) return fail(t('auth.err.passwordMismatch'));
+  const meta = { civilite: f.civilite, prenom: f.prenom.trim(), nom: f.nom.trim(), telephone: tel };
   const { data, error } = await sb.auth.signUp({
-    email, password,
-    options: { emailRedirectTo: SITE_URL }
+    email, password: f.password,
+    options: { emailRedirectTo: SITE_URL, data: meta }
   });
   if(error){
     if(/rate limit|only request this after/i.test(error.message)){
-      state.authError = t('auth.err.rateLimit');
-    } else {
-      state.authError = t('auth.err.registerGeneric', { msg: error.message });
+      return fail(t('auth.err.rateLimit'));
     }
-    render(); return;
+    if(/database error saving new user|jetable|masqu/i.test(error.message)){
+      return fail(tx("Cette adresse e-mail n'est pas acceptée. Utilisez votre adresse personnelle.", 'This e-mail address is not accepted. Please use your personal address.'));
+    }
+    return fail(t('auth.err.registerGeneric', { msg: error.message }));
   }
   state.authError = "";
+  state.regDraft = {};
   if(data.session){
     await fetchAll();
-    const prof = await ensureClientProfile(email);
+    let prof;
+    try{ prof = await ensureClientProfile(email, meta); }
+    catch(e){ return fail(t('auth.err.registerGeneric', { msg: e.message })); }
     state.session = { username: prof.username, isMaster: !!prof.is_master };
     state.view = state.session.isMaster ? "dashboard" : "accueil";
     maybeShowPaymentReminder();
@@ -1806,6 +2063,23 @@ async function doClientRegister(email, password, password2){
   state.lastRegisterEmail = email;
   state.authTab = "login";
   render();
+}
+
+function registerFormHtml(){
+  const rd = state.regDraft || {};
+  return `
+    <form onsubmit="return handleClientRegister(event)" novalidate>
+      ${pfSegHtml({ id:'reg-civilite', name:'civilite', value: rd.civilite || '', scope:'reg', label: t('profil.field.civilite') })}
+      <div class="row">
+        <div class="field"><label for="reg-prenom">${esc(t('profil.field.prenom'))} <span class="pfx-req">*</span></label><input id="reg-prenom" name="prenom" value="${esc(rd.prenom || '')}" autocomplete="given-name" maxlength="80"></div>
+        <div class="field"><label for="reg-nom">${esc(t('profil.field.nom'))} <span class="pfx-req">*</span></label><input id="reg-nom" name="nom" value="${esc(rd.nom || '')}" autocomplete="family-name" maxlength="80"></div>
+      </div>
+      <div class="field"><label for="reg-tel">${esc(t('profil.field.tel'))} <span class="pfx-req">*</span></label><input id="reg-tel" name="tel" type="tel" inputmode="tel" value="${esc(rd.tel || '')}" placeholder="06 12 34 56 78" autocomplete="tel"></div>
+      <div class="field"><label for="reg-email">${esc(t('gate.field.email'))} <span class="pfx-req">*</span></label><input id="reg-email" name="email" type="email" value="${esc(rd.email || '')}" autocomplete="email"></div>
+      ${passwordFieldHtml('reg-pwd', 'password', t('gate.field.password'), { autocomplete: 'new-password', minlength: 6 })}
+      ${passwordFieldHtml('reg-pwd2', 'password2', t('gate.field.password2'), { autocomplete: 'new-password', minlength: 6 })}
+      <button class="btn btn-primary" type="submit">${esc(t('gate.btn.register'))}</button>
+    </form>`;
 }
 
 async function resendConfirmationEmail(email){
@@ -2573,9 +2847,20 @@ async function confirmRedemptionAddress(id, address){
 
 /* ---------- Profiles (équipe) ---------- */
 async function deleteProfile(username){
-  if(!confirm(`Supprimer définitivement le compte "${username}" ? Cette action est irréversible.`)) return;
-  const { error } = await sb.from('profiles').delete().eq('username', username);
-  if(error){ alert("Erreur : " + error.message); return; }
+  const p = state.profiles.find(x => x.username === username);
+  const label = p ? clientDisplayName(p) : username;
+  if(!confirm(`Supprimer définitivement le compte « ${label} » (${username}) ?\n\nIl ne pourra plus se connecter. Ses réservations, missions, messages, contrats et documents sont effacés. Les factures déjà émises sont conservées.\n\nAction irréversible.`)) return;
+  // Lot 40 : suppression côté serveur (profil + données + compte de connexion). Avant, seule la fiche
+  // était supprimée : le compte de connexion restait valide et l'appli recréait une fiche vide
+  // à la prochaine ouverture, avec accès à tout.
+  const { error } = await sb.rpc('admin_delete_account', { p_username: username });
+  if(error){
+    const notInstalled = /admin_delete_account|schema cache|could not find the function|does not exist/i.test(error.message || '');
+    alert(notInstalled
+      ? "La mise à jour de la base (migration lot 40) n'est pas encore installée : le compte n'a PAS été supprimé. Exécute migration_lot40_comptes.sql dans Supabase (SQL Editor), puis réessaie."
+      : "Erreur : " + error.message);
+    return;
+  }
   await sb.storage.from('documents').remove([`${username}/id_doc`, `${username}/address_doc`]);
   await sb.storage.from('contracts').remove([`${username}/original.pdf`, `${username}/signed.pdf`]);
   // Le Propriétaire éventuel entraîne en cascade (base) la suppression de sa ligne
@@ -2587,29 +2872,79 @@ async function deleteProfile(username){
   state.completions = state.completions.filter(c => c.username !== username);
   state.contracts = state.contracts.filter(c => c.username !== username);
   state.owner_contracts = state.owner_contracts.filter(c => c.username !== username);
+  state.messages = state.messages.filter(m => m.username !== username);
+  state.funnelEvents = state.funnelEvents.filter(e => e.username !== username);
+  if(state.messagesSelectedUser === username) state.messagesSelectedUser = null;
   state.items.forEach(i => { if(i.owner_username === username) i.owner_username = null; });
+  state.modal = null;
   render();
 }
 async function saveProfile(){
   const u = currentProfile();
+  if(!u) return;
+  const el = (id) => document.getElementById(id);
+  const val = (id) => (el(id) ? String(el(id).value || '').trim() : undefined);
+  const draft = {};
+  [['civilite','pf-civilite'],['prenom','pf-prenom'],['nom','pf-nom'],['date_naissance','pf-dob'],['telephone','pf-tel'],
+   ['adresse','pf-adresse'],['code_postal','pf-cp'],['ville','pf-ville'],['numero_cni','pf-cni'],
+   ['nationalite','pf-nationalite'],['lieu_naissance','pf-lieu-naissance']].forEach(([k, id]) => {
+    const v = val(id); if(v !== undefined) draft[k] = v;
+  });
+  if(u.is_owner && el('pf-iban')) draft.iban = val('pf-iban');
+  state.profileDraft = Object.assign({}, state.profileDraft || {}, draft);
+
+  // Validation — les messages s'affichent sous chaque champ concerné.
+  const errs = {};
+  if(!draft.civilite) errs.civilite = tx('Choisissez M. ou Mme.', 'Choose Mr or Mrs.');
+  if(!draft.prenom) errs.prenom = tx('Indiquez votre prénom.', 'Enter your first name.');
+  if(!draft.nom) errs.nom = tx('Indiquez votre nom.', 'Enter your last name.');
+  if(!draft.date_naissance) errs.date_naissance = tx('Indiquez votre date de naissance.', 'Enter your date of birth.');
+  else {
+    const dob = new Date(draft.date_naissance + 'T00:00:00');
+    if(isNaN(dob) || dob.getFullYear() < 1900 || dob > new Date()) errs.date_naissance = tx('Date de naissance invalide.', 'Invalid date of birth.');
+  }
+  const tel = normalizeMobile(draft.telephone);
+  if(!tel) errs.telephone = tx('Portable invalide — exemple : 06 12 34 56 78 (ou +32 470 12 34 56).', 'Invalid mobile — example: +33 6 12 34 56 78.');
+  if(!draft.adresse || draft.adresse.length < 5) errs.adresse = tx("Indiquez votre adresse (numéro et rue).", 'Enter your street address.');
+  if(!/^[A-Za-z0-9][A-Za-z0-9 \-]{2,9}$/.test(draft.code_postal || '')) errs.code_postal = tx('Code postal invalide.', 'Invalid postal code.');
+  if(!draft.ville || draft.ville.length < 2) errs.ville = tx('Indiquez votre ville.', 'Enter your city.');
+  state.profileFieldErrors = errs;
+  state.profileSaved = false;
+  if(Object.keys(errs).length){
+    state.profileError = tx('Certaines informations sont manquantes ou invalides — elles sont signalées en rouge.', 'Some information is missing or invalid — see the fields in red.');
+    render();
+    const first = document.querySelector('.pfx-field-err');
+    if(first && first.scrollIntoView) first.scrollIntoView({ block: 'center', behavior: 'smooth' });
+    return;
+  }
+
   const payload = {
-    nom: document.getElementById('pf-nom').value.trim(),
-    prenom: document.getElementById('pf-prenom').value.trim(),
-    date_naissance: document.getElementById('pf-dob').value || null,
-    telephone: document.getElementById('pf-tel').value.trim(),
-    numero_cni: document.getElementById('pf-cni').value.trim(),
-    adresse: document.getElementById('pf-adresse').value.trim(),
-    civilite: document.getElementById('pf-civilite')?.value || null,
-    nationalite: document.getElementById('pf-nationalite')?.value.trim() || null,
-    lieu_naissance: document.getElementById('pf-lieu-naissance')?.value.trim() || null,
+    civilite: draft.civilite, prenom: draft.prenom, nom: draft.nom, date_naissance: draft.date_naissance,
+    telephone: tel, adresse: draft.adresse, code_postal: draft.code_postal, ville: draft.ville,
   };
-  if(u.is_owner && document.getElementById('pf-iban')) payload.iban = document.getElementById('pf-iban').value.trim() || null;
+  if(draft.numero_cni !== undefined) payload.numero_cni = draft.numero_cni;
+  if(draft.nationalite !== undefined) payload.nationalite = draft.nationalite || null;
+  if(draft.lieu_naissance !== undefined) payload.lieu_naissance = draft.lieu_naissance || null;
+  if(draft.iban !== undefined) payload.iban = draft.iban || null;
+
   const { data, error } = await sb.from('profiles').update(payload).eq('username', u.username).select().single();
-  if(error){ state.profileError = t('common.error_prefix', { msg: error.message }); state.profileSaved = false; render(); return; }
+  if(error){
+    const colMissing = /code_postal|ville|schema cache|column/i.test(error.message || '');
+    state.profileError = colMissing
+      ? tx("Le service est en cours de mise à jour. Réessayez dans quelques minutes.", 'The service is being updated. Please try again in a few minutes.')
+      : t('common.error_prefix', { msg: error.message });
+    render(); return;
+  }
   Object.assign(u, data);
+  state.profileDraft = null; state.profileFieldErrors = {};
   state.profileError = ""; state.profileSaved = true;
-  if(isProfileComplete(u)) state.profileNotice = "";
+  if(isProfileComplete(u)){
+    state.profileNotice = "";
+    if(state.view !== 'profil') state.view = 'accueil';
+    maybeShowNotifPrompt();
+  }
   render();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
 /* ---------- Contracts ---------- */
@@ -4483,12 +4818,7 @@ function renderGate(){
         </form>
         <div class="admin-link-wrap"><button onclick="handleResendConfirmation()">${esc(t('gate.resend'))}</button></div>
       ` : `
-        <form onsubmit="return handleClientRegister(event)">
-          <div class="field"><label>${esc(t('gate.field.email'))}</label><input name="email" type="email" required autocomplete="email"></div>
-          ${passwordFieldHtml('reg-pwd', 'password', t('gate.field.password'), { autocomplete: 'new-password', minlength: 6 })}
-          ${passwordFieldHtml('reg-pwd2', 'password2', t('gate.field.password2'), { autocomplete: 'new-password', minlength: 6 })}
-          <button class="btn btn-primary" type="submit">${esc(t('gate.btn.register'))}</button>
-        </form>
+        ${registerFormHtml()}
         <div style="font-size:11.5px;color:var(--text-faint);margin-top:10px;text-align:center;">${esc(t('gate.register.notice'))}</div>
       `}
     </div>
@@ -6091,7 +6421,7 @@ function usersFilteredSorted(){
   const q = (state.usersSearch||'').trim().toLowerCase();
   const { field, dir } = state.usersSort;
   const mult = dir === 'asc' ? 1 : -1;
-  return state.profiles.slice().filter(p => usersMatchesSearch(p, q)).sort((a,b) => {
+  return state.profiles.slice().filter(p => usersMatchesSearch(p, q) && usersFilterMatch(p, state.usersFilter || 'all')).sort((a,b) => {
     // Le(s) compte(s) équipe restent toujours en tête de liste, quel que soit le tri choisi —
     // comportement déjà en place avant l'ajout du tri par colonne, conservé tel quel.
     if(!!a.is_master !== !!b.is_master) return a.is_master ? -1 : 1;
@@ -6101,73 +6431,140 @@ function usersFilteredSorted(){
     return 0;
   });
 }
-function usersTheadHtml(){
-  const arrow = (f) => state.usersSort.field === f ? `<span class="sort-arrow">${state.usersSort.dir === 'asc' ? '▲' : '▼'}</span>` : '';
-  return `<tr>
-    <th class="sortable" onclick="onUsersSort('name')">Compte ${arrow('name')}</th>
-    <th class="sortable" onclick="onUsersSort('xp')">XP ${arrow('xp')}</th>
-    <th class="sortable" onclick="onUsersSort('created')">Inscrit le ${arrow('created')}</th>
-    <th class="sortable" onclick="onUsersSort('last_login')">Dernière connexion ${arrow('last_login')}</th>
-    <th></th>
-  </tr>`;
+const USERS_SORTS = [['last_login', 'Dernière connexion'], ['created', 'Inscription'], ['xp', 'XP'], ['name', 'Nom']];
+const USERS_FILTERS = [
+  ['all', 'Tous'],
+  ['week', 'Connectés cette semaine'],
+  ['never', 'Jamais connectés'],
+  ['incomplete', 'Fiche incomplète'],
+  ['owner', 'Propriétaires'],
+  ['blocked', 'E-mail jetable'],
+];
+function usersFilterMatch(p, f){
+  if(f === 'all') return true;
+  if(p.is_master) return false;
+  if(f === 'week') return !!p.last_login && (Date.now() - new Date(p.last_login).getTime()) < 7 * 86400000;
+  if(f === 'never') return !p.last_login;
+  if(f === 'incomplete') return !isProfileComplete(p);
+  if(f === 'owner') return !!p.is_owner;
+  if(f === 'blocked') return isBlockedEmail(p.username);
+  return true;
+}
+function usersHeadHtml(){
+  const cell = (field, label) => {
+    const on = state.usersSort.field === field;
+    return `<button type="button" class="${on ? 'on' : ''}" onclick="onUsersSort('${field}')">${label}${on ? `<span class="sort-arrow">${state.usersSort.dir === 'asc' ? '▲' : '▼'}</span>` : ''}</button>`;
+  };
+  return `${cell('name', 'Client')}${cell('xp', 'Progression')}${cell('created', 'Inscrit le')}${cell('last_login', 'Dernière connexion')}<span></span>`;
+}
+function usersChipsHtml(){
+  const clients = state.profiles.filter(p => !p.is_master);
+  const sortChips = USERS_SORTS.map(([f, label]) => {
+    const on = state.usersSort.field === f;
+    return `<button type="button" class="ul-chip ${on ? 'on' : ''}" onclick="onUsersSort('${f}')">${label}${on ? ` ${state.usersSort.dir === 'asc' ? '▲' : '▼'}` : ''}</button>`;
+  }).join('');
+  const filterChips = USERS_FILTERS.map(([f, label]) => {
+    const n = f === 'all' ? clients.length : state.profiles.filter(p => usersFilterMatch(p, f)).length;
+    if(f === 'blocked' && !n) return '';
+    const on = (state.usersFilter || 'all') === f;
+    return `<button type="button" class="ul-chip ${on ? 'on' : ''}" onclick="onUsersFilter('${f}')">${label} <b>${n}</b></button>`;
+  }).join('');
+  return `<div class="ul-chips ul-sortchips"><span class="ul-chips-label">Trier par</span>${sortChips}</div>
+          <div class="ul-chips"><span class="ul-chips-label">Afficher</span>${filterChips}</div>`;
 }
 function usersRowHtml(p){
+  const u = esc(p.username);
+  const online = !!p.last_login && (Date.now() - new Date(p.last_login).getTime()) < 10 * 60 * 1000;
+  const tags = [];
+  if(p.is_master) tags.push(`<span class="ul-tag amber">Équipe</span>`);
+  if(p.is_owner) tags.push(`<span class="owner-tag">${tacticalIconSvg('house',{size:11})}Propriétaire</span>`);
+  if(!p.is_master && !isProfileComplete(p)) tags.push(`<span class="ul-tag warn" title="${esc(profileMissingFields(p).map(m => m.label).join(', '))}">Fiche incomplète</span>`);
+  if(!p.is_master && isBlockedEmail(p.username)) tags.push(`<span class="ul-tag danger">E-mail jetable</span>`);
+  const place = [p.code_postal, p.ville].filter(Boolean).join(' ');
+  const sub = esc(p.username);
+  const sub2 = [p.telephone, place].filter(Boolean).map(esc).join(' · ');
+  const acts = p.is_master ? '' : `
+    <button type="button" class="btn btn-primary btn-sm ul-msg" style="width:auto;" onclick="openConversationFromList('${u}')">${tacticalIconSvg('mail',{size:14})}<span>Message</span></button>
+    <button type="button" class="icon-btn" title="Voir la fiche" onclick="openViewProfile('${u}')">${tacticalIconSvg('id-badge',{size:16})}</button>
+    <button type="button" class="icon-btn" title="Ajouter de l'XP" onclick="openAddXpModal('${u}')">${tacticalIconSvg('coins',{size:16})}</button>
+    <button type="button" class="icon-btn" title="Réinitialiser l'XP au niveau 1" onclick="resetUserToLevel1('${u}')">↺</button>
+    <button type="button" class="icon-btn${p.is_owner ? ' active' : ''}" title="${p.is_owner ? 'Compte marqué Propriétaire' : 'Marquer comme Propriétaire'}" onclick="openMarkAsOwnerModal('${u}')">${tacticalIconSvg('house',{size:16})}</button>
+    <button type="button" class="icon-btn danger" title="Supprimer ce compte" onclick="deleteProfile('${u}')">✕</button>`;
   return `
-    <tr>
-      <td data-label="Compte" class="td-block"><div class="t-title">${esc(clientDisplayName(p))}${p.is_master?` <span style="display:inline-flex;vertical-align:-2px;color:var(--amber);">${tacticalIconSvg('rank-star',{size:13})}</span>`:''}${p.is_owner?` <span class="owner-tag">${tacticalIconSvg('house',{size:11})}Propriétaire</span>`:''}</div>${p.prenom||p.nom ? `<div class="t-desc">@${esc(p.username)}</div>` : ''}</td>
-      <td data-label="XP">${p.is_master ? '—' : `${p.xp} XP · Niv. ${levelFor(p.xp)}`}</td>
-      <td data-label="Inscrit le">${fmtDate(p.created_at)}</td>
-      <td data-label="Dernière connexion">${fmtDateTime(p.last_login)}</td>
-      <td><div class="row-icon-actions">
-        ${!p.is_master ? `<button type="button" class="icon-btn" title="Voir la fiche" onclick="openViewProfile('${esc(p.username)}')">${tacticalIconSvg('id-badge',{size:16})}</button>` : ''}
-        ${!p.is_master ? `<button type="button" class="icon-btn" title="Ajouter de l'XP" onclick="openAddXpModal('${esc(p.username)}')">${tacticalIconSvg('coins',{size:16})}</button>` : ''}
-        ${!p.is_master ? `<button type="button" class="icon-btn" title="Réinitialiser l'XP au niveau 1" onclick="resetUserToLevel1('${esc(p.username)}')">↺</button>` : ''}
-        ${!p.is_master ? `<button type="button" class="icon-btn${p.is_owner ? ' active' : ''}" title="${p.is_owner ? 'Compte marqué Propriétaire' : 'Marquer comme Propriétaire'}" onclick="openMarkAsOwnerModal('${esc(p.username)}')">${tacticalIconSvg('house',{size:16})}</button>` : ''}
-        ${!p.is_master ? `<button type="button" class="icon-btn danger" title="Supprimer ce compte" onclick="deleteProfile('${esc(p.username)}')">✕</button>` : ''}
-      </div></td>
-    </tr>`;
+    <div class="ul-row">
+      <div class="ul-who">
+        <div class="ul-av${online ? ' online' : ''}">${esc(userInitials(p))}</div>
+        <div class="ul-who-txt">
+          <div class="ul-name">${esc(clientDisplayName(p))}${tags.length ? ` <span class="ul-tags">${tags.join('')}</span>` : ''}</div>
+          <div class="ul-sub">${sub}</div>
+          ${sub2 ? `<div class="ul-sub">${sub2}</div>` : ''}
+        </div>
+      </div>
+      <div class="ul-cell" data-label="Progression">${p.is_master ? '—' : `<b>${p.xp} XP</b><small>Niveau ${levelFor(p.xp)}</small>`}</div>
+      <div class="ul-cell" data-label="Inscrit le">${p.created_at ? fmtDate(p.created_at) : '—'}</div>
+      <div class="ul-cell" data-label="Dernière connexion">${p.last_login ? `<b${online ? ' class="ul-live"' : ''}>${online ? 'En ligne' : esc(fmtAgo(p.last_login))}</b><small>${esc(fmtDateTime(p.last_login))}</small>` : `<span class="ul-never">Jamais connecté</span>`}</div>
+      <div class="ul-act">${acts}</div>
+    </div>`;
 }
+function usersListHtml(list){
+  return list.length ? list.map(usersRowHtml).join('') : `<div class="empty" style="margin:18px;">Aucun compte ne correspond à cette recherche.</div>`;
+}
+function usersCountText(n){ return `${n} compte${n > 1 ? 's' : ''}`; }
 function refreshUsersView(){
   const list = usersFilteredSorted();
-  const tbody = document.getElementById('users-tbody');
-  const thead = document.getElementById('users-thead');
+  const body = document.getElementById('users-list');
+  if(!body) return;
+  const head = document.getElementById('users-head');
+  const chips = document.getElementById('users-chips');
   const count = document.getElementById('users-count');
-  if(!tbody) return;
-  if(thead) thead.innerHTML = usersTheadHtml();
-  tbody.innerHTML = list.length ? list.map(usersRowHtml).join('') : `<tr><td colspan="5"><div class="empty">Aucun compte ne correspond à cette recherche.</div></td></tr>`;
-  if(count) count.textContent = `${list.length} compte${list.length>1?'s':''}`;
+  if(head) head.innerHTML = usersHeadHtml();
+  if(chips) chips.innerHTML = usersChipsHtml();
+  body.innerHTML = usersListHtml(list);
+  if(count) count.textContent = usersCountText(list.length);
 }
 function renderUtilisateurs(){
   const list = usersFilteredSorted();
   return `
-    <div class="topbar"><div><h1>Utilisateurs</h1><div class="desc">Tous les comptes Owls Vision, leur XP et leur dernière connexion. <span id="users-count">${list.length} compte${list.length>1?'s':''}</span></div></div></div>
-    <div style="display:flex;gap:10px;margin-bottom:18px;flex-wrap:wrap;">
+    <div class="topbar"><div><h1>Utilisateurs</h1><div class="desc">Tous les comptes Owls Vision. <span id="users-count">${usersCountText(list.length)}</span></div></div>
       <button class="btn btn-primary btn-sm" style="width:auto;" onclick="openNewManualUserModal()">+ Créer un utilisateur</button>
     </div>
     <div class="filter-bar">
-      <input type="text" placeholder="Nom, pseudo... ou tapez « propriétaire » pour filtrer les comptes Propriétaire" value="${esc(state.usersSearch)}" oninput="onUsersSearch(this.value)">
+      <input type="text" placeholder="Rechercher un nom, un e-mail, « propriétaire »…" value="${esc(state.usersSearch)}" oninput="onUsersSearch(this.value)">
     </div>
-    <div class="panel"><table class="tbl-compact tbl-cards-mobile"><thead id="users-thead">${usersTheadHtml()}</thead><tbody id="users-tbody">${list.length ? list.map(usersRowHtml).join('') : `<tr><td colspan="5"><div class="empty">Aucun compte ne correspond à cette recherche.</div></td></tr>`}</tbody></table></div>
+    <div id="users-chips">${usersChipsHtml()}</div>
+    <div class="panel ul-panel">
+      <div class="ul">
+        <div class="ul-head" id="users-head">${usersHeadHtml()}</div>
+        <div id="users-list">${usersListHtml(list)}</div>
+      </div>
+    </div>
   `;
 }
 
-/* ---------- Lot 37 : suivi du parcours de réservation (funnel) ---------- */
-// Regroupe les événements funnel_events par client, triés du plus ancien au plus récent — le
-// DERNIER événement de chacun dit où il en est resté dans le parcours.
-function funnelEventsByUser(){
-  const byUser = {};
-  state.funnelEvents.slice().sort((a,b) => new Date(a.created_at) - new Date(b.created_at)).forEach(ev => {
-    (byUser[ev.username] = byUser[ev.username] || []).push(ev);
-  });
-  return byUser;
-}
+/* ---------- Lot 37 / 40 : suivi du parcours de réservation (funnel) ---------- */
+// Lot 40 : refonte. Avant, une ligne par client dont le dernier événement n'était pas "demande envoyée",
+// pour toujours — les vieux paniers, les comptes supprimés et les clients ayant réservé entre-temps
+// s'empilaient. Maintenant : UN panier par client (le plus récent), classé par ancienneté, avec le
+// téléphone pour relancer, un bouton Message, un bouton "Traité", et les paniers de plus de 30 jours
+// rangés à part avec une purge.
+const FUNNEL_LIVE_MS = 3 * 3600 * 1000;       // moins de 3 h : le client est peut-être encore en train de choisir
+const FUNNEL_OLD_MS = 30 * 86400 * 1000;      // plus de 30 jours : rangé dans "Anciens"
 const FUNNEL_STEP_LABELS = {
   model_selected: "A choisi un modèle",
   dates_selected: "A choisi des dates",
   booking_submitted: "A envoyé sa demande",
 };
-// Compte, pour chaque étape, le nombre de clients DISTINCTS l'ayant atteinte au moins une fois
-// (toutes périodes confondues) — c'est l'entonnoir affiché en haut du sous-onglet.
+// Événements par client, du plus ancien au plus récent. Les événements d'un compte supprimé sont ignorés.
+function funnelEventsByUser(){
+  const known = new Set(state.profiles.map(p => p.username));
+  const byUser = {};
+  state.funnelEvents.slice().sort((a,b) => new Date(a.created_at) - new Date(b.created_at)).forEach(ev => {
+    if(!known.has(ev.username)) return;
+    (byUser[ev.username] = byUser[ev.username] || []).push(ev);
+  });
+  return byUser;
+}
+// Entonnoir : nombre de clients DISTINCTS ayant atteint chaque étape au moins une fois.
 function funnelSummaryCounts(){
   const byUser = funnelEventsByUser();
   let modelCount = 0, datesCount = 0, submittedCount = 0;
@@ -6179,38 +6576,47 @@ function funnelSummaryCounts(){
   });
   return { modelCount, datesCount, submittedCount };
 }
-// "Panier abandonné" = un client dont le DERNIER événement connu n'est pas "a envoyé sa demande" —
-// il s'est arrêté en cours de route (modèle choisi, parfois une date, jamais validé). C'est
-// exactement la demande de Luka : savoir quel compte client est arrivé où dans le cheminement,
-// sans validation à la fin.
+function funnelBandFor(ageMs){
+  if(ageMs < FUNNEL_LIVE_MS) return 'live';
+  if(ageMs < FUNNEL_OLD_MS) return 'relance';
+  return 'old';
+}
+// Paniers ouverts : un par client. Ne comptent pas : parcours abouti (demande envoyée, ou réservation
+// créée depuis, y compris par l'équipe), panier déjà marqué "traité", compte supprimé.
 function funnelAbandonedList(){
   const byUser = funnelEventsByUser();
   const rows = [];
+  const now = Date.now();
   Object.keys(byUser).forEach(username => {
+    const profile = state.profiles.find(p => p.username === username);
+    if(!profile || profile.is_master) return;
     const events = byUser[username];
     const last = events[events.length - 1];
-    if(last.event_type === 'booking_submitted') return;
+    if(last.event_type === 'booking_submitted' || last.dismissed_at) return;
+    const lastMs = new Date(last.created_at).getTime();
+    if(state.bookings.some(b => b.username === username && b.created_at && new Date(b.created_at).getTime() >= lastMs - 60000)) return;
+    let from = 0;
+    for(let i = events.length - 1; i >= 0; i--){ if(events[i].event_type === 'booking_submitted'){ from = i + 1; break; } }
+    const since = events.slice(from);
+    const datesEv = since.slice().reverse().find(e => e.event_type === 'dates_selected' && (!last.item_id || e.item_id === last.item_id));
     rows.push({
-      username,
+      username, profile,
       eventId: last.id,
       seenByMaster: !!last.seen_by_master,
-      profile: state.profiles.find(p => p.username === username) || null,
-      step: last.event_type,
-      itemName: last.item_name,
-      startDate: last.start_date,
-      endDate: last.end_date,
+      step: datesEv ? 'dates_selected' : 'model_selected',
+      itemName: last.item_name || (datesEv && datesEv.item_name) || null,
+      startDate: datesEv ? datesEv.start_date : null,
+      endDate: datesEv ? datesEv.end_date : null,
+      tries: new Set(since.map(e => e.item_id || e.item_name).filter(Boolean)).size,
       lastAt: last.created_at,
+      band: funnelBandFor(now - lastMs),
     });
   });
   return rows.sort((a,b) => new Date(b.lastAt) - new Date(a.lastAt));
 }
-// Pastille de nav (rouge, "3") = paniers abandonnés pas encore VUS par le master — pas le total
-// (celui-ci reste affiché en toutes lettres dans le panneau, voir renderUtilisateursFunnel). Se vide
-// à l'ouverture de l'onglet (markFunnelAbandonedSeen, appelé depuis goto()) et se remplit à nouveau
-// dès qu'un client a une nouvelle activité (un nouvel événement = une nouvelle ligne, forcément non
-// vue) — même logique que les pastilles Messages/Contrats/Missions existantes.
+// Pastille rouge de la nav = paniers récents pas encore VUS (les paniers de plus de 30 jours n'y comptent plus).
 function funnelUnseenAbandonedCount(){
-  return funnelAbandonedList().filter(r => !r.seenByMaster).length;
+  return funnelAbandonedList().filter(r => !r.seenByMaster && r.band !== 'old').length;
 }
 function markFunnelAbandonedSeen(){
   const toMark = funnelAbandonedList().filter(r => !r.seenByMaster);
@@ -6221,31 +6627,37 @@ function markFunnelAbandonedSeen(){
     sb.from('funnel_events').update({ seen_by_master: true }).eq('id', r.eventId).then(()=>{});
   });
 }
-// Formatage commun "20/10 → 22/10" (ou "—" si pas de dates) pour les listes du funnel.
 function funnelFmtPeriode(startDate, endDate){
   return startDate && endDate
     ? `${new Date(startDate+'T00:00:00').toLocaleDateString('fr-FR',{day:'2-digit',month:'2-digit'})} → ${new Date(endDate+'T00:00:00').toLocaleDateString('fr-FR',{day:'2-digit',month:'2-digit'})}`
-    : '—';
+    : 'Dates non choisies';
 }
-function funnelAbandonedRowHtml(row){
-  const name = row.profile ? clientDisplayName(row.profile) : row.username;
-  const stepCls = row.step === 'dates_selected' ? 'info' : 'pending';
+function funnelClientCellHtml(p, username){
+  const name = p ? clientDisplayName(p) : username;
+  const tel = p && p.telephone ? `<a class="ul-tel" href="tel:${esc(String(p.telephone).replace(/\s/g,''))}">${esc(p.telephone)}</a>` : '';
+  return `<div class="ul-who"><div class="ul-av">${esc(userInitials(p || { username }))}</div><div class="ul-who-txt"><div class="ul-name">${esc(name)}</div><div class="ul-sub">${tel || esc(username)}</div></div></div>`;
+}
+function funnelCartRowHtml(row){
+  const u = esc(row.username);
+  const stepNo = row.step === 'dates_selected' ? 2 : 1;
   return `
-    <tr>
-      <td><div class="t-title">${esc(name)}</div><div class="t-desc">@${esc(row.username)}</div></td>
-      <td>${esc(row.itemName || '—')}</td>
-      <td>${funnelFmtPeriode(row.startDate, row.endDate)}</td>
-      <td><span class="status-pill ${stepCls}">${esc(FUNNEL_STEP_LABELS[row.step] || row.step)}</span></td>
-      <td>${fmtDateTime(row.lastAt)}</td>
-      <td>${row.profile ? `<button class="btn btn-ghost btn-sm" onclick="openViewProfile('${esc(row.username)}')">Fiche</button>` : ''}</td>
-    </tr>`;
+    <div class="ul-row">
+      ${funnelClientCellHtml(row.profile, row.username)}
+      <div class="ul-cell" data-label="Modèle"><b>${esc(row.itemName || '—')}</b><small>${esc(funnelFmtPeriode(row.startDate, row.endDate))}${row.tries > 1 ? ` · ${row.tries} modèles consultés` : ''}</small></div>
+      <div class="ul-cell" data-label="Étape"><span class="ul-steps" aria-hidden="true"><i class="on"></i><i class="${stepNo >= 2 ? 'on' : ''}"></i><i></i></span><small>${esc(FUNNEL_STEP_LABELS[row.step])}</small></div>
+      <div class="ul-cell" data-label="Dernière activité"><b>${esc(fmtAgo(row.lastAt))}</b><small>${esc(fmtDateTime(row.lastAt))}</small></div>
+      <div class="ul-act">
+        <button type="button" class="btn btn-primary btn-sm ul-msg" style="width:auto;" onclick="openConversationFromList('${u}')">${tacticalIconSvg('mail',{size:14})}<span>Message</span></button>
+        <button type="button" class="icon-btn" title="Voir la fiche" onclick="openViewProfile('${u}')">${tacticalIconSvg('id-badge',{size:16})}</button>
+        <button type="button" class="icon-btn" title="Marquer comme traité (retire ce panier de la liste)" onclick="funnelDismiss('${u}')">✓</button>
+      </div>
+    </div>`;
 }
-// Lot 37bis : Luka veut le détail nominatif à CHAQUE étape (pas seulement les paniers abandonnés) —
-// "je veux pareil pour les étapes d'avant, je veux pouvoir cliquer et voir quelle fiche client ça
-// concerne". Pour une étape donnée, un client y apparaît dès qu'il l'a atteinte au moins une fois,
-// qu'il ait continué le parcours ensuite ou non — contrairement à funnelAbandonedList() qui ne
-// retient que le DERNIER événement de chacun. On garde ici l'occurrence la plus récente de cette
-// étape précise pour chaque client (date/modèle affichés = ceux de cette dernière fois-là).
+function funnelCartListHtml(rows, emptyText){
+  if(!rows.length) return `<div class="empty" style="margin:18px;">${emptyText}</div>`;
+  return `<div class="ul ul-funnel"><div class="ul-head"><span>Client</span><span>Modèle</span><span>Étape</span><span>Dernière activité</span><span></span></div>${rows.map(funnelCartRowHtml).join('')}</div>`;
+}
+// Clients ayant atteint une étape donnée (au moins une fois) — détail de l'entonnoir.
 function funnelClientsForStep(eventType){
   const byUser = funnelEventsByUser();
   const rows = [];
@@ -6256,33 +6668,29 @@ function funnelClientsForStep(eventType){
     rows.push({
       username,
       profile: state.profiles.find(p => p.username === username) || null,
-      itemName: last.item_name,
-      startDate: last.start_date,
-      endDate: last.end_date,
-      lastAt: last.created_at,
+      itemName: last.item_name, startDate: last.start_date, endDate: last.end_date, lastAt: last.created_at,
     });
   });
   return rows.sort((a,b) => new Date(b.lastAt) - new Date(a.lastAt));
 }
 function funnelStepRowHtml(row){
-  const name = row.profile ? clientDisplayName(row.profile) : row.username;
+  const u = esc(row.username);
   return `
-    <tr>
-      <td><div class="t-title">${esc(name)}</div><div class="t-desc">@${esc(row.username)}</div></td>
-      <td>${esc(row.itemName || '—')}</td>
-      <td>${funnelFmtPeriode(row.startDate, row.endDate)}</td>
-      <td>${fmtDateTime(row.lastAt)}</td>
-      <td>${row.profile ? `<button class="btn btn-ghost btn-sm" onclick="openViewProfile('${esc(row.username)}')">Fiche</button>` : ''}</td>
-    </tr>`;
+    <div class="ul-row">
+      ${funnelClientCellHtml(row.profile, row.username)}
+      <div class="ul-cell" data-label="Modèle"><b>${esc(row.itemName || '—')}</b></div>
+      <div class="ul-cell" data-label="Dates">${esc(funnelFmtPeriode(row.startDate, row.endDate))}</div>
+      <div class="ul-cell" data-label="Dernière activité"><b>${esc(fmtAgo(row.lastAt))}</b></div>
+      <div class="ul-act">
+        <button type="button" class="icon-btn" title="Envoyer un message" onclick="openConversationFromList('${u}')">${tacticalIconSvg('mail',{size:16})}</button>
+        <button type="button" class="icon-btn" title="Voir la fiche" onclick="openViewProfile('${u}')">${tacticalIconSvg('id-badge',{size:16})}</button>
+      </div>
+    </div>`;
 }
-// Un <details> par étape (même mécanique que "Rémunération du président" dans Finances, voir
-// finRemunerationPanelHtml) : repliée par défaut, un clic sur la barre déroule la liste nominative
-// des clients ayant atteint cette étape, avec un accès direct à leur fiche.
 function funnelStepDetailsHtml(stepNum, eventType, count, barColorCss){
   const rows = funnelClientsForStep(eventType);
-  // La barre DOIT être à l'intérieur de <summary> (et non juste dans <details>) : tout ce qui est
-  // enfant de <details> mais hors <summary> est masqué par le navigateur tant que l'accordéon est
-  // fermé — sinon on perd le côté "visuel en un coup d'œil" repliée (régression repérée par Luka).
+  // La barre DOIT être à l'intérieur de <summary> : tout ce qui est hors <summary> est masqué
+  // par le navigateur tant que l'accordéon est fermé.
   return `
     <details class="funnel-details">
       <summary>
@@ -6293,31 +6701,53 @@ function funnelStepDetailsHtml(stepNum, eventType, count, barColorCss){
         </div>
       </summary>
       <div class="funnel-step-clients">
-        <table class="tbl-compact"><thead><tr><th>Client</th><th>Modèle</th><th>Dates envisagées</th><th>Dernière activité</th><th></th></tr></thead>
-        <tbody>${rows.length ? rows.map(funnelStepRowHtml).join('') : `<tr><td colspan="5"><div class="empty">Aucun client n'a encore atteint cette étape.</div></td></tr>`}</tbody></table>
+        ${rows.length
+          ? `<div class="ul ul-funnel"><div class="ul-head"><span>Client</span><span>Modèle</span><span>Dates</span><span>Dernière activité</span><span></span></div>${rows.map(funnelStepRowHtml).join('')}</div>`
+          : `<div class="empty">Aucun client n'a encore atteint cette étape.</div>`}
       </div>
     </details>`;
 }
 function renderUtilisateursFunnel(){
   const counts = funnelSummaryCounts();
-  const abandoned = funnelAbandonedList();
-  const base = counts.modelCount || 1; // évite une division par 0 : les barres restent à 0 % si personne n'a encore rien choisi
+  const all = funnelAbandonedList();
+  const live = all.filter(r => r.band === 'live');
+  const relance = all.filter(r => r.band === 'relance');
+  const old = all.filter(r => r.band === 'old');
+  const base = counts.modelCount || 1;
   const pct = (n) => Math.round(n / base * 100);
   return `
-    <div class="topbar"><div><h1>Suivi réservation</h1><div class="desc">Où vos clients s'arrêtent dans le parcours de réservation, du choix du modèle jusqu'à l'envoi de la demande.</div></div></div>
+    <div class="topbar"><div><h1>Suivi réservation</h1><div class="desc">Les clients qui ont commencé une réservation sans l'envoyer. Un seul panier par client, le plus récent en premier.</div></div></div>
+
     <div class="panel" style="margin-bottom:18px;">
-      <h2 style="margin-bottom:4px;">Entonnoir</h2>
-      <div style="font-size:12.5px;color:var(--text-faint);margin-bottom:18px;">Nombre de clients ayant atteint chaque étape au moins une fois, toutes périodes confondues. Cliquez sur une étape pour voir qui, nommément.</div>
+      <h2 class="ul-h2">À relancer <span class="status-pill pending">${relance.length}</span></h2>
+      <div class="ul-h2-sub">Panier laissé il y a plus de 3 h, depuis moins de 30 jours. Appelez ou écrivez au client, puis cliquez ✓ pour retirer le panier de la liste.</div>
+      ${funnelCartListHtml(relance, "Aucun panier à relancer — tous les clients qui ont commencé une réservation l'ont envoyée.")}
+    </div>
+
+    ${live.length ? `
+    <div class="panel" style="margin-bottom:18px;">
+      <h2 class="ul-h2">En cours <span class="status-pill info">${live.length}</span></h2>
+      <div class="ul-h2-sub">Activité de moins de 3 h : ces clients sont peut-être encore en train de choisir.</div>
+      ${funnelCartListHtml(live, '')}
+    </div>` : ''}
+
+    <div class="panel" style="margin-bottom:18px;">
+      <h2 class="ul-h2">Entonnoir</h2>
+      <div class="ul-h2-sub">Clients distincts ayant atteint chaque étape au moins une fois, toutes périodes confondues. Cliquez sur une étape pour voir qui.</div>
       ${funnelStepDetailsHtml(1, 'model_selected', counts.modelCount, 'width:100%;')}
       ${funnelStepDetailsHtml(2, 'dates_selected', counts.datesCount, `width:${pct(counts.datesCount)}%;background:linear-gradient(90deg, var(--blue), var(--blue));`)}
       ${funnelStepDetailsHtml(3, 'booking_submitted', counts.submittedCount, `width:${pct(counts.submittedCount)}%;`)}
     </div>
-    <div class="panel">
-      <h2 style="margin-bottom:4px;">Paniers abandonnés <span class="status-pill danger" style="margin-left:4px;">${abandoned.length}</span></h2>
-      <div style="font-size:12.5px;color:var(--text-faint);margin-bottom:16px;">Clients qui ont choisi un modèle — et souvent une date — mais n'ont jamais envoyé leur demande de réservation.</div>
-      <table class="tbl-compact"><thead><tr><th>Client</th><th>Modèle</th><th>Dates envisagées</th><th>Étape atteinte</th><th>Dernière activité</th><th></th></tr></thead>
-      <tbody>${abandoned.length ? abandoned.map(funnelAbandonedRowHtml).join('') : `<tr><td colspan="6"><div class="empty">Aucun panier abandonné pour l'instant — tous les clients qui ont commencé une réservation l'ont envoyée.</div></td></tr>`}</tbody></table>
-    </div>`;
+
+    ${old.length ? `
+    <details class="panel ul-old">
+      <summary><h2 class="ul-h2" style="display:inline-flex;margin:0;">Anciens paniers <span class="status-pill none">${old.length}</span></h2><span class="ul-h2-sub" style="margin:0 0 0 10px;">plus de 30 jours</span></summary>
+      <div style="margin-top:14px;">
+        ${funnelCartListHtml(old, '')}
+        <div style="margin-top:14px;"><button type="button" class="btn btn-ghost btn-sm" style="width:auto;" onclick="funnelPurgeOld()">Supprimer définitivement les événements de plus de 30 jours</button></div>
+      </div>
+    </details>` : ''}
+  `;
 }
 
 /* ---------- Messagerie (chat direct client <-> équipe) ---------- */
@@ -8266,36 +8696,138 @@ function notificationsPanelHtml(){
       ${showButton ? `<button class="btn btn-primary btn-sm" style="margin-top:10px;" onclick="window.enableNotifications()">${esc(t('profil.notif.enable'))}</button>` : ''}
     </div>`;
 }
+function pfInputHtml(o){
+  const err = (state.profileFieldErrors || {})[o.key];
+  const tag = o.req === false
+    ? ` <span class="pfx-opt">${esc(tx('facultatif', 'optional'))}</span>`
+    : ` <span class="pfx-req">*</span>`;
+  return `<div class="field${err ? ' pfx-field-err' : ''}${o.cls ? ' ' + o.cls : ''}">
+    <label for="${o.id}">${esc(o.label)}${tag}</label>
+    <input id="${o.id}" type="${o.type || 'text'}" value="${esc(o.value || '')}" oninput="this.closest('.field').classList.remove('pfx-field-err')" ${o.attrs || ''}>
+    ${err ? `<div class="pfx-err-msg">${esc(err)}</div>` : ''}${o.hint ? `<div class="pfx-hint">${esc(o.hint)}</div>` : ''}
+  </div>`;
+}
+function pfSegHtml(o){
+  const mk = (v, lab) => `<button type="button" role="radio" aria-checked="${o.value === v}" class="${o.value === v ? 'on' : ''}" onclick="pfSegSet(this,'${v}','${o.scope}')">${esc(lab)}</button>`;
+  return `<div class="field${o.err ? ' pfx-field-err' : ''}">
+    <label>${esc(o.label)} <span class="pfx-req">*</span></label>
+    <div class="pfx-seg" role="radiogroup">${mk('M.', t('profil.civilite.m'))}${mk('Mme', t('profil.civilite.mme'))}</div>
+    <input type="hidden" id="${o.id}" ${o.name ? `name="${o.name}"` : ''} value="${esc(o.value || '')}">
+    ${o.err ? `<div class="pfx-err-msg">${esc(o.err)}</div>` : ''}
+  </div>`;
+}
+// Formulaire "fiche membre", partagé entre l'écran bloquant (première connexion / comptes à
+// compléter) et l'onglet Mon profil. gate=true : seulement les informations obligatoires.
+function profileFormHtml(u, gate){
+  const d = Object.assign({}, u, state.profileDraft || {});
+  const errs = state.profileFieldErrors || {};
+  let cpHint = '';
+  if(!u.code_postal && !u.ville && u.adresse && d.adresse === u.adresse && !d.code_postal && !d.ville){
+    const s = parseAddressSuggestion(u.adresse);
+    if(s){
+      d.adresse = s.street; d.code_postal = s.cp; d.ville = s.ville;
+      cpHint = tx('Pré-rempli à partir de votre ancienne adresse — vérifiez, puis enregistrez.', 'Pre-filled from your previous address — check it, then save.');
+    }
+  }
+  const missing = profileMissingFields(u);
+  const total = PROFILE_REQUIRED.length, done = total - missing.length;
+  const pct = Math.round(done / total * 100);
+  const fullName = [u.prenom, u.nom].filter(Boolean).join(' ');
+  const meterText = missing.length
+    ? tx(`${done}/${total} informations — il manque : ${missing.map(m => m.label.toLowerCase()).join(', ')}`,
+         `${done}/${total} items — missing: ${missing.map(m => m.label.toLowerCase()).join(', ')}`)
+    : tx('Fiche complète', 'Profile complete');
+  return `
+    <div class="pfx-hero">
+      <div class="pfx-avatar">${esc(userInitials(u))}</div>
+      <div class="pfx-hero-main">
+        <div class="pfx-hero-name">${esc(fullName || tx('Votre fiche membre', 'Your member profile'))}</div>
+        <div class="pfx-hero-mail">${esc(u.username)}</div>
+        <div class="pfx-meter"><div class="pfx-meter-track"><div class="pfx-meter-fill${missing.length ? '' : ' done'}" style="width:${pct}%"></div></div>
+        <div class="pfx-meter-label">${esc(meterText)}</div></div>
+      </div>
+    </div>
+    ${state.profileSaved ? `<div class="msg msg-ok">${esc(t('profil.saved'))}</div>` : ''}
+    ${state.profileError ? `<div class="msg msg-error">${esc(state.profileError)}</div>` : ''}
+
+    <section class="pfx-section">
+      <h3>${esc(tx('Identité', 'Identity'))}</h3>
+      <div class="pfx-sub">${esc(tx("Telles qu'elles figurent sur votre pièce d'identité — elles servent à établir votre contrat de location.", 'As shown on your ID — used to draw up your rental contract.'))}</div>
+      ${pfSegHtml({ id:'pf-civilite', value:d.civilite || '', scope:'pf', label:t('profil.field.civilite'), err:errs.civilite })}
+      <div class="pfx-grid">
+        ${pfInputHtml({ id:'pf-prenom', key:'prenom', label:t('profil.field.prenom'), value:d.prenom, attrs:'autocomplete="given-name" maxlength="80"' })}
+        ${pfInputHtml({ id:'pf-nom', key:'nom', label:t('profil.field.nom'), value:d.nom, attrs:'autocomplete="family-name" maxlength="80"' })}
+        ${pfInputHtml({ id:'pf-dob', key:'date_naissance', label:t('profil.field.dob'), value:d.date_naissance, type:'date', attrs:'autocomplete="bday"' })}
+        ${gate ? '' : pfInputHtml({ id:'pf-nationalite', key:'nationalite', label:t('profil.field.nationalite'), value:d.nationalite, req:false })}
+        ${gate ? '' : pfInputHtml({ id:'pf-lieu-naissance', key:'lieu_naissance', label:t('profil.field.lieuNaissance'), value:d.lieu_naissance, req:false, cls:'full' })}
+      </div>
+    </section>
+
+    <section class="pfx-section">
+      <h3>${esc(tx('Contact', 'Contact'))}</h3>
+      <div class="pfx-sub">${esc(tx('Nous vous joignons sur ce portable pour la remise et le retour du matériel.', 'We reach you on this mobile for pick-up and return of the equipment.'))}</div>
+      <div class="pfx-grid">
+        <div class="field full">
+          <label for="pf-email">${esc(tx('Adresse e-mail', 'E-mail address'))}</label>
+          <input id="pf-email" type="email" value="${esc(u.username)}" readonly tabindex="-1" class="pfx-locked">
+          <div class="pfx-hint pfx-hint-dim">${esc(tx("C'est votre identifiant de connexion, il ne peut pas être modifié ici.", 'This is your login, it cannot be changed here.'))}</div>
+        </div>
+        ${pfInputHtml({ id:'pf-tel', key:'telephone', label:t('profil.field.tel'), value:d.telephone, type:'tel', cls:'full', attrs:'autocomplete="tel" inputmode="tel" placeholder="06 12 34 56 78"' })}
+      </div>
+    </section>
+
+    <section class="pfx-section">
+      <h3>${esc(tx('Adresse postale', 'Postal address'))}</h3>
+      <div class="pfx-grid">
+        ${pfInputHtml({ id:'pf-adresse', key:'adresse', label:tx('Numéro et rue', 'Street address'), value:d.adresse, cls:'full', attrs:'autocomplete="address-line1"' , hint:cpHint })}
+        <div class="pfx-cpville full">
+          ${pfInputHtml({ id:'pf-cp', key:'code_postal', label:tx('Code postal', 'Postal code'), value:d.code_postal, attrs:'autocomplete="postal-code" inputmode="numeric" maxlength="10"' })}
+          ${pfInputHtml({ id:'pf-ville', key:'ville', label:tx('Ville', 'City'), value:d.ville, attrs:'autocomplete="address-level2" maxlength="80"' })}
+        </div>
+      </div>
+    </section>
+
+    ${gate ? '' : `
+    <section class="pfx-section">
+      <h3>${esc(tx("Pièce d'identité", 'ID document'))}</h3>
+      <div class="pfx-grid">
+        ${pfInputHtml({ id:'pf-cni', key:'numero_cni', label:t('profil.field.cni'), value:d.numero_cni, req:false, cls:'full' })}
+        ${u.is_owner ? pfInputHtml({ id:'pf-iban', key:'iban', label:t('profil.field.iban'), value:d.iban, req:false, cls:'full' }) : ''}
+      </div>
+    </section>`}
+
+    <button class="btn btn-primary pfx-save" onclick="saveProfile()">${esc(gate ? tx("Enregistrer et accéder à l'application", 'Save and continue') : t('profil.save'))}</button>`;
+}
+function renderProfileGate(u){
+  const first = !u.adresse && !u.date_naissance;
+  const title = first ? tx('Bienvenue chez Owls Vision', 'Welcome to Owls Vision') : tx('Complétez votre fiche pour continuer', 'Complete your profile to continue');
+  const sub = first
+    ? tx("Avant d'accéder à l'application, finalisez votre fiche membre. Ces informations sont obligatoires pour louer du matériel et établir votre contrat.",
+         'Before you continue, finish your member profile. This information is required to rent equipment and draw up your contract.')
+    : tx("Nous mettons à jour toutes les fiches : il manque quelques informations sur votre compte. Cela prend une minute.",
+         'We are updating all profiles: a few details are missing on your account. It only takes a minute.');
+  return `
+  <div class="gate pfx-gate">
+    <div class="gate-lang">${langSwitcherHtml()}</div>
+    <div class="pfx-gate-card">
+      <div class="gate-brand" style="margin-bottom:18px;">
+        <img src="${LOGO}" alt="Owls Vision">
+        <div class="brand-name">OWLS<span>VISION</span></div>
+      </div>
+      <h1 class="pfx-gate-title">${esc(title)}</h1>
+      <p class="pfx-gate-sub">${esc(sub)}</p>
+      ${profileFormHtml(u, true)}
+      <div class="admin-link-wrap"><button onclick="logout()">${esc(tx('Se déconnecter', 'Log out'))}</button></div>
+    </div>
+  </div>`;
+}
 function renderProfilClient(){
   const u = currentProfile();
   const complete = isProfileComplete(u);
   return `
     <div class="topbar"><div><h1>${esc(t('profil.title'))}</h1><div class="desc">${esc(t('profil.desc'))}</div></div>${xpBarHtml(u)}</div>
-    ${state.profileNotice ? `<div class="profile-warning" style="display:flex;align-items:flex-start;gap:8px;">${tacticalIconSvg('warning',{size:16,style:'margin-top:2px;'})}<span>${esc(state.profileNotice)}</span></div>` : (!complete ? `<div class="profile-warning" style="display:flex;align-items:flex-start;gap:8px;">${tacticalIconSvg('warning',{size:16,style:'margin-top:2px;'})}<span>${esc(t('profil.incomplete'))}</span></div>` : '')}
-    <div class="panel">
-      ${state.profileSaved ? `<div class="msg msg-ok">${esc(t('profil.saved'))}</div>` : ''}
-      ${state.profileError ? `<div class="msg msg-error">${esc(state.profileError)}</div>` : ''}
-      <div class="row">
-        <div class="field"><label>${esc(t('profil.field.nom'))}</label><input id="pf-nom" value="${esc(u.nom||'')}"></div>
-        <div class="field"><label>${esc(t('profil.field.prenom'))}</label><input id="pf-prenom" value="${esc(u.prenom||'')}"></div>
-      </div>
-      <div class="field"><label>${esc(t('profil.field.dob'))}</label><input id="pf-dob" type="date" value="${esc(u.date_naissance||'')}"></div>
-      <div class="field"><label>${esc(t('profil.field.tel'))}</label><input id="pf-tel" value="${esc(u.telephone||'')}"></div>
-      <div class="field"><label>${esc(t('profil.field.cni'))}</label><input id="pf-cni" value="${esc(u.numero_cni||'')}"></div>
-      <div class="field"><label>${esc(t('profil.field.adresse'))}</label><input id="pf-adresse" value="${esc(u.adresse||'')}"></div>
-      <div class="section-title" style="margin-top:14px;">${esc(t('profil.section.extra'))}</div>
-      <div class="row">
-        <div class="field"><label>${esc(t('profil.field.civilite'))}</label><select id="pf-civilite">
-          <option value="" ${!u.civilite?'selected':''}>—</option>
-          <option value="M." ${u.civilite==='M.'?'selected':''}>${esc(t('profil.civilite.m'))}</option>
-          <option value="Mme" ${u.civilite==='Mme'?'selected':''}>${esc(t('profil.civilite.mme'))}</option>
-        </select></div>
-        <div class="field"><label>${esc(t('profil.field.nationalite'))}</label><input id="pf-nationalite" value="${esc(u.nationalite||'')}"></div>
-      </div>
-      <div class="field"><label>${esc(t('profil.field.lieuNaissance'))}</label><input id="pf-lieu-naissance" value="${esc(u.lieu_naissance||'')}"></div>
-      ${u.is_owner ? `<div class="field"><label>${esc(t('profil.field.iban'))}</label><input id="pf-iban" value="${esc(u.iban||'')}"></div>` : ''}
-      <button class="btn btn-primary" onclick="saveProfile()">${esc(t('profil.save'))}</button>
-    </div>
+    ${state.profileNotice ? `<div class="profile-warning" style="display:flex;align-items:flex-start;gap:8px;">${tacticalIconSvg('warning',{size:16,style:'margin-top:2px;'})}<span>${esc(state.profileNotice)}</span></div>` : ''}
+    <div class="pfx-wrap">${profileFormHtml(u, false)}</div>
     ${notificationsPanelHtml()}
     ${MEMBER_DOC_UPLOAD_ENABLED ? `
     <div class="panel">
@@ -8773,6 +9305,7 @@ function renderModal(){
       </div>
       <div class="field"><label>Progression</label><div class="static-val">${p.xp} XP · Niveau ${levelFor(p.xp)} · ${esc(getRanks()[rankIndexFor(p.xp)].name)}</div></div>
       <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <button class="btn btn-primary btn-sm" style="width:auto;" onclick="openConversationFromList('${esc(p.username)}')">Envoyer un message</button>
         <button class="btn btn-ghost btn-sm" onclick="openAddXpModal('${esc(p.username)}')">Ajouter XP</button>
         <button class="btn btn-ghost btn-sm" onclick="resetUserToLevel1('${esc(p.username)}')">Reset XP</button>
       </div>
@@ -8781,7 +9314,7 @@ function renderModal(){
         <div class="field"><label>Téléphone</label><div class="static-val">${esc(p.telephone || '—')}</div></div>
       </div>
       <div class="field"><label>Numéro de carte d'identité / passeport</label><div class="static-val">${esc(p.numero_cni || '—')}</div></div>
-      <div class="field"><label>Adresse</label><div class="static-val">${esc(p.adresse || '—')}</div></div>
+      <div class="field"><label>Adresse</label><div class="static-val">${esc([p.adresse, [p.code_postal, p.ville].filter(Boolean).join(' ')].filter(Boolean).join(', ') || '—')}</div></div>
       ${p.civilite || p.lieu_naissance || p.nationalite || p.is_owner ? `
       <div class="section-title" style="margin-top:6px;">Informations complémentaires</div>
       <div class="row">
@@ -9006,6 +9539,9 @@ function render(){
   const u = currentProfile();
   if(!u){ logout(); return; }
   updateAppBadge(u);
+  // Lot 40 : fiche membre obligatoire — tant qu'elle est incomplète (nouveau compte OU compte existant),
+  // le client ne voit que l'écran de complétion, aucun autre onglet.
+  if(!u.is_master && !isProfileComplete(u)){ app.innerHTML = renderProfileGate(u); return; }
   const allowed = navFor(u.is_master).flatMap(item => item.sub ? item.sub.map(s => s.id) : [item.id]);
   if(!allowed.includes(state.view)) state.view = allowed[0];
 
@@ -9072,6 +9608,56 @@ function animateXpTotal(){
   }
   requestAnimationFrame(step);
 }
+/* ---------- Lot 40 : handlers (fiche, utilisateurs, paniers) ---------- */
+window.pfSegSet = (btn, val, scope) => {
+  const wrap = btn.closest('.field');
+  if(!wrap) return;
+  wrap.querySelectorAll('.pfx-seg button').forEach(b => { b.classList.toggle('on', b === btn); b.setAttribute('aria-checked', b === btn ? 'true' : 'false'); });
+  const input = wrap.querySelector('input[type=hidden]');
+  if(input) input.value = val;
+  wrap.classList.remove('pfx-field-err');
+  // Mémorisé dans l'état : survit à un re-rendu automatique (la valeur d'un champ caché ne se récupère pas par le snapshot).
+  if(scope === 'reg') state.regDraft = Object.assign({}, state.regDraft || {}, { civilite: val });
+  else state.profileDraft = Object.assign({}, state.profileDraft || {}, { civilite: val });
+};
+window.onUsersFilter = (f) => { state.usersFilter = f; refreshUsersView(); };
+// Ouvre la conversation avec ce client (la crée à l'envoi du premier message) — plus besoin de
+// le chercher dans le menu "Nouveau message".
+window.openConversationFromList = (username) => {
+  state.modal = null;
+  state.view = 'messages';
+  state.sidebarOpen = false;
+  state.messagesSelectedUser = username;
+  state.messagesMobileOpen = true;
+  markMessagesSeenByMaster(username);
+  render();
+  const input = document.getElementById('chat-input');
+  if(input) input.focus();
+};
+window.funnelDismiss = async (username) => {
+  const now = new Date().toISOString();
+  state.funnelEvents.forEach(e => { if(e.username === username && !e.dismissed_at) e.dismissed_at = now; });
+  render();
+  const { error } = await sb.from('funnel_events').update({ dismissed_at: now }).eq('username', username).is('dismissed_at', null);
+  if(error){
+    state.funnelEvents.forEach(e => { if(e.username === username && e.dismissed_at === now) e.dismissed_at = null; });
+    render();
+    alert(/dismissed_at|schema cache|column/i.test(error.message || '')
+      ? "La mise à jour de la base (migration lot 40) n'est pas encore installée : exécute migration_lot40_comptes.sql dans Supabase, puis réessaie."
+      : "Erreur : " + error.message);
+  }
+};
+window.funnelPurgeOld = async () => {
+  const cutoff = new Date(Date.now() - FUNNEL_OLD_MS).toISOString();
+  const n = state.funnelEvents.filter(e => e.created_at < cutoff).length;
+  if(!n) return;
+  if(!confirm(`Supprimer définitivement ${n} événement${n > 1 ? 's' : ''} de suivi de plus de 30 jours ?\n\nLes statistiques de l'entonnoir sur cette période disparaissent aussi. Les réservations ne sont pas touchées.`)) return;
+  const { error } = await sb.from('funnel_events').delete().lt('created_at', cutoff);
+  if(error){ alert("Erreur : " + error.message); return; }
+  state.funnelEvents = state.funnelEvents.filter(e => e.created_at >= cutoff);
+  render();
+};
+
 /* ---------- Global handlers ---------- */
 window.setAuthTab = (tab) => { state.authTab = tab; state.authError = ""; state.authNotice = ""; render(); };
 window.togglePasswordVisibility = (id) => {
@@ -9084,7 +9670,7 @@ window.togglePasswordVisibility = (id) => {
 };
 window.toggleAdminLogin = () => { state.showAdminLogin = !state.showAdminLogin; state.authError = ""; render(); };
 window.handleClientLogin = (e) => { e.preventDefault(); doClientLogin(e.target.email.value, e.target.password.value); return false; };
-window.handleClientRegister = (e) => { e.preventDefault(); doClientRegister(e.target.email.value, e.target.password.value, e.target.password2.value); return false; };
+window.handleClientRegister = (e) => { e.preventDefault(); const f = e.target; doClientRegister({ email: f.email.value, password: f.password.value, password2: f.password2.value, civilite: f.civilite.value, prenom: f.prenom.value, nom: f.nom.value, tel: f.tel.value }); return false; };
 window.handleResendConfirmation = () => {
   const field = document.getElementById('login-email');
   resendConfirmationEmail(field ? field.value : "");
@@ -9269,7 +9855,7 @@ window.onGestionSearch = (v) => { state.gestionSearch = v; refreshGestionView();
 window.onUsersSearch = (v) => { state.usersSearch = v; refreshUsersView(); };
 window.onUsersSort = (field) => {
   if(state.usersSort.field === field) state.usersSort.dir = state.usersSort.dir === 'asc' ? 'desc' : 'asc';
-  else state.usersSort = { field, dir: 'asc' };
+  else state.usersSort = { field, dir: field === 'name' ? 'asc' : 'desc' };
   refreshUsersView();
 };
 window.onMessagesSearch = (v) => { state.messagesSearch = v; refreshMessagesListPane(); };
