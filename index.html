@@ -2863,6 +2863,10 @@ async function deleteProfile(username){
   }
   await sb.storage.from('documents').remove([`${username}/id_doc`, `${username}/address_doc`]);
   await sb.storage.from('contracts').remove([`${username}/original.pdf`, `${username}/signed.pdf`]);
+  try{
+    const { data: arch } = await sb.storage.from('contracts').list(`${username}/archive`);
+    if(arch && arch.length) await sb.storage.from('contracts').remove(arch.map(f => `${username}/archive/${f.name}`));
+  }catch(e){}
   // Le Propriétaire éventuel entraîne en cascade (base) la suppression de sa ligne
   // owner_contracts et le détachement (owner_username -> NULL) de son matériel — on nettoie ici
   // les mêmes traces côté stockage et côté état local, pour rester cohérent immédiatement.
@@ -3685,6 +3689,16 @@ function latestRelevantBookingFor(username){
   })[0];
 }
 async function generateClientContract(username, fields){
+  // Lot 41 : l'ancien contrat (et sa signature) sont copiés dans "<client>/archive/" avant d'être
+  // écrasés — un client qui reloue ne fait plus disparaître le contrat de sa location précédente.
+  try{
+    const prev = state.contracts.find(c => c.username === username);
+    if(prev && prev.pdf_path){
+      const stamp = new Date(prev.signed_at || prev.uploaded_at || Date.now()).toISOString().slice(0, 10) + '-' + Date.now().toString(36);
+      await sb.storage.from('contracts').copy(prev.pdf_path, `${username}/archive/${stamp}-original.pdf`);
+      if(prev.signed_pdf_path) await sb.storage.from('contracts').copy(prev.signed_pdf_path, `${username}/archive/${stamp}-signe.pdf`);
+    }
+  }catch(e){ /* archivage best-effort : ne bloque jamais la génération */ }
   const dd = buildContractDocDefinition(fields);
   const blob = await window.pdfMake.createPdf(dd).getBlob();
   const path = `${username}/original.pdf`;
@@ -4430,6 +4444,7 @@ window.deletePlatformDoc = async (kind) => {
   render();
 };
 window.openGenerateContractModal = (username) => { state.modal = { type:"generateContract", username }; render(); };
+window.openGenerateContractForBooking = (username, bookingId) => { state.modal = { type:"generateContract", username, bookingId }; render(); };
 window.onGenerateContractBookingChange = (username, bookingId) => { state.modal = { type:"generateContract", username, bookingId }; render(); };
 window.confirmGenerateContract = async (e, username) => {
   const errEl = document.getElementById('gc-error');
@@ -4444,7 +4459,9 @@ window.confirmGenerateContract = async (e, username) => {
   // finalizeContractAssignment) — le client devrait alors re-signer. Le message change selon le cas.
   const clientLabelGC = clientDisplayName(p) || username;
   const existingContractGC = state.contracts.find(c => c.username === username);
-  const confirmMsgGC = existingContractGC && existingContractGC.signed_pdf_path
+  const confirmMsgGC = existingContractGC && contractIsStaleFor(username)
+    ? `Éditer le nouveau contrat de ${clientLabelGC} pour sa nouvelle demande ? L'ancien contrat est archivé ; ${clientLabelGC} devra signer le nouveau.`
+    : existingContractGC && existingContractGC.signed_pdf_path
     ? `Régénérer le contrat de ${clientLabelGC} ? Le contrat déjà SIGNÉ sera remplacé : ${clientLabelGC} devra re-signer le nouveau contrat.`
     : `Générer le contrat pour ${clientLabelGC} ?`;
   if(!confirm(confirmMsgGC)) return;
@@ -4907,7 +4924,7 @@ function masterNavDef(){
         + state.owner_contracts.filter(oc => oc.signed_at && oc.signed_seen_by_master === false).length,
       sub: [
         { id: "gestion", label: "Réservations", badge: () => state.bookings.filter(b => b.status === 'demande').length },
-        { id: "contrats", label: "Contrats de location", badge: () => state.contracts.filter(c => c.signed_at && c.signed_seen_by_master === false).length },
+        { id: "contrats", label: "Contrats de location", badge: () => state.contracts.filter(c => c.signed_at && c.signed_seen_by_master === false).length + state.contracts.filter(c => contractIsStaleFor(c.username)).length },
         { id: "gestion-proprietaires", label: "Contrats propriétaire", badge: () => state.owner_contracts.filter(oc => oc.signed_at && oc.signed_seen_by_master === false).length },
         { id: "stock", label: "Stock" },
         { id: "catalogue", label: "Catalogue" },
@@ -8514,8 +8531,22 @@ window.onCrmSort = (field) => {
 window.onCrmTasksFilter = (v) => { state.crmTasksFilter = v; render(); };
 
 /* ---------- Contrats (équipe) ---------- */
+// Lot 41 : un contrat est lié à UN client, pas à une location. Si ce client fait une nouvelle demande
+// APRÈS la création de son contrat (ex. il a déjà loué, puis relouer), le contrat existant concerne
+// l'ancienne location : il faut en éditer un nouveau. Avant, l'écran affichait seulement "Voir
+// contrat signé", comme si l'ancienne location comptait pour la nouvelle.
+function contractNewBookingsFor(username){
+  const c = state.contracts.find(x => x.username === username);
+  if(!c || !c.uploaded_at) return [];
+  const madeAt = new Date(c.uploaded_at).getTime();
+  return state.bookings
+    .filter(b => b.username === username && ['demande','accepte','loue'].includes(b.status) && b.created_at && new Date(b.created_at).getTime() > madeAt)
+    .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+}
+function contractIsStaleFor(username){ return contractNewBookingsFor(username).length > 0; }
 function contratStatusRank(c){
   if(!c) return 0; // Aucun contrat
+  if(c.username && contractIsStaleFor(c.username)) return 0; // Contrat à refaire pour la nouvelle demande
   if(c.signed_at) return 2; // Signé
   return 1; // En attente de signature
 }
@@ -8547,12 +8578,15 @@ function contratsFilteredSorted(){
 }
 function contratsRowHtml(usr){
   const c = state.contracts.find(x => x.username === usr.username);
+  const staleList = c ? contractNewBookingsFor(usr.username) : [];
+  const stale = staleList.length > 0;
   let pill = `<span class="status-pill none">Aucun contrat</span>`;
-  if(c && c.signed_at) pill = `<span class="status-pill ok">Signé le ${fmtDate(c.signed_at)}</span>`;
+  if(stale) pill = `<span class="status-pill pending">Nouvelle demande — contrat à éditer</span>`;
+  else if(c && c.signed_at) pill = `<span class="status-pill ok">Signé le ${fmtDate(c.signed_at)}</span>`;
   else if(c) pill = `<span class="status-pill pending">En attente de signature</span>`;
   // Contexte immédiat (matériel + statut de sa location la plus pertinente) pour éviter d'avoir à
-  // aller chercher l'info dans Gestion location.
-  const lb = latestRelevantBookingFor(usr.username);
+  // aller chercher l'info dans Gestion location. Pour un contrat à refaire : la NOUVELLE demande.
+  const lb = stale ? staleList[0] : latestRelevantBookingFor(usr.username);
   const item = lb ? state.items.find(i => i.id === lb.item_id) : null;
   const bookingSub = lb ? `${esc(item?.name || 'Matériel supprimé')} · ${statusPillHtml(lb.status)}` : '';
   return `
@@ -8560,8 +8594,10 @@ function contratsRowHtml(usr){
       <div><div class="t-title">${esc(clientDisplayName(usr))}</div><div class="t-desc">${pill}${bookingSub ? ' · ' + bookingSub : ''}</div></div>
       <div class="btn-row" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
         ${!c ? `<button class="btn btn-primary btn-sm" onclick="openGenerateContractModal('${esc(usr.username)}')">Envoyer le contrat</button>` : ''}
-        ${c && c.signed_pdf_path ? `<button type="button" class="btn btn-ghost btn-sm" onclick="openContractFile('${esc(usr.username)}','signed')">Voir contrat signé</button>` : ''}
-        ${c ? `<button class="btn btn-primary btn-sm" onclick="openGenerateContractModal('${esc(usr.username)}')">Régénérer le contrat</button>` : ''}
+        ${stale ? `<button class="btn btn-primary btn-sm" onclick="openGenerateContractForBooking('${esc(usr.username)}','${esc(staleList[0].id)}')">Éditer le contrat</button>` : ''}
+        ${c && c.signed_pdf_path ? `<button type="button" class="btn btn-ghost btn-sm" onclick="openContractFile('${esc(usr.username)}','signed')">${stale ? 'Voir ancien contrat signé' : 'Voir contrat signé'}</button>` : ''}
+        ${c && stale && !c.signed_pdf_path ? `<button type="button" class="btn btn-ghost btn-sm" onclick="openContractFile('${esc(usr.username)}','original')">Voir ancien contrat</button>` : ''}
+        ${c && !stale ? `<button class="btn btn-primary btn-sm" onclick="openGenerateContractModal('${esc(usr.username)}')">Régénérer le contrat</button>` : ''}
         ${c ? `<button type="button" class="btn btn-danger btn-sm" onclick="deleteContract('${esc(usr.username)}')">Supprimer le contrat</button>` : ''}
       </div>
     </div>`;
@@ -8632,6 +8668,7 @@ function platformDocRowHtml(kind, label){
 function renderContratClient(){
   const u = currentProfile();
   const c = state.contracts.find(x => x.username === u.username);
+  const stale = !!c && contractIsStaleFor(u.username);
   // Le Contrat Propriétaire n'apparaît ici QUE si une ligne owner_contracts existe réellement
   // pour ce compte (= le master lui a effectivement envoyé ce contrat) — jamais sur la seule
   // base du drapeau is_owner, qui reste un détail interne côté master (voir clientNavDef et la
@@ -8643,16 +8680,17 @@ function renderContratClient(){
       <div class="section-title" style="margin-top:0;">${esc(t('contrat.location.title'))}</div>
       ${!c ? `<div class="empty">${esc(t('contrat.none'))}</div>` : `
         <div style="display:flex;flex-direction:column;gap:14px;align-items:flex-start;">
+          ${stale ? `<div class="msg msg-info" style="width:100%;margin:0;">${esc(tx("Votre nouvelle demande de location est bien reçue : votre nouveau contrat apparaîtra ici dès qu'il aura été établi. Le contrat ci-dessous concerne votre location précédente.", 'Your new rental request has been received: your new contract will appear here as soon as it is prepared. The contract below is for your previous rental.'))}</div>` : ''}
           ${c.signed_at ? `<span class="status-pill ok">${esc(t('contrat.signedOn', { date: fmtDate(c.signed_at) }))}</span>` : `<span class="status-pill pending">${esc(t('contrat.pendingSignature'))}</span>`}
-          ${c.signed_at ? (() => { const lb = latestRelevantBookingFor(u.username); return lb && lb.paid
+          ${c.signed_at && !stale ? (() => { const lb = latestRelevantBookingFor(u.username); return lb && lb.paid
             ? `<span class="status-pill ok">${esc(t('contrat.paymentStatus.paid'))}</span>`
             : `<span class="status-pill pending">${esc(t('contrat.paymentStatus.pending'))}</span>`; })() : ''}
-          ${c.signed_at ? (() => { const lb = latestRelevantBookingFor(u.username); const inv = lb ? state.invoices.find(x => x.booking_id === lb.id) : null; return inv
+          ${c.signed_at && !stale ? (() => { const lb = latestRelevantBookingFor(u.username); const inv = lb ? state.invoices.find(x => x.booking_id === lb.id) : null; return inv
             ? `<button type="button" class="btn btn-ghost" style="width:100%;" onclick="openInvoiceFile('${esc(inv.pdf_path)}','${esc(inv.id)}')">${tacticalIconSvg('doc',{size:16})} ${esc(t('contrat.invoice.view', { number: inv.invoice_number }))}</button>`
             : ''; })() : ''}
           <button type="button" class="btn btn-ghost" style="width:100%;" onclick="openContractFile('${esc(u.username)}','original')">${tacticalIconSvg('doc',{size:16})} ${esc(t('contrat.openPdf'))}</button>
           ${c.signed_pdf_path ? `<button type="button" class="btn btn-ghost" style="width:100%;" onclick="openContractFile('${esc(u.username)}','signed')">${tacticalIconSvg('download',{size:16})} ${esc(t('contrat.downloadSigned'))}</button>` : ''}
-          ${!c.signed_at ? `<button class="btn btn-primary" style="width:100%;" onclick="openSignaturePad()">${tacticalIconSvg('signature-pen',{size:16})} ${esc(t('contrat.sign'))}</button>` : ''}
+          ${!c.signed_at && !stale ? `<button class="btn btn-primary" style="width:100%;" onclick="openSignaturePad()">${tacticalIconSvg('signature-pen',{size:16})} ${esc(t('contrat.sign'))}</button>` : ''}
         </div>
       `}
     </div>
