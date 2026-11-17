@@ -1002,7 +1002,7 @@
 
 /* --- Liste Utilisateurs / paniers : une seule grille partagée par l'en-tête et les lignes --- */
 .ul-panel{padding:6px 0 0;overflow:hidden;}
-.ul{--cols:minmax(0,2.4fr) minmax(0,.9fr) minmax(0,1fr) minmax(0,1.4fr) 318px;}
+.ul{--cols:minmax(0,2.4fr) minmax(0,.9fr) minmax(0,1fr) minmax(0,1.4fr) 220px;}
 .ul-funnel{--cols:minmax(0,2fr) minmax(0,1.8fr) minmax(0,1.1fr) minmax(0,1.2fr) 196px;}
 .ul-head,.ul-row{display:grid;grid-template-columns:var(--cols);gap:14px;align-items:center;padding-left:18px;padding-right:18px;}
 .ul-head{min-height:40px;font-size:11px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--text-faint);border-bottom:1px solid var(--border-soft);}
@@ -1571,6 +1571,21 @@ button.gb-own:focus-visible{outline:2px solid var(--accent);outline-offset:2px;b
 @media (max-width:640px){.db-kpis{grid-template-columns:repeat(2,minmax(0,1fr));}.db-kpis .db-kpi:last-child{grid-column:1/-1;}.db-big{font-size:60px;}.db-big-s{font-size:42px;}.db-card{padding:16px;}.db-hero{padding:18px 16px 12px;}.db-top{margin-bottom:16px;}}
 </style>
 
+<style id="lot50-css">
+.um-sec{border-top:1px solid var(--border-soft);padding:14px 0;}
+.um-sec:first-of-type{border-top:0;padding-top:0;}
+.um-t{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin:0 0 10px;font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--text-faint);}
+.um-t b{font-size:14px;letter-spacing:0;text-transform:none;color:var(--accent);}
+.um-xp{display:flex;gap:8px;align-items:center;}
+.um-xp input{flex:1;min-width:0;padding:10px 12px;background:rgba(255,255,255,.05);border:1px solid var(--border-soft);border-radius:var(--r-sm);color:var(--text);font:inherit;}
+.um-link{all:unset;cursor:pointer;margin-top:10px;font-size:13px;color:var(--text-dim);text-decoration:underline;text-underline-offset:3px;}
+.um-link:hover{color:var(--text);}
+.um-link:focus-visible{outline:2px solid var(--accent);outline-offset:3px;}
+.um-btns{display:flex;gap:8px;flex-wrap:wrap;}
+.um-btns .btn{width:auto;flex:1;min-width:150px;}
+.um-danger .um-t{color:#ff9c88;}
+.ul-act .ul-manage{min-width:84px;}
+</style>
 </head>
 <body>
 <div id="app"></div>
@@ -6910,12 +6925,7 @@ function usersRowHtml(p){
   const sub2 = [p.telephone, place].filter(Boolean).map(esc).join(' · ');
   const acts = p.is_master ? '' : `
     <button type="button" class="btn btn-primary btn-sm ul-msg" style="width:auto;" onclick="openConversationFromList('${u}')">${tacticalIconSvg('mail',{size:14})}<span>Message</span></button>
-    <button type="button" class="icon-btn" title="Voir la fiche" onclick="openViewProfile('${u}')">${tacticalIconSvg('id-badge',{size:16})}</button>
-    <button type="button" class="icon-btn" title="Ajouter de l'XP" onclick="openAddXpModal('${u}')">${tacticalIconSvg('coins',{size:16})}</button>
-    <button type="button" class="icon-btn" title="Réinitialiser l'XP au niveau 1" onclick="resetUserToLevel1('${u}')">↺</button>
-    <button type="button" class="icon-btn${p.is_owner ? ' active' : ''}" title="${p.is_owner ? 'Compte marqué Propriétaire' : 'Marquer comme Propriétaire'}" onclick="openMarkAsOwnerModal('${u}')">${tacticalIconSvg('house',{size:16})}</button>
-    <button type="button" class="icon-btn danger" title="Supprimer ce compte" onclick="deleteProfile('${u}')">✕</button>
-    <button type="button" class="icon-btn danger" title="Bannissement définitif : supprime le compte et interdit toute réinscription avec cette adresse" aria-label="Bannissement définitif" onclick="deleteProfile('${u}', true)"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M5.6 5.6l12.8 12.8"/></svg></button>`;
+    <button type="button" class="btn btn-ghost btn-sm ul-manage" style="width:auto;" onclick="openUserManage('${u}')">Gérer</button>`;
   return `
     <div class="ul-row">
       <div class="ul-who">
@@ -9771,6 +9781,38 @@ window.unbanEmail = async (email) => {
   render();
 };
 
+
+/* ===== Lot 50 : bouton « Gérer » (XP, compte, zone sensible) ===== */
+window.openUserManage = (username) => { state.manageXpError = ''; state.modal = { type: "userManage", username }; render(); };
+async function removeXpFromUser(username, amount){
+  if(!state.session.isMaster) return 'forbidden';
+  const prof = state.profiles.find(p => p.username === username);
+  if(!prof) return 'notfound';
+  const n = Number(amount);
+  if(!Number.isFinite(n) || !Number.isInteger(n) || n <= 0) return 'invalid';
+  const newXp = Math.max(0, (prof.xp || 0) - n);
+  const { error } = await sb.from('profiles').update({ xp: newXp }).eq('username', username);
+  if(error) return 'error';
+  prof.xp = newXp;
+  return 'ok';
+}
+let userXpBusy = false;
+window.userXpAdjust = async (username, sign) => {
+  if(userXpBusy) return;
+  const raw = document.getElementById('um-xp').value;
+  const n = Number(raw);
+  if(!raw || !Number.isFinite(n) || !Number.isInteger(n) || n <= 0){ state.manageXpError = "Entre un nombre entier positif d'XP."; render(); return; }
+  const p = state.profiles.find(x => x.username === username); if(!p) return;
+  const label = clientDisplayName(p) || username;
+  if(!confirm(sign > 0 ? `Ajouter ${n} XP à ${label} ?` : `Retirer ${n} XP à ${label} ? (minimum 0)`)) return;
+  userXpBusy = true;
+  try{
+    const r = sign > 0 ? await addXpToUser(username, n) : await removeXpFromUser(username, n);
+    state.manageXpError = r === 'ok' ? '' : "Erreur : l'XP n'a pas pu être modifiée.";
+    render();
+  } finally { userXpBusy = false; }
+};
+
 /* ---------- Assemblage + rafraîchissements ciblés ---------- */
 function finRootHtml(){
   finEnsurePeriod();
@@ -11309,6 +11351,40 @@ function renderModal(){
         : state.bannedError ? `<div class="empty" style="padding:16px;">${esc(state.bannedError)}</div>`
         : !list.length ? '<div class="empty" style="padding:16px;">Aucune adresse bannie.</div>'
         : `<div class="nc-list">${list.map(b => `<div class="nc-row" style="cursor:default;"><span class="nc-n"><b>${esc(b.raw_email || b.email)}</b><small>${esc(fmtDate(b.banned_at))}${b.reason ? ' · ' + esc(b.reason) : ''}</small></span><button type="button" class="btn btn-ghost btn-sm" style="width:auto;" onclick="unbanEmail('${esc(b.raw_email || b.email)}')">Débannir</button></div>`).join('')}</div>`}
+      <div class="modal-actions"><button class="btn btn-ghost" onclick="closeModal()">Fermer</button></div>
+    </div></div>`;
+  }
+  if(m.type === "userManage"){
+    const p = state.profiles.find(x => x.username === m.username);
+    if(!p) return "";
+    const u = esc(p.username);
+    const owner = p.is_owner ? `<span class="owner-tag">${tacticalIconSvg('house',{size:11})}Propriétaire</span>` : '';
+    return `
+    <div class="modal-bg" onclick="closeModalBg(event)"><div class="modal um" style="max-width:460px;">
+      <h3>${esc(clientDisplayName(p))} ${owner}</h3>
+      <div class="desc" style="margin:-8px 0 16px;">${esc(p.username)}</div>
+      <div class="um-sec">
+        <div class="um-t"><span>XP</span><b>${p.xp || 0} XP · niveau ${levelFor(p.xp || 0)}</b></div>
+        ${state.manageXpError ? `<div class="msg msg-error">${esc(state.manageXpError)}</div>` : ''}
+        <div class="um-xp"><input id="um-xp" type="number" min="1" step="1" placeholder="Nombre d'XP" inputmode="numeric">
+          <button type="button" class="btn btn-primary btn-sm" style="width:auto;" onclick="userXpAdjust('${u}', 1)">Ajouter</button>
+          <button type="button" class="btn btn-ghost btn-sm" style="width:auto;" onclick="userXpAdjust('${u}', -1)">Retirer</button></div>
+        <button type="button" class="um-link" onclick="resetUserToLevel1('${u}')">Remettre à 0 XP (niveau 1)</button>
+      </div>
+      <div class="um-sec">
+        <div class="um-t"><span>Compte</span></div>
+        <div class="um-btns">
+          <button type="button" class="btn btn-ghost btn-sm" onclick="closeModal();openViewProfile('${u}')">Voir la fiche</button>
+          <button type="button" class="btn btn-ghost btn-sm" onclick="closeModal();openMarkAsOwnerModal('${u}')">${p.is_owner ? 'Infos propriétaire' : 'Marquer propriétaire'}</button>
+        </div>
+      </div>
+      <div class="um-sec um-danger">
+        <div class="um-t"><span>Zone sensible</span></div>
+        <div class="um-btns">
+          <button type="button" class="btn btn-danger btn-sm" onclick="closeModal();deleteProfile('${u}')">Supprimer le compte</button>
+          <button type="button" class="btn btn-danger btn-sm" title="Supprime le compte et interdit toute réinscription avec cette adresse" onclick="closeModal();deleteProfile('${u}', true)">Bannir définitivement</button>
+        </div>
+      </div>
       <div class="modal-actions"><button class="btn btn-ghost" onclick="closeModal()">Fermer</button></div>
     </div></div>`;
   }
