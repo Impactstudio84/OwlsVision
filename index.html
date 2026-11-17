@@ -6052,7 +6052,7 @@ function renderGestionLocation(){
     <div class="filter-bar">
       <input type="text" placeholder="Rechercher un client, un matériel..." value="${esc(state.gestionSearch)}" oninput="onGestionSearch(this.value)">
     </div>
-    ${unitsBannerHtml()}<div id="gestion-chips">${gestionAllChipsHtml()}</div>
+    ${unitsBannerHtml()}${invoiceBannerHtml()}<div id="gestion-chips">${gestionAllChipsHtml()}</div>
     <div class="result-count" id="gestion-count">${totalCount} location${totalCount>1?'s':''}</div>
     <div id="gestion-groups">${groups.length ? groups.map(gestionDateGroupHtml).join('') : `<div class="panel"><div class="empty">Aucune location ne correspond à cette recherche.</div></div>`}</div>
   `;
@@ -8670,7 +8670,7 @@ function gbNeedsAction(b){
   const { signed } = gbContractState(b);
   const inv = state.invoices.find(x => x.booking_id === b.id);
   const unitMissing = bookingNeedsUnit(b) && itemUniformOwner(state.items.find(i => i.id === b.item_id)) === undefined;
-  return !(signed || b.contract_waived) || !inv || !b.paid || unitMissing;
+  return !(signed || b.contract_waived) || !(inv || b.invoice_manual) || !b.paid || unitMissing;
 }
 
 /* ===== Lot 44 : exemplaires (n° de série + propriétaire), reversements, attribution automatique =====
@@ -9290,7 +9290,8 @@ function gestionCardHtml(b){
       : redo ? gbStepHtml('todo', 'Contrat à refaire', `openGenerateContractModal('${u}')`, 'Nouvelle location : nouveau contrat à établir')
       : signed ? gbStepHtml('ok', 'Contrat signé', `openGenerateContractModal('${u}')`, 'Signé le ' + fmtDate(c.signed_at))
       : gbStepHtml('wait', 'Contrat envoyé', `openGenerateContractModal('${u}')`, 'Signature attendue');
-    const s2 = !cOk ? gbStepHtml('off', 'Facture', '', 'Disponible après la signature (ou en gérant sans contrat)')
+    const s2 = (!inv && b.invoice_manual) ? gbStepHtml('ok', 'Facture envoyée', `toggleInvoiceManual('${esc(b.id)}')`, 'Marquée comme envoyée (hors appli) · toucher pour annuler')
+      : !cOk && !inv ? gbStepHtml('off', 'Facture', '', 'Disponible après la signature (ou en gérant sans contrat) · ou « Facture déjà envoyée » dans le menu ⋯')
       : inv ? gbStepHtml(inv.read_at ? 'ok' : 'wait', inv.read_at ? 'Facture lue' : 'Facture envoyée', `openInvoiceFile('${esc(inv.pdf_path)}','${esc(inv.id)}')`, (inv.invoice_number || '') + (inv.read_at ? ' · lue le ' + fmtDate(inv.read_at) : ' · pas encore lue'))
       : gbStepHtml('todo', 'Facture à envoyer', `openSendInvoiceModal('${esc(b.id)}')`);
     const s3 = b.paid ? gbStepHtml('ok', 'Payée', `toggleBookingPaid('${b.id}')`, b.paid_at ? 'Payée le ' + fmtDate(b.paid_at) + ' · toucher pour annuler' : 'Toucher pour annuler')
@@ -9318,6 +9319,7 @@ function gestionCardHtml(b){
       <button type="button" onclick="${close}openViewProfile('${u}')">Fiche client</button>
       ${hasUnits && confirmed ? `<button type="button" onclick="${close}openUnitPicker('${esc(b.id)}')">Changer d'exemplaire</button>` : ''}
       ${inv && cOk ? `<button type="button" onclick="${close}reissueInvoice('${esc(b.id)}')">Réémettre la facture</button>` : ''}
+      ${confirmed && !inv ? `<button type="button" onclick="${close}toggleInvoiceManual('${esc(b.id)}')">${b.invoice_manual ? 'Annuler « facture envoyée »' : 'Facture déjà envoyée'}</button>` : ''}
       ${confirmed && !signed ? `<button type="button" onclick="${close}toggleContractWaived('${esc(b.id)}')">${waived ? 'Exiger un contrat' : 'Gérer sans contrat'}</button>` : ''}
       ${confirmed && !signed && !waived ? `<button type="button" onclick="${close}waiveAllForClient('${u}')">Sans contrat : tout ce client</button>` : ''}
       <button type="button" class="danger" onclick="${close}cancelBooking('${b.id}')">Supprimer la réservation</button>
@@ -9555,6 +9557,36 @@ function renderGestionProprietaires(){
     ${!owners.length ? `<div class="empty">Aucun compte Propriétaire pour le moment — ouvrez la fiche d'un utilisateur (onglet Utilisateurs) et utilisez le bouton "Marquer Propriétaire" pour en désigner un.</div>` : `<div class="section-title" style="margin:18px 0 8px;">Contrats</div><div style="display:flex;flex-direction:column;gap:10px;">${rows}</div>`}
   `;
 }
+
+
+/* ===== Lot 46 : facture « déjà envoyée » sans passer par l'appli ===== */
+function invoicePendingBookings(){
+  return state.bookings.filter(b => ['accepte', 'loue', 'retourne'].includes(b.status) && !b.invoice_manual && !state.invoices.some(x => x.booking_id === b.id))
+    .filter(b => { const g = gbContractState(b); return g.signed || g.waived; });
+}
+function invoiceBannerHtml(){
+  if(!state.session.isMaster) return '';
+  const n = invoicePendingBookings().length;
+  if(n < 2) return '';
+  return `<div class="un-banner"><span><b>${n}</b> locations sans facture envoyée dans l'appli.</span><button type="button" class="btn btn-ghost btn-sm" style="width:auto;" onclick="markInvoicesSentAll()">Toutes déjà envoyées</button></div>`;
+}
+const INV_MANUAL_ERR = "\nExécutez d'abord migration_lot46_facture_manuelle.sql dans Supabase (SQL Editor).";
+window.toggleInvoiceManual = async (bookingId) => {
+  if(!state.session.isMaster) return;
+  const b = state.bookings.find(x => x.id === bookingId); if(!b) return;
+  const next = !b.invoice_manual; const prev = b.invoice_manual;
+  b.invoice_manual = next; render();
+  const { error } = await sb.from('bookings').update({ invoice_manual: next }).eq('id', bookingId);
+  if(error){ b.invoice_manual = prev; render(); alert("Non enregistré : " + error.message + INV_MANUAL_ERR); }
+};
+window.markInvoicesSentAll = async () => {
+  if(!state.session.isMaster) return;
+  const list = invoicePendingBookings(); if(!list.length) return;
+  if(!confirm(`Marquer ${list.length} location${list.length > 1 ? 's' : ''} comme « facture déjà envoyée » ?\n\nAucune facture n'est créée ni envoyée au client depuis l'appli : seul le suivi change. Tu peux annuler une par une depuis le menu ⋯.`)) return;
+  list.forEach(b => { b.invoice_manual = true; }); render();
+  const { error } = await sb.from('bookings').update({ invoice_manual: true }).in('id', list.map(b => b.id));
+  if(error){ list.forEach(b => { b.invoice_manual = false; }); render(); alert("Non enregistré : " + error.message + INV_MANUAL_ERR); }
+};
 
 /* ---------- Assemblage + rafraîchissements ciblés ---------- */
 function finRootHtml(){
