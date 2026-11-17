@@ -1059,6 +1059,162 @@ details.ul-old > summary::-webkit-details-marker{display:none;}
 }
 </style>
 
+<style id="lot41-css">
+/* ===== Lot 41 : Finances — Argent des locations ===== */
+.fin-views{display:flex;gap:8px;margin:0 0 16px;flex-wrap:wrap;}
+.fin-views button{display:inline-flex;align-items:center;gap:8px;border:1px solid var(--border-soft);background:rgba(255,255,255,0.04);color:var(--text-dim);font-weight:700;font-size:14px;padding:11px 18px;border-radius:12px;cursor:pointer;transition:background .15s,color .15s,border-color .15s;}
+.fin-views button:hover{background:rgba(255,255,255,0.08);color:var(--text);}
+.fin-views button.on{background:var(--accent-soft);border-color:var(--accent-soft-2);color:var(--accent);}
+.rl-count{display:inline-flex;align-items:center;justify-content:center;min-width:20px;height:20px;padding:0 7px;border-radius:99px;font-size:11px;font-weight:800;vertical-align:middle;}
+.rl-count.warn{background:var(--amber-soft);color:var(--amber);}
+.rl-count.ok{background:var(--accent-soft);color:var(--accent);}
+.rl-kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin:0 0 12px;}
+.rl-kpi{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-md);padding:16px 18px;min-width:0;}
+.rl-kpi-l{font-size:11px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--text-faint);}
+.rl-kpi-v{font-family:var(--font-disp);font-size:30px;font-weight:700;margin:6px 0 4px;font-variant-numeric:tabular-nums;color:var(--text);}
+.rl-kpi.good .rl-kpi-v{color:var(--accent);}
+.rl-kpi.warn .rl-kpi-v{color:var(--amber);}
+.rl-kpi.dim .rl-kpi-v{color:var(--text-dim);}
+.rl-kpi-s{font-size:12.5px;color:var(--text-faint);line-height:1.4;}
+.rl-note{font-size:12.5px;color:var(--text-faint);line-height:1.55;margin:0 0 14px;padding:10px 14px;border-left:2px solid var(--accent-soft-2);}
+.rl-h2sub{font-size:12.5px;color:var(--text-faint);margin:0 0 12px;line-height:1.5;}
+.rl-issues-panel.has{border-color:rgba(255,184,76,0.45);}
+.rl-issue{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:11px 0;border-top:1px solid var(--border-soft);font-size:13px;line-height:1.5;color:var(--text-dim);}
+.rl-issue b{color:var(--text);}
+.rl-toolbar{display:flex;gap:12px;align-items:center;flex-wrap:wrap;}
+.rl-toolbar input{background:rgba(255,255,255,0.05);border:1px solid var(--border-soft);color:var(--text);border-radius:var(--r-sm);padding:11px 14px;font:inherit;font-size:14px;}
+.rl-toolbar input:focus{outline:none;border-color:var(--accent-soft-2);}
+.rl-toolbar input[type=text]{flex:1;min-width:220px;}
+.rl-3col > .panel{margin:0;}
+.rl-pct{display:inline-flex;align-items:center;gap:7px;font-size:12.5px;color:var(--text-dim);white-space:nowrap;}
+.rl-pct input{width:72px;text-align:right;padding:8px 10px;}
+.rl{--cols:minmax(0,1.9fr) minmax(0,1.3fr) minmax(0,.9fr) minmax(0,.9fr) minmax(0,1.5fr) 236px;margin:6px -4px 0;}
+.rl-head,.rl-row{display:grid;grid-template-columns:var(--cols);gap:14px;align-items:center;padding:0 14px;}
+.rl-head{min-height:38px;font-size:11px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--text-faint);border-bottom:1px solid var(--border-soft);}
+.rl-num{text-align:right;}
+.rl-row{min-height:66px;padding-top:10px;padding-bottom:10px;border-bottom:1px solid var(--border-soft);}
+.rl-row:last-child{border-bottom:none;}
+.rl-row:hover{background:rgba(255,255,255,0.025);}
+.rl-who{min-width:0;}
+.rl-name{font-weight:600;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.rl-sub{font-size:12px;color:var(--text-faint);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-top:1px;}
+.rl-cell{min-width:0;font-size:13px;line-height:1.35;}
+.rl-cell b{display:block;font-weight:600;color:var(--text);font-variant-numeric:tabular-nums;}
+.rl-cell small{display:block;font-size:11.5px;color:var(--text-faint);margin-top:2px;line-height:1.3;}
+.rl-src{display:inline-block;font-size:10.5px;font-weight:700;color:var(--text-faint);margin-top:2px;}
+.rl-src.ok{color:var(--accent);} .rl-src.warn{color:var(--amber);}
+.rl-act{display:flex;align-items:center;justify-content:flex-end;gap:6px;}
+.status-pill.danger{background:var(--danger-soft);color:#FFB3A6;}
+.rl-bars{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:12px;align-items:end;margin-top:6px;}
+.rl-bar{display:flex;flex-direction:column;align-items:center;gap:4px;min-width:0;}
+.rl-bar-col{width:100%;max-width:64px;height:130px;display:flex;flex-direction:column;justify-content:flex-end;gap:2px;}
+.rl-bar-col i{display:block;width:100%;border-radius:4px 4px 0 0;min-height:0;}
+.rl-bar-col i.paid{background:var(--accent);} .rl-bar-col i.due{background:var(--amber);opacity:.75;}
+.rl-bar b{font-size:12px;font-variant-numeric:tabular-nums;color:var(--text);}
+.rl-bar span{font-size:11.5px;color:var(--text-faint);text-transform:capitalize;}
+.rl-legend{display:flex;gap:18px;margin-top:12px;font-size:12px;color:var(--text-faint);flex-wrap:wrap;}
+.rl-legend i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:6px;vertical-align:-1px;}
+.rl-legend i.paid{background:var(--accent);} .rl-legend i.due{background:var(--amber);opacity:.75;}
+.rl-3col{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;}
+.rl-bd-row{display:flex;justify-content:space-between;gap:12px;padding:9px 0;border-top:1px solid var(--border-soft);font-size:13px;}
+.rl-bd-row span{min-width:0;} .rl-bd-row small{display:block;font-size:11.5px;color:var(--text-faint);}
+.rl-bd-row b{font-variant-numeric:tabular-nums;white-space:nowrap;}
+.fin-split{font-size:11.5px;color:var(--text-faint);margin-top:6px;line-height:1.4;}
+.fin-split b{color:var(--text-dim);font-weight:600;}
+.fin-banner{display:flex;align-items:center;justify-content:space-between;gap:14px;background:var(--amber-soft);color:var(--text-dim);border-radius:var(--r-sm);padding:11px 16px;margin:0 0 14px;font-size:13px;line-height:1.5;}
+.fin-sum td{font-weight:700;border-top:1px solid var(--border);background:rgba(255,255,255,0.02);}
+@media (max-width:1100px){
+  .rl-kpis{grid-template-columns:repeat(2,minmax(0,1fr));}
+  .rl-3col{grid-template-columns:minmax(0,1fr);}
+  .rl-head{display:none;}
+  .rl-row{grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px 14px;padding:15px 10px;}
+  .rl-row > .rl-who,.rl-row > .rl-act{grid-column:1 / -1;}
+  .rl-act{justify-content:flex-start;flex-wrap:wrap;}
+  .rl-num{text-align:left;}
+  .rl-cell::before{content:attr(data-label);display:block;font-size:10.5px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--text-faint);margin-bottom:3px;}
+  .rl-cell b,.rl-cell small{white-space:normal;}
+  .rl-issue{flex-direction:column;align-items:flex-start;}
+}
+@media (max-width:520px){ .rl-kpi-v{font-size:25px;} .rl-bar b{font-size:10.5px;} }
+</style>
+
+<style id="lot41b-css">
+/* ===== Lot 41 (2) : recherche globale, stock, tableau de bord ===== */
+.ovp-back{position:fixed;inset:0;z-index:9000;background:rgba(3,6,4,0.72);backdrop-filter:blur(3px);display:flex;justify-content:center;align-items:flex-start;padding:11vh 16px 16px;}
+.ovp{width:100%;max-width:620px;background:var(--surface-2,#121915);border:1px solid var(--border);border-radius:16px;box-shadow:0 30px 80px rgba(0,0,0,.6);overflow:hidden;display:flex;flex-direction:column;max-height:72vh;}
+.ovp-in{display:flex;align-items:center;gap:10px;padding:14px 16px;border-bottom:1px solid var(--border-soft);}
+.ovp-in input{flex:1;background:transparent;border:none;outline:none;color:var(--text);font:inherit;font-size:16px;min-width:0;}
+.ovp-ico{color:var(--text-faint);display:inline-flex;}
+.ovp kbd,.dash-short kbd{font-family:inherit;font-size:10.5px;font-weight:700;padding:2px 6px;border-radius:5px;border:1px solid var(--border);color:var(--text-faint);background:rgba(255,255,255,0.05);}
+.dash-short kbd{margin-left:6px;color:inherit;border-color:rgba(0,0,0,.25);background:rgba(0,0,0,.12);}
+.ovp-list{overflow-y:auto;padding:6px;}
+.ovp-group{font-size:10.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--text-faint);padding:10px 10px 4px;}
+.ovp-row{display:flex;align-items:center;gap:12px;padding:9px 10px;border-radius:10px;cursor:pointer;}
+.ovp-row.on{background:var(--accent-soft);}
+.ovp-txt{flex:1;min-width:0;display:flex;flex-direction:column;}
+.ovp-txt b{font-weight:600;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.ovp-txt small{font-size:12px;color:var(--text-faint);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.ovp-alt{border:1px solid var(--border);background:rgba(255,255,255,0.05);color:var(--text-dim);font-size:12px;font-weight:600;padding:5px 10px;border-radius:8px;cursor:pointer;}
+.ovp-alt:hover{background:var(--accent-soft);color:var(--accent);border-color:var(--accent-soft-2);}
+.ovp-empty{padding:26px;text-align:center;color:var(--text-faint);font-size:14px;}
+.ovp-foot{display:flex;gap:16px;flex-wrap:wrap;padding:10px 16px;border-top:1px solid var(--border-soft);font-size:11.5px;color:var(--text-faint);}
+.ovp-foot kbd{margin:0 2px;}
+.side-search{display:flex;align-items:center;justify-content:space-between;gap:8px;width:calc(100% - 24px);margin:0 12px 10px;padding:10px 12px;border-radius:12px;border:1px solid var(--border-soft);background:rgba(255,255,255,0.04);color:var(--text-dim);font:inherit;font-size:13.5px;font-weight:600;cursor:pointer;}
+.side-search:hover{background:rgba(255,255,255,0.08);color:var(--text);}
+.side-search span{display:inline-flex;align-items:center;gap:8px;}
+.side-search kbd{font-family:inherit;font-size:10.5px;font-weight:700;padding:2px 6px;border-radius:5px;border:1px solid var(--border);color:var(--text-faint);}
+.sk-sum{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px;margin:0 0 14px;}
+.sk-sum-c{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-md);padding:12px 14px;display:flex;flex-direction:column;gap:2px;min-width:0;}
+.sk-sum-c b{font-family:var(--font-disp);font-size:24px;font-weight:700;font-variant-numeric:tabular-nums;}
+.sk-sum-c span{font-size:11.5px;color:var(--text-faint);line-height:1.3;}
+.sk-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));gap:14px;}
+.sk-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-md);padding:16px;display:flex;flex-direction:column;gap:14px;min-width:0;}
+.sk-top{display:flex;gap:14px;align-items:flex-start;}
+.sk-img{width:64px;height:64px;border-radius:14px;object-fit:cover;flex-shrink:0;}
+.sk-img-ph{background:rgba(255,255,255,0.05);display:flex;align-items:center;justify-content:center;color:var(--text-faint);}
+.sk-head{min-width:0;flex:1;}
+.sk-name{font-weight:700;font-size:15.5px;line-height:1.3;overflow-wrap:anywhere;}
+.sk-tags{display:flex;gap:6px;flex-wrap:wrap;margin:6px 0 4px;}
+.ul-tag.okk{background:var(--accent-soft);color:var(--accent);}
+.sk-price{font-size:12.5px;color:var(--text-faint);}
+.sk-stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;padding:10px 0;border-top:1px solid var(--border-soft);border-bottom:1px solid var(--border-soft);}
+.sk-stats div{display:flex;flex-direction:column;min-width:0;}
+.sk-stats b{font-size:15px;font-variant-numeric:tabular-nums;}
+.sk-stats span{font-size:11px;color:var(--text-faint);}
+.sk-due{font-size:12px;color:var(--amber);margin-top:-4px;}
+.sk-act{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+.sk-qty{display:inline-flex;align-items:center;gap:8px;margin-right:auto;}
+.sk-qty span{font-size:17px;font-weight:700;min-width:22px;text-align:center;font-variant-numeric:tabular-nums;}
+.dash-money-row{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin:0 0 14px;}
+.dash-money{all:unset;box-sizing:border-box;cursor:pointer;display:flex;flex-direction:column;gap:3px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r-md);padding:14px 18px;transition:border-color .15s,background .15s;}
+.dash-money:hover{background:rgba(255,255,255,0.04);border-color:var(--accent-soft-2);}
+.dash-money:focus-visible{outline:2px solid var(--accent);outline-offset:2px;}
+.dm-l{font-size:11px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--text-faint);}
+.dm-v{font-family:var(--font-disp);font-size:26px;font-weight:700;font-variant-numeric:tabular-nums;}
+.dash-money.good .dm-v{color:var(--accent);} .dash-money.warn .dm-v{color:var(--amber);} .dash-money.dim .dm-v{color:var(--text-dim);}
+.dm-s{font-size:12.5px;color:var(--text-faint);}
+.dash-short{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 14px;}
+.stat-card.clickable{cursor:pointer;transition:border-color .15s,background .15s;}
+.stat-card.clickable:hover{border-color:var(--accent-soft-2);background:rgba(255,255,255,0.04);}
+.gst-mail{margin-left:6px;vertical-align:middle;}
+@media (max-width:1100px){ .sk-sum{grid-template-columns:repeat(3,minmax(0,1fr));} .dash-money-row{grid-template-columns:minmax(0,1fr);} }
+@media (max-width:620px){ .sk-sum{grid-template-columns:repeat(2,minmax(0,1fr));} .sk-grid{grid-template-columns:minmax(0,1fr);} .ovp-back{padding-top:6vh;} }
+</style>
+
+<style id="lot42-css">
+.mr-list{display:flex;flex-direction:column;gap:8px;max-height:280px;overflow-y:auto;}
+.mr-opt{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:2px 12px;text-align:left;border:1px solid var(--border-soft);background:rgba(255,255,255,0.04);color:var(--text);border-radius:var(--r-sm);padding:12px 14px;font:inherit;cursor:pointer;transition:background .15s,border-color .15s;}
+.mr-opt:hover{background:rgba(255,255,255,0.08);}
+.mr-opt.on{background:var(--accent-soft);border-color:var(--accent-soft-2);}
+.mr-opt b{font-weight:600;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.mr-opt span{grid-column:1;font-size:12.5px;color:var(--text-faint);}
+.mr-opt em{grid-column:2;grid-row:1 / span 2;align-self:center;font-style:normal;font-size:11.5px;font-weight:700;color:var(--accent);}
+.mr-empty{background:var(--amber-soft);color:var(--text);border-radius:var(--r-sm);padding:14px 16px;font-size:14px;line-height:1.55;margin-bottom:6px;}
+.mr-check{font-size:12.5px;line-height:1.5;padding:8px 12px;border-radius:8px;width:100%;box-sizing:border-box;}
+.mr-check.good{background:var(--accent-soft);color:var(--accent);}
+.mr-check.bad{background:var(--danger-soft);color:#FFB3A6;}
+</style>
+
 </head>
 <body>
 <div id="app"></div>
@@ -1330,6 +1486,8 @@ let state = {
   funnelEvents: [], // Lot 37 : journal des étapes du parcours de réservation (voir fetchAll)
   financePeriod: null, // {mode,start,end} — initialisé au premier affichage de l'onglet (finEnsurePeriod)
   financeStatsOpen: false,
+  stockSearch: '', stockFilter: 'all',
+  finView: 'locations', finRentalFilter: 'all', finRentalSearch: '', finSalesFilter: 'all',
   financeTableView: { A: false, B: false },
   finEditingSaleId: null, // Lot 35 : vente en cours de modification (clic sur une ligne du tableau)
   finEditingChargeId: null, // idem pour une charge
@@ -2420,6 +2578,7 @@ async function finSyncBookingToSales(b){
     ttc, cout_ht: 0,
     booking_id: b.id,
   };
+  if(item && item.owner_username) payload.retribution_proprietaire = round2(ttc * finOwnerPct() / 100);
   const { data, error } = await sb.from('finance_sales').insert(payload).select().single();
   if(!error && data) state.financeSales.push(data);
 }
@@ -2559,6 +2718,9 @@ async function submitTaskCompletion(taskId, answer, answerDate){
   // qui demande la date d'une location n'accepte jamais une date antérieure au lancement de l'app.
   if(task.requires_date && (!answerDate || answerDate < MISSION_LAUNCH_DATE)){
     state.answerError = missionDateTooEarlyMsg(); render(); return;
+  }
+  if(task.requires_date && !missionRentalIsValidFor(state.session.username, answerDate)){
+    state.answerError = tx("Aucune location confirmée de votre compte ne correspond à cette date.", 'None of your confirmed rentals matches this date.'); render(); return;
   }
   const username = state.session.username;
   // La table a une contrainte unique (task_id, username) : un client ne peut avoir qu'UNE ligne par
@@ -5068,6 +5230,7 @@ function renderSidebar(){
       <img src="${LOGO}" alt="logo">
       <div><div class="name">OWLS<span>VISION</span></div><div class="sub">OPS &amp; LOCATION</div></div>
     </div>
+    ${isMaster ? `<button type="button" class="side-search" onclick="ovPaletteOpen()"><span>${tacticalIconSvg('reticle',{size:15})}Rechercher</span><kbd>Ctrl K</kbd></button>` : ''}
     <div class="nav ${isMaster?'nav-draggable':''}">${items}</div>
     <div class="side-foot">
       <div class="side-user">
@@ -5335,7 +5498,7 @@ function gestionRowHtml(b){
   return `
     <tr>
       <td data-label="Matériel">${esc(item?.name || "Matériel supprimé")}</td>
-      <td data-label="Client"><button class="btn btn-ghost btn-sm" style="padding:6px 12px;" onclick="openViewProfile('${esc(p?.username||b.username)}')">${esc(p ? clientDisplayName(p) : b.username)}</button></td>
+      <td data-label="Client"><button class="btn btn-ghost btn-sm" style="padding:6px 12px;" onclick="openViewProfile('${esc(p?.username||b.username)}')">${esc(p ? clientDisplayName(p) : b.username)}</button><button type="button" class="icon-btn gst-mail" title="Écrire à ce client" onclick="openConversationFromList('${esc(b.username)}')">${tacticalIconSvg('mail',{size:15})}</button></td>
       <td data-label="Fin">${fmtDate(b.end_date)}</td>
       <td data-label="Prix estimé">${fmtPrice(price)}</td>
       <td data-label="Statut">${statusPillHtml(b.status)}</td>
@@ -5620,22 +5783,15 @@ function renderGestionLocation(){
     </div>
     <div class="filter-bar">
       <input type="text" placeholder="Rechercher un client, un matériel..." value="${esc(state.gestionSearch)}" oninput="onGestionSearch(this.value)">
-      <select onchange="onGestionFilter(this.value)">
-        <option value="all" ${state.gestionFilter==='all'?'selected':''}>Tous les statuts</option>
-        <option value="demande" ${state.gestionFilter==='demande'?'selected':''}>Demandes</option>
-        <option value="accepte" ${state.gestionFilter==='accepte'?'selected':''}>Acceptées</option>
-        <option value="loue" ${state.gestionFilter==='loue'?'selected':''}>En cours (louées)</option>
-        <option value="retourne" ${state.gestionFilter==='retourne'?'selected':''}>Retournées</option>
-        <option value="refuse" ${state.gestionFilter==='refuse'?'selected':''}>Refusées</option>
-      </select>
     </div>
+    <div id="gestion-chips">${gestionChipsHtml()}</div>
     <div class="result-count" id="gestion-count">${totalCount} location${totalCount>1?'s':''}</div>
     <div id="gestion-groups">${groups.length ? groups.map(gestionDateGroupHtml).join('') : `<div class="panel"><div class="empty">Aucune location ne correspond à cette recherche.</div></div>`}</div>
   `;
 }
 
 /* ---------- Gestion de stock (équipe) ---------- */
-function renderGestionStock(){
+function renderGestionStockOld(){
   const rows = state.items.map(item => {
     const enCours = state.bookings.filter(b => b.item_id === item.id && b.status === 'loue').length;
     const dispo = Math.max(0, item.qty - activeBookingsCount(item.id, todayStr(), todayStr()));
@@ -5687,6 +5843,8 @@ function renderGestionProprietaires(){
           <div class="t-desc" style="margin-top:4px;">Matériel rattaché (informatif) : ${myItems.length ? myItems.map(i => esc(i.name)).join(', ') : 'aucun'}</div>
         </div>
         <div class="btn-row" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+          <button type="button" class="icon-btn" title="Écrire à ce propriétaire" onclick="openConversationFromList('${esc(p.username)}')">${tacticalIconSvg('mail',{size:16})}</button>
+          <button type="button" class="icon-btn" title="Fiche" onclick="openViewProfile('${esc(p.username)}')">${tacticalIconSvg('id-badge',{size:16})}</button>
           ${oc && oc.signed_pdf_path ? `<button type="button" class="btn btn-ghost btn-sm" onclick="openOwnerContractFile('${esc(p.username)}','signed')">Voir contrat signé</button>` : ''}
           <button class="btn btn-primary btn-sm" onclick="openGenerateOwnerContractModal('${esc(p.username)}')">${oc ? 'Régénérer' : 'Envoyer'} le contrat propriétaire</button>
           ${oc ? `<button type="button" class="btn btn-danger btn-sm" onclick="deleteOwnerContract('${esc(p.username)}')">Supprimer le contrat</button>` : ''}
@@ -5954,8 +6112,10 @@ function renderDashboard(){
   return `
     <div class="topbar"><div><h1>Tableau de bord</h1><div class="desc">Vue d'ensemble en temps réel de la gestion des locations Owls Vision (les chiffres financiers sont dans l'onglet Finances).</div></div></div>
 
+    ${dashboardShortcutsHtml()}
+    ${dashboardMoneyHtml()}
     <div class="stat-grid">
-      <div class="stat-card">
+      <div class="stat-card clickable" onclick="dashGo('gestion','demande')" role="button" tabindex="0" title="Voir les demandes">
         <div class="stat-card-top">
           <div class="stat-icon" style="background:var(--amber-soft);color:var(--amber);">${tacticalIconSvg('clock',{size:19})}</div>
           ${counts.demande>0 ? `<span class="stat-delta up" style="background:var(--amber-soft);color:var(--amber);">à traiter</span>` : ''}
@@ -5963,14 +6123,14 @@ function renderDashboard(){
         <div class="stat-value">${counts.demande}</div>
         <div class="stat-label">Demandes en attente</div>
       </div>
-      <div class="stat-card">
+      <div class="stat-card clickable" onclick="dashGo('gestion','loue')" role="button" tabindex="0" title="Voir les locations en cours">
         <div class="stat-card-top">
           <div class="stat-icon" style="background:var(--blue-soft);color:var(--blue);">${tacticalIconSvg('package',{size:19})}</div>
         </div>
         <div class="stat-value">${activeBookings}</div>
         <div class="stat-label">Locations en cours / acceptées</div>
       </div>
-      <div class="stat-card">
+      <div class="stat-card clickable" onclick="dashGo('utilisateurs')" role="button" tabindex="0" title="Voir les comptes">
         <div class="stat-card-top">
           <div class="stat-icon" style="background:var(--violet-soft);color:var(--violet);">${tacticalIconSvg('id-badge',{size:19})}</div>
         </div>
@@ -6287,7 +6447,7 @@ function validationRowHtml(c){
         <span class="task-xp">+${task ? task.xp_reward : '?'} XP</span>
       </div>
       ${task && task.requires_answer ? `<div class="card-desc" style="flex:0;"><strong>${esc(task.answer_label||'Réponse')}</strong> : ${esc(c.answer||'—')}</div>` : ''}
-      ${task && task.requires_date ? `<div class="card-desc" style="flex:0;"><strong>Date de la location</strong> : ${c.answer_date ? esc(fmtDate(c.answer_date)) : '—'}</div>` : ''}
+      ${task && task.requires_date ? `<div class="card-desc" style="flex:0;"><strong>Date de la location</strong> : ${c.answer_date ? esc(fmtDate(c.answer_date)) : '—'}</div>${missionRentalCheckHtml(c)}` : ''}
       <div class="btn-row" style="display:flex;gap:8px;flex-wrap:wrap;">
         <button class="btn btn-primary btn-sm" onclick="validateCompletion('${c.id}')">Valider</button>
         <button class="btn btn-ghost btn-sm" onclick="rejectCompletion('${c.id}')">Refuser</button>
@@ -7359,12 +7519,14 @@ function finComputeAll(){
   // au propriétaire : ce n'est pas une marge pour OwlsVision, donc ça se déduit avant la marge brute,
   // au même titre que le coût d'achat.
   let caTTC=0, caHT=0, tvaCollectee=0, coutMarch=0, retroProprietaires=0, tvaDeductibleAchats=0;
+  let caLocTTC=0, caVenteTTC=0, margeLoc=0, margeVente=0, nbLoc=0, nbVente=0;
   sales.forEach(s => {
     const ttc = Number(s.ttc)||0;
     const ht = ttc / (1+tvaRate);
     const cout = Number(s.cout_ht||0);
     const retro = Number(s.retribution_proprietaire||0);
     caTTC += ttc; caHT += ht; tvaCollectee += (ttc - ht); coutMarch += cout; retroProprietaires += retro;
+    if(s.type === 'location'){ caLocTTC += ttc; margeLoc += ht - cout - retro; nbLoc++; } else { caVenteTTC += ttc; margeVente += ht - cout - retro; nbVente++; }
     if(s.tva_deductible) tvaDeductibleAchats += cout * tvaRate;
   });
   const margeBrute = caHT - coutMarch - retroProprietaires;
@@ -7399,6 +7561,7 @@ function finComputeAll(){
 
   return {
     caTTC, caHT, tvaCollectee, coutMarch, retroProprietaires, margeBrute, margePct,
+    caLocTTC, caVenteTTC, margeLoc, margeVente, nbLoc, nbVente,
     chargesHT, tvaDeductible, tvaDeductibleAchats, tvaDeductibleCharges, tvaNette,
     nbMois, brut, chargesSalariales, netAvantImpot, chargesPatronales, coutEmployeur,
     resultatAvantIS, isEstime, resultatNet, dividendesDispo, dividendesApresPfu,
@@ -7407,7 +7570,7 @@ function finComputeAll(){
 }
 
 /* ---------- Rendu : en-tête période ---------- */
-function finPeriodBarHtml(){
+function finPeriodBarHtml(noStats){
   finEnsurePeriod();
   const p = state.financePeriod;
   const f = d => d.toLocaleDateString('fr-FR', { day:'numeric', month:'short', year:'numeric' });
@@ -7420,8 +7583,8 @@ function finPeriodBarHtml(){
         ${tab('prevmonth','Mois dernier')}
         ${tab('year','Cette année')}
         <button type="button" class="${p.mode==='custom'?'active':''}" onclick="finSetPeriod('custom')">Période…</button>
-        <span class="fin-period-sep"></span>
-        <button type="button" class="${state.financeStatsOpen?'active':''}" onclick="finToggleStats()">${tacticalIconSvg('trending-up',{size:13,style:'margin-right:5px;vertical-align:-2px;'})}Statistiques</button>
+        ${noStats ? '' : `<span class="fin-period-sep"></span>
+        <button type="button" class="${state.financeStatsOpen?'active':''}" onclick="finToggleStats()">${tacticalIconSvg('trending-up',{size:13,style:'margin-right:5px;vertical-align:-2px;'})}Statistiques</button>`}
       </div>
       ${p.mode==='custom' ? `<div class="fin-period-range">
         <input type="date" value="${esc(p.start)}" onchange="finSetCustomRange('start', this.value)">
@@ -7453,6 +7616,7 @@ function finHeroHtml(t){
         <div class="stat-card-top"><div class="stat-icon" style="background:var(--blue-soft);color:var(--blue);">${tacticalIconSvg('coins',{size:19})}</div></div>
         <div class="stat-value">${finFmtEUR(t.caTTC)}</div>
         <div class="stat-label">Encaissé (TTC) — ${esc(salesLabel)}</div>
+        <div class="fin-split">Locations <b>${finFmtEUR(t.caLocTTC)}</b> (${t.nbLoc}) · Ventes de matériel <b>${finFmtEUR(t.caVenteTTC)}</b> (${t.nbVente})</div>
       </div>
       <div class="stat-card">
         <div class="stat-card-top"><div class="stat-icon" style="background:var(--amber-soft);color:var(--amber);">${tacticalIconSvg('doc',{size:19})}</div></div>
@@ -7469,9 +7633,13 @@ function finHeroHtml(t){
 
 /* ---------- Rendu : ventes / charges (saisie + tableaux) ---------- */
 function finSalesTbodyHtml(){
-  const rows = state.financeSales.filter(s => finInRange(s.date)).slice().sort((a,b) => a.date < b.date ? 1 : -1);
-  if(!rows.length) return `<tr><td colspan="5"><div class="empty">Aucune vente sur cette période.</div></td></tr>`;
+  const sf = state.finSalesFilter || 'all';
+  const rows = state.financeSales.filter(s => finInRange(s.date) && (sf === 'all' || s.type === sf)).slice().sort((a,b) => a.date < b.date ? 1 : -1);
+  if(!rows.length) return `<tr><td colspan="5"><div class="empty">Aucune ${sf==='location'?'location':sf==='vente'?'vente':'ligne'} sur cette période.</div></td></tr>`;
   const tvaRate = finSettings().tva/100;
+  const sumTtc = rows.reduce((a,s) => a + (Number(s.ttc)||0), 0);
+  const sumMarge = rows.reduce((a,s) => a + Number(s.ttc)/(1+tvaRate) - Number(s.cout_ht||0) - Number(s.retribution_proprietaire||0), 0);
+  const sumRow = `<tr class="fin-sum"><td></td><td data-label="Total">Total ${sf==='location'?'locations':sf==='vente'?'ventes de matériel':'(ventes + locations)'} — ${rows.length} ligne${rows.length>1?'s':''}</td><td style="text-align:right;font-variant-numeric:tabular-nums;">${finFmtEUR(sumTtc)}</td><td style="text-align:right;font-variant-numeric:tabular-nums;">${finFmtEUR(sumMarge)}</td><td></td></tr>`;
   return rows.map(s => {
     const ht = Number(s.ttc)/(1+tvaRate);
     const retro = Number(s.retribution_proprietaire||0);
@@ -7494,7 +7662,7 @@ function finSalesTbodyHtml(){
       <td data-label="Marge" style="text-align:right;font-variant-numeric:tabular-nums;">${finFmtEUR(marge)}</td>
       <td><button class="btn btn-danger btn-sm" onclick="event.stopPropagation();finDeleteSale('${s.id}')" title="Supprimer" style="width:auto;padding:6px 9px;">✕</button></td>
     </tr>`;
-  }).join('');
+  }).join('') + sumRow;
 }
 function finChargesTbodyHtml(){
   const rows = finExpandRecurringCharges().filter(c => finInRange(c.date)).slice().sort((a,b) => a.date < b.date ? 1 : -1);
@@ -7556,6 +7724,7 @@ function finVentesPanelHtml(){
           ${editing ? `<button type="button" class="btn btn-ghost btn-sm" onclick="finCancelEditSale()">Annuler</button>` : ''}
         </div>
       </form>
+      <div class="ul-chips" style="margin:6px 0 8px;">${[['all','Tout'],['vente','Ventes de matériel'],['location','Locations']].map(([f,l]) => `<button type="button" class="ul-chip ${(state.finSalesFilter||'all')===f?'on':''}" onclick="finSetSalesFilter('${f}')">${l}</button>`).join('')}</div>
       <div class="fin-tbl-wrap"><table class="tbl-cards-mobile"><thead><tr><th>Date</th><th>Désignation</th><th style="text-align:right;">TTC</th><th style="text-align:right;">Marge</th><th></th></tr></thead>
       <tbody id="fin-sales-tbody">${finSalesTbodyHtml()}</tbody></table></div>
     </div>`;
@@ -7813,12 +7982,573 @@ function finDisclaimerHtml(){
   </div>`;
 }
 
+/* ===== Lot 41 : « Argent des locations » — la source de vérité, ce sont les RÉSERVATIONS =====
+   Avant : la page Finances additionnait en un seul total les ventes de matériel et les locations
+   (lignes finance_sales), plus un bloc « Chiffre Location » calculé ailleurs à partir du planning.
+   Trois chiffres différents pour la même chose, et une location saisie à la main EN PLUS de la
+   ligne créée automatiquement au clic « Payé » comptait deux fois.
+   Ici : une ligne = une réservation. Le montant vient de la facture (sinon du tarif catalogue),
+   l'état vient du bouton Payé, la part propriétaire vient du matériel. Les écarts avec la compta
+   sont listés dans « Contrôles » avec un bouton pour les corriger. */
+const FIN_RENTAL_STATUSES = ['accepte', 'loue', 'retourne'];
+function finOwnerPct(){
+  const v = Number(finSettings().owner_share_pct);
+  return isFinite(v) && finSettings().owner_share_pct != null ? v : 40;
+}
+function finPaidDate(b){ return (b.paid_at ? String(b.paid_at).slice(0, 10) : (b.start_date || todayStr())); }
+function finBookingAmount(b){
+  const inv = state.invoices.find(x => x.booking_id === b.id);
+  if(inv && inv.amount_ttc != null && isFinite(Number(inv.amount_ttc))) return { amount: round2(Number(inv.amount_ttc)), source: 'facture' };
+  const est = estimatedBookingPrice(b);
+  if(est != null) return { amount: round2(est), source: 'estime' };
+  return { amount: 0, source: 'inconnu' };
+}
+function finRentalsLedger(){
+  const today = todayStr();
+  const pct = finOwnerPct();
+  const sales = state.financeSales;
+  return state.bookings
+    .filter(b => b.status === 'demande' || FIN_RENTAL_STATUSES.includes(b.status))
+    .map(b => {
+      const item = state.items.find(i => i.id === b.item_id) || null;
+      const profile = state.profiles.find(p => p.username === b.username) || null;
+      const { amount, source } = finBookingAmount(b);
+      const linked = sales.filter(s => s.booking_id === b.id);
+      const sale = linked[0] || null;
+      const isOwner = !!(item && item.owner_username);
+      let share = 0;
+      if(isOwner){
+        const manual = sale && Number(sale.retribution_proprietaire) > 0 ? Number(sale.retribution_proprietaire) : null;
+        share = manual != null ? manual : round2(amount * pct / 100);
+      }
+      let st;
+      if(b.status === 'demande') st = 'pipeline';
+      else if(b.paid) st = 'paid';
+      else if(b.status === 'retourne' || (b.end_date && b.end_date < today)) st = 'overdue';
+      else st = 'due';
+      return { b, item, profile, amount, source, sale, linked, isOwner, share, net: round2(amount - share), st,
+        refDate: st === 'paid' ? finPaidDate(b) : b.start_date };
+    });
+}
+function finRentalsTotals(rows){
+  finEnsurePeriod();
+  const paidIn = rows.filter(r => r.st === 'paid' && finInRange(r.refDate));
+  const sum = (a, f) => a.reduce((s, r) => s + f(r), 0);
+  const due = rows.filter(r => r.st === 'due' || r.st === 'overdue');
+  const overdue = rows.filter(r => r.st === 'overdue');
+  const pipe = rows.filter(r => r.st === 'pipeline');
+  return {
+    paidRows: paidIn, paid: round2(sum(paidIn, r => r.amount)), paidShare: round2(sum(paidIn, r => r.share)),
+    paidNet: round2(sum(paidIn, r => r.net)),
+    due: round2(sum(due, r => r.amount)), dueN: due.length, overdue: round2(sum(overdue, r => r.amount)), overdueN: overdue.length,
+    pipe: round2(sum(pipe, r => r.amount)), pipeN: pipe.length,
+    estimatedN: rows.filter(r => r.st !== 'paid' ? r.source !== 'facture' : false).length,
+  };
+}
+// Contrôles : tout ce qui rend la compta différente des réservations.
+function finRentalsIssues(rows){
+  const issues = [];
+  const byBooking = new Map(rows.map(r => [r.b.id, r]));
+  // 1. Payée mais absente de la compta
+  rows.filter(r => r.st === 'paid' && !r.sale).forEach(r => {
+    const twin = state.financeSales.find(s => s.type === 'location' && !s.booking_id && Math.abs(Number(s.ttc) - r.amount) <= 1 && s.date && r.refDate && Math.abs(new Date(s.date) - new Date(r.refDate)) <= 10 * 86400000);
+    if(twin) issues.push({ kind: 'twin', r, sale: twin });
+    else issues.push({ kind: 'missing', r });
+  });
+  // 2. Montant différent entre compta et réservation
+  rows.filter(r => r.sale && Math.abs(Number(r.sale.ttc) - r.amount) > 0.5 && r.st === 'paid').forEach(r => issues.push({ kind: 'diff', r }));
+  // 3. Plusieurs lignes compta pour une seule réservation
+  rows.filter(r => r.linked.length > 1).forEach(r => r.linked.slice(1).forEach(s => issues.push({ kind: 'dup', r, sale: s })));
+  // 4. Ligne compta liée à une réservation non payée ou disparue
+  state.financeSales.filter(s => s.booking_id).forEach(s => {
+    const r = byBooking.get(s.booking_id);
+    if(!r) issues.push({ kind: 'orphan', sale: s, why: 'la réservation n\'existe plus (ou est refusée)' });
+    else if(r.st !== 'paid') issues.push({ kind: 'orphan', sale: s, r, why: 'la réservation n\'est pas marquée payée' });
+  });
+  return issues;
+}
+function finRentalPill(r){
+  const m = { paid: ['ok', 'Encaissé'], due: ['pending', 'À encaisser'], overdue: ['danger', 'En retard'], pipeline: ['none', 'Demande'] }[r.st];
+  return `<span class="status-pill ${m[0]}">${m[1]}</span>`;
+}
+function finRentalRowHtml(r){
+  const { b } = r;
+  const u = esc(b.username);
+  const name = r.profile ? clientDisplayName(r.profile) : b.username;
+  const stLabel = { demande: 'Demande', accepte: 'Acceptée', loue: 'En cours', retourne: 'Retournée' }[b.status] || b.status;
+  const src = r.source === 'facture' ? `<span class="rl-src ok" title="Montant de la facture émise">facturé</span>` : r.source === 'estime' ? `<span class="rl-src" title="Tarif catalogue × durée : pas encore de facture">estimé</span>` : `<span class="rl-src warn" title="Aucun tarif sur ce matériel">sans tarif</span>`;
+  const dateTxt = b.start_date ? finShortRange(b.start_date, b.end_date) : '—';
+  const paidTxt = r.st === 'paid' ? `<small>payé le ${fmtDate(r.refDate)}</small>` : `<small>${esc(stLabel)}</small>`;
+  const shareCell = r.isOwner
+    ? `<b>${finFmtEUR2(r.net)}</b><small>proprio ${finFmtEUR2(r.share)} · ${esc(clientDisplayName(state.profiles.find(p => p.username === r.item.owner_username)) || r.item.owner_username)}</small>`
+    : `<b>${finFmtEUR2(r.net)}</b><small>matériel OwlsVision</small>`;
+  const payBtn = b.status === 'demande' ? '' : r.st === 'paid'
+    ? `<button type="button" class="btn btn-ghost btn-sm" style="width:auto;" onclick="toggleBookingPaid('${b.id}')" title="Annuler le paiement">Annuler</button>`
+    : `<button type="button" class="btn btn-primary btn-sm" style="width:auto;" onclick="toggleBookingPaid('${b.id}')">Marquer payé</button>`;
+  return `
+    <div class="rl-row">
+      <div class="rl-who"><div class="rl-name">${esc(name)}</div><div class="rl-sub">${esc(r.item ? r.item.name : 'Matériel supprimé')}</div></div>
+      <div class="rl-cell" data-label="Dates"><b>${esc(dateTxt)}</b>${paidTxt}</div>
+      <div class="rl-cell" data-label="État">${finRentalPill(r)}</div>
+      <div class="rl-cell rl-num" data-label="Montant TTC"><b>${finFmtEUR2(r.amount)}</b>${src}</div>
+      <div class="rl-cell rl-num" data-label="Net OwlsVision">${shareCell}</div>
+      <div class="rl-act">
+        ${payBtn}
+        <button type="button" class="icon-btn" title="Écrire au client" onclick="openConversationFromList('${u}')">${tacticalIconSvg('mail',{size:15})}</button>
+        <button type="button" class="icon-btn" title="Fiche client" onclick="openViewProfile('${u}')">${tacticalIconSvg('id-badge',{size:15})}</button>
+        <button type="button" class="icon-btn" title="Voir dans Réservations" onclick="finGoBooking('${b.id}')">${tacticalIconSvg('doc',{size:15})}</button>
+      </div>
+    </div>`;
+}
+function finShortRange(a, b){
+  const y = new Date().getFullYear();
+  const f = (iso, withYear) => new Date(iso + 'T00:00:00').toLocaleDateString('fr-FR', withYear ? { day: 'numeric', month: 'short', year: 'numeric' } : { day: 'numeric', month: 'short' });
+  const diffYear = new Date(a).getFullYear() !== y || new Date(b || a).getFullYear() !== y;
+  return f(a, diffYear) + ' → ' + f(b || a, diffYear);
+}
+function finFmtEUR2(n){
+  if(!isFinite(n)) n = 0;
+  return n.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR', minimumFractionDigits: 0, maximumFractionDigits: 2 });
+}
+const FIN_RL_FILTERS = [['all', 'Tout'], ['due', 'À encaisser'], ['overdue', 'En retard'], ['paid', 'Encaissé (période)'], ['pipeline', 'Demandes']];
+function finRentalsFiltered(rows){
+  const f = state.finRentalFilter || 'all';
+  const order = { overdue: 0, due: 1, pipeline: 2, paid: 3 };
+  let list = rows.filter(r => r.st !== 'paid' || finInRange(r.refDate));
+  if(f !== 'all') list = list.filter(r => f === 'due' ? (r.st === 'due' || r.st === 'overdue') : r.st === f);
+  const q = (state.finRentalSearch || '').trim().toLowerCase();
+  if(q) list = list.filter(r => [r.b.username, r.profile && clientDisplayName(r.profile), r.item && r.item.name].filter(Boolean).join(' ').toLowerCase().includes(q));
+  return list.sort((a, b) => (order[a.st] - order[b.st]) || (a.st === 'paid' ? (a.refDate < b.refDate ? 1 : -1) : (a.refDate > b.refDate ? 1 : -1)));
+}
+function finRentalsMonthBars(rows){
+  const now = new Date();
+  const months = [];
+  for(let i = 5; i >= 0; i--){
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    months.push({ key: d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0'), label: d.toLocaleDateString('fr-FR', { month: 'short' }), paid: 0, due: 0 });
+  }
+  rows.forEach(r => {
+    const m = months.find(x => x.key === String(r.refDate || '').slice(0, 7));
+    if(!m) return;
+    if(r.st === 'paid') m.paid += r.amount; else if(r.st === 'due' || r.st === 'overdue') m.due += r.amount;
+  });
+  const max = Math.max(1, ...months.map(m => m.paid + m.due));
+  return `<div class="rl-bars">${months.map(m => `
+    <div class="rl-bar" title="${esc(m.label)} : ${finFmtEUR(m.paid)} encaissé, ${finFmtEUR(m.due)} à encaisser">
+      <div class="rl-bar-col"><i class="due" style="height:${(m.due / max * 100).toFixed(1)}%"></i><i class="paid" style="height:${(m.paid / max * 100).toFixed(1)}%"></i></div>
+      <b>${finFmtEUR(m.paid + m.due)}</b><span>${esc(m.label)}</span>
+    </div>`).join('')}</div>
+    <div class="rl-legend"><span><i class="paid"></i>Encaissé</span><span><i class="due"></i>À encaisser (par date de début)</span></div>`;
+}
+function finRentalsBreakdownHtml(t){
+  const group = (keyFn, labelFn) => {
+    const m = new Map();
+    t.paidRows.forEach(r => { const k = keyFn(r); const e = m.get(k) || { label: labelFn(r), n: 0, amount: 0, share: 0 }; e.n++; e.amount += r.amount; e.share += r.share; m.set(k, e); });
+    return [...m.values()].sort((a, b) => b.amount - a.amount);
+  };
+  const list = (arr, empty) => arr.length ? arr.slice(0, 8).map(e => `<div class="rl-bd-row"><span>${esc(e.label)}<small>${e.n} location${e.n > 1 ? 's' : ''}</small></span><b>${finFmtEUR(e.amount)}</b></div>`).join('') : `<div class="empty" style="padding:14px;">${empty}</div>`;
+  const byItem = group(r => r.item ? r.item.id : 'x', r => r.item ? r.item.name : 'Matériel supprimé');
+  const byOwner = group(r => r.isOwner ? r.item.owner_username : '_own', r => r.isOwner ? (clientDisplayName(state.profiles.find(p => p.username === r.item.owner_username)) || r.item.owner_username) : 'Stock OwlsVision');
+  const ownerRows = [...new Map(t.paidRows.filter(r => r.isOwner).map(r => [r.item.owner_username, 0])).keys()].map(u => {
+    const rs = t.paidRows.filter(r => r.isOwner && r.item.owner_username === u);
+    return { label: clientDisplayName(state.profiles.find(p => p.username === u)) || u, n: rs.length, amount: rs.reduce((s, r) => s + r.share, 0) };
+  }).sort((a, b) => b.amount - a.amount);
+  return `<div class="rl-3col">
+    <div class="panel"><h2>Par matériel</h2><div class="rl-h2sub">Encaissé sur la période</div>${list(byItem, 'Rien d\'encaissé sur la période.')}</div>
+    <div class="panel"><h2>Par propriétaire</h2><div class="rl-h2sub">Chiffre généré par le matériel de chacun</div>${list(byOwner, 'Rien d\'encaissé sur la période.')}</div>
+    <div class="panel"><h2>À reverser</h2><div class="rl-h2sub">Part propriétaire sur la période (${finOwnerPct()} % par défaut)</div>${ownerRows.length ? ownerRows.map(e => `<div class="rl-bd-row"><span>${esc(e.label)}<small>${e.n} location${e.n > 1 ? 's' : ''}</small></span><b>${finFmtEUR(e.amount)}</b></div>`).join('') : `<div class="empty" style="padding:14px;">Aucun matériel de propriétaire loué et payé sur la période.</div>`}</div>
+  </div>`;
+}
+function finIssueHtml(i){
+  const nm = r => esc((r.profile ? clientDisplayName(r.profile) : r.b.username) + ' — ' + (r.item ? r.item.name : 'matériel'));
+  if(i.kind === 'missing') return `<div class="rl-issue"><div><b>${nm(i.r)}</b> est payée (${finFmtEUR2(i.r.amount)}) mais absente de la compta.</div><button class="btn btn-primary btn-sm" style="width:auto;" onclick="finFixAddSale('${i.r.b.id}')">Ajouter à la compta</button></div>`;
+  if(i.kind === 'twin') return `<div class="rl-issue"><div><b>Doublon probable :</b> la saisie « ${esc(i.sale.label)} » (${finFmtEUR2(Number(i.sale.ttc))}, ${fmtDate(i.sale.date)}) ressemble à <b>${nm(i.r)}</b>. Les deux seraient comptées si la réservation était ajoutée.</div><button class="btn btn-primary btn-sm" style="width:auto;" onclick="finFixLinkSale('${i.sale.id}','${i.r.b.id}')">Relier la saisie à la réservation</button></div>`;
+  if(i.kind === 'diff') return `<div class="rl-issue"><div><b>${nm(i.r)}</b> : ${finFmtEUR2(i.r.amount)} dans la réservation, ${finFmtEUR2(Number(i.r.sale.ttc))} dans la compta.</div><button class="btn btn-primary btn-sm" style="width:auto;" onclick="finFixAlignSale('${i.r.sale.id}','${i.r.b.id}')">Aligner la compta</button></div>`;
+  if(i.kind === 'dup') return `<div class="rl-issue"><div><b>${nm(i.r)}</b> apparaît deux fois en compta (${finFmtEUR2(Number(i.sale.ttc))}).</div><button class="btn btn-danger btn-sm" style="width:auto;" onclick="finFixDeleteSale('${i.sale.id}')">Supprimer le doublon</button></div>`;
+  return `<div class="rl-issue"><div><b>${esc(i.sale.label)}</b> (${finFmtEUR2(Number(i.sale.ttc))}) : ${esc(i.why)}.</div><button class="btn btn-danger btn-sm" style="width:auto;" onclick="finFixDeleteSale('${i.sale.id}')">Retirer de la compta</button></div>`;
+}
+function finRentalsHtml(){
+  const rows = finRentalsLedger();
+  const t = finRentalsTotals(rows);
+  const issues = finRentalsIssues(rows);
+  const list = finRentalsFiltered(rows);
+  const chips = FIN_RL_FILTERS.map(([f, label]) => {
+    const n = f === 'all' ? rows.filter(r => r.st !== 'paid' || finInRange(r.refDate)).length : f === 'due' ? t.dueN : f === 'overdue' ? t.overdueN : f === 'paid' ? t.paidRows.length : t.pipeN;
+    const on = (state.finRentalFilter || 'all') === f;
+    return `<button type="button" class="ul-chip ${on ? 'on' : ''}" onclick="finSetRentalFilter('${f}')">${label} <b>${n}</b></button>`;
+  }).join('');
+  const kpi = (cls, label, value, sub) => `<div class="rl-kpi ${cls}"><div class="rl-kpi-l">${label}</div><div class="rl-kpi-v">${value}</div><div class="rl-kpi-s">${sub}</div></div>`;
+  return `
+    ${finPeriodBarHtml(true)}
+    <div class="rl-kpis">
+      ${kpi('good', 'Encaissé sur la période', finFmtEUR(t.paid), `${t.paidRows.length} location${t.paidRows.length > 1 ? 's' : ''} payée${t.paidRows.length > 1 ? 's' : ''}`)}
+      ${kpi('', 'Net OwlsVision', finFmtEUR(t.paidNet), t.paidShare > 0 ? `après ${finFmtEUR(t.paidShare)} reversés aux propriétaires` : 'aucune part propriétaire')}
+      ${kpi(t.overdueN ? 'warn' : '', 'À encaisser (total)', finFmtEUR(t.due), `${t.dueN} réservation${t.dueN > 1 ? 's' : ''}${t.overdueN ? ` dont ${finFmtEUR(t.overdue)} en retard` : ''}`)}
+      ${kpi('dim', 'Demandes en attente', finFmtEUR(t.pipe), `${t.pipeN} demande${t.pipeN > 1 ? 's' : ''}, pas encore acceptée${t.pipeN > 1 ? 's' : ''}`)}
+    </div>
+    <div class="rl-note">Un seul calcul, une ligne par réservation : le montant vient de la facture (sinon du tarif catalogue), l'état vient du bouton « Payé ». Les demandes non acceptées ne sont <b>jamais</b> additionnées à l'encaissé. Les ventes de matériel sont dans l'onglet « Comptabilité ».</div>
+    <div class="panel rl-issues-panel ${issues.length ? 'has' : ''}">
+      <h2>Contrôles avec la compta ${issues.length ? `<span class="rl-count warn">${issues.length}</span>` : `<span class="rl-count ok">OK</span>`}</h2>
+      ${issues.length ? `<div class="rl-h2sub">Écarts qui font que les chiffres de la compta ne correspondent pas aux réservations. Chaque ligne se corrige en un clic.</div>${issues.map(finIssueHtml).join('')}` : `<div class="rl-h2sub" style="margin:0;">Chaque location payée a une seule ligne en compta, au bon montant.</div>`}
+    </div>
+    <div class="panel">
+      <h2>Détail des réservations</h2>
+      <div class="rl-toolbar">
+        <input type="text" id="fin-rl-search" placeholder="Chercher un client ou un matériel…" value="${esc(state.finRentalSearch || '')}" oninput="finRentalSearch(this.value)">
+        <label class="rl-pct">Part propriétaire <input type="number" id="fin-owner-pct" min="0" max="100" step="1" value="${finOwnerPct()}" onchange="finSetOwnerPct(this.value)"> %</label>
+      </div>
+      <div class="ul-chips" style="margin-top:10px;">${chips}</div>
+      <div class="rl">
+        <div class="rl-head"><span>Client · matériel</span><span>Dates</span><span>État</span><span class="rl-num">Montant TTC</span><span class="rl-num">Net OwlsVision</span><span></span></div>
+        <div id="fin-rl-list">${list.length ? list.map(finRentalRowHtml).join('') : `<div class="empty" style="margin:18px;">Aucune réservation ne correspond.</div>`}</div>
+      </div>
+    </div>
+    <div class="panel"><h2>Six derniers mois</h2><div class="rl-h2sub">Encaissé (date du clic « Payé ») et reste à encaisser (date de début de location)</div>${finRentalsMonthBars(rows)}</div>
+    ${finRentalsBreakdownHtml(t)}
+    <div id="fin-tooltip" class="fin-tooltip" role="tooltip"></div>`;
+}
+
+/* ---------- Lot 41 : handlers « Argent des locations » ---------- */
+function finTabsHtml(){
+  const v = state.finView || 'locations';
+  const issues = finRentalsIssues(finRentalsLedger()).length;
+  const tab = (id, label, extra) => `<button type="button" class="${v === id ? 'on' : ''}" onclick="finSetView('${id}')">${label}${extra || ''}</button>`;
+  return `<div class="fin-views" role="tablist">
+    ${tab('locations', 'Argent des locations', issues ? `<span class="rl-count warn" title="${issues} écart(s) à vérifier">${issues}</span>` : '')}
+    ${tab('compta', 'Comptabilité SASU')}
+  </div>`;
+}
+window.finSetView = (v) => { state.finView = v; finRefreshInner(); };
+window.finSetRentalFilter = (f) => { state.finRentalFilter = f; finRefreshInner(); };
+window.finRentalSearch = (v) => {
+  state.finRentalSearch = v;
+  const el = document.getElementById('fin-rl-list');
+  if(!el) return;
+  const list = finRentalsFiltered(finRentalsLedger());
+  el.innerHTML = list.length ? list.map(finRentalRowHtml).join('') : `<div class="empty" style="margin:18px;">Aucune réservation ne correspond.</div>`;
+};
+window.finSetOwnerPct = async (v) => {
+  let n = parseFloat(v);
+  if(!isFinite(n) || n < 0) n = 0; if(n > 100) n = 100;
+  const prev = state.financeSettings ? state.financeSettings.owner_share_pct : undefined;
+  state.financeSettings = { ...(state.financeSettings || finSettings()), owner_share_pct: n };
+  finRefreshInner();
+  const id = (state.financeSettings && state.financeSettings.id) || 1;
+  const { error } = await sb.from('finance_settings').update({ owner_share_pct: n }).eq('id', id);
+  if(error){
+    state.financeSettings.owner_share_pct = prev;
+    finRefreshInner();
+    alert("Le pourcentage n'a pas pu être enregistré : " + error.message + "\nExécutez d'abord migration_lot41_finances.sql dans Supabase.");
+  }
+};
+window.finGoBooking = (id) => {
+  const b = state.bookings.find(x => x.id === id);
+  state.gestionSearch = b ? b.username : '';
+  state.gestionFilter = 'all';
+  goto('gestion');
+};
+async function finFixInsertSale(r){
+  const b = r.b;
+  const clientName = (r.profile ? clientDisplayName(r.profile) : b.username);
+  const payload = { date: finPaidDate(b), type: 'location', label: `${r.item ? r.item.name : 'Matériel'} — ${clientName}`, ttc: r.amount, cout_ht: 0, booking_id: b.id };
+  if(r.isOwner) payload.retribution_proprietaire = r.share;
+  const { data, error } = await sb.from('finance_sales').insert(payload).select().single();
+  if(error){ alert('Erreur : ' + error.message); return; }
+  if(data) state.financeSales.push(data);
+}
+window.finFixAddSale = async (bookingId) => {
+  const r = finRentalsLedger().find(x => x.b.id === bookingId);
+  if(!r) return;
+  await finFixInsertSale(r);
+  finRefreshInner();
+};
+window.finFixLinkSale = async (saleId, bookingId) => {
+  const r = finRentalsLedger().find(x => x.b.id === bookingId);
+  const s = state.financeSales.find(x => x.id === saleId);
+  if(!r || !s) return;
+  const patch = { booking_id: bookingId };
+  if(r.isOwner && !(Number(s.retribution_proprietaire) > 0)) patch.retribution_proprietaire = r.share;
+  const { error } = await sb.from('finance_sales').update(patch).eq('id', saleId);
+  if(error){ alert('Erreur : ' + error.message); return; }
+  Object.assign(s, patch);
+  finRefreshInner();
+};
+window.finFixAlignSale = async (saleId, bookingId) => {
+  const r = finRentalsLedger().find(x => x.b.id === bookingId);
+  const s = state.financeSales.find(x => x.id === saleId);
+  if(!r || !s) return;
+  const patch = { ttc: r.amount };
+  if(r.isOwner && !(Number(s.retribution_proprietaire) > 0)) patch.retribution_proprietaire = r.share;
+  const { error } = await sb.from('finance_sales').update(patch).eq('id', saleId);
+  if(error){ alert('Erreur : ' + error.message); return; }
+  Object.assign(s, patch);
+  finRefreshInner();
+};
+window.finFixDeleteSale = (id) => window.finDeleteSale(id);
+window.finSetSalesFilter = (f) => { state.finSalesFilter = f; finRefreshInner(); };
+
+/* ===== Lot 41 : navigation globale (recherche Ctrl+K), Stock refondu, filtres Réservations ===== */
+/* ---------- Recherche globale (palette) : pages, clients, matériel, réservations ---------- */
+let ovPal = { open: false, q: '', idx: 0, results: [] };
+function ovPaletteIndex(){
+  const out = [];
+  navFor(true).forEach(it => (it.sub || [it]).forEach(s => out.push({ kind: 'Page', icon: 'doc', label: s.label, sub: it.sub ? it.label : '', hay: (s.label + ' ' + it.label).toLowerCase(), run: () => goto(s.id) })));
+  state.profiles.filter(p => !p.is_master).forEach(p => {
+    const name = clientDisplayName(p) || p.username;
+    out.push({ kind: 'Client', icon: 'id-badge', label: name, sub: p.username + (p.telephone ? ' · ' + p.telephone : ''), hay: [name, p.username, p.telephone, p.ville, p.nom, p.prenom].filter(Boolean).join(' ').toLowerCase(),
+      run: () => openViewProfile(p.username), alt: { label: 'Message', run: () => openConversationFromList(p.username) } });
+  });
+  state.items.forEach(i => out.push({ kind: 'Matériel', icon: 'package', label: i.name, sub: i.owner_username ? 'Propriétaire : ' + i.owner_username : 'Stock OwlsVision', hay: i.name.toLowerCase(),
+    run: () => { state.stockSearch = i.name; state.stockFilter = 'all'; goto('stock'); }, alt: { label: 'Réservations', run: () => { state.gestionSearch = i.name; state.gestionFilter = 'all'; goto('gestion'); } } }));
+  return out;
+}
+function ovPaletteSearch(q){
+  const all = ovPaletteIndex();
+  q = q.trim().toLowerCase();
+  if(!q) return all.filter(r => r.kind === 'Page');
+  const terms = q.split(/\s+/);
+  return all.filter(r => terms.every(t => r.hay.includes(t))).sort((a, b) => (a.hay.startsWith(q) ? 0 : 1) - (b.hay.startsWith(q) ? 0 : 1)).slice(0, 40);
+}
+function ovPaletteRender(){
+  const box = document.getElementById('ov-pal-list'); if(!box) return;
+  const res = ovPal.results;
+  if(!res.length){ box.innerHTML = `<div class="ovp-empty">Aucun résultat pour « ${esc(ovPal.q)} ».</div>`; return; }
+  let last = '';
+  box.innerHTML = res.map((r, i) => {
+    const head = r.kind !== last ? `<div class="ovp-group">${esc(r.kind === 'Page' ? 'Pages' : r.kind === 'Client' ? 'Clients' : 'Matériel')}</div>` : '';
+    last = r.kind;
+    return `${head}<div class="ovp-row ${i === ovPal.idx ? 'on' : ''}" data-i="${i}" onclick="ovPaletteGo(${i})" onmousemove="ovPaletteHover(${i})">
+      <span class="ovp-ico">${tacticalIconSvg(r.icon, { size: 16 })}</span>
+      <span class="ovp-txt"><b>${esc(r.label)}</b>${r.sub ? `<small>${esc(r.sub)}</small>` : ''}</span>
+      ${r.alt ? `<button type="button" class="ovp-alt" onclick="event.stopPropagation();ovPaletteAlt(${i})">${esc(r.alt.label)}</button>` : ''}
+    </div>`;
+  }).join('');
+  const on = box.querySelector('.ovp-row.on'); if(on) on.scrollIntoView({ block: 'nearest' });
+}
+window.ovPaletteOpen = () => {
+  const u = currentProfile(); if(!u || !u.is_master) return;
+  ovPal = { open: true, q: '', idx: 0, results: ovPaletteSearch('') };
+  let el = document.getElementById('ov-pal');
+  if(el) el.remove();
+  el = document.createElement('div'); el.id = 'ov-pal'; el.className = 'ovp-back';
+  el.innerHTML = `<div class="ovp" role="dialog" aria-label="Recherche"><div class="ovp-in"><span class="ovp-ico">${tacticalIconSvg('reticle', { size: 18 })}</span>
+    <input id="ov-pal-input" type="text" placeholder="Chercher un client, un matériel, une page…" autocomplete="off" oninput="ovPaletteInput(this.value)" onkeydown="ovPaletteKey(event)"><kbd>Échap</kbd></div>
+    <div class="ovp-list" id="ov-pal-list"></div>
+    <div class="ovp-foot"><span><kbd>↑</kbd><kbd>↓</kbd> choisir</span><span><kbd>Entrée</kbd> ouvrir</span><span><kbd>Ctrl</kbd>+<kbd>K</kbd> n'importe où</span></div></div>`;
+  el.addEventListener('mousedown', e => { if(e.target === el) ovPaletteClose(); });
+  document.body.appendChild(el);
+  ovPaletteRender();
+  document.getElementById('ov-pal-input').focus();
+};
+window.ovPaletteClose = () => { ovPal.open = false; const el = document.getElementById('ov-pal'); if(el) el.remove(); };
+window.ovPaletteInput = (v) => { ovPal.q = v; ovPal.idx = 0; ovPal.results = ovPaletteSearch(v); ovPaletteRender(); };
+window.ovPaletteHover = (i) => { if(ovPal.idx === i) return; ovPal.idx = i; document.querySelectorAll('#ov-pal-list .ovp-row').forEach((r, k) => r.classList.toggle('on', k === i)); };
+window.ovPaletteGo = (i) => { const r = ovPal.results[i]; if(!r) return; ovPaletteClose(); r.run(); };
+window.ovPaletteAlt = (i) => { const r = ovPal.results[i]; if(!r || !r.alt) return; ovPaletteClose(); r.alt.run(); };
+window.ovPaletteKey = (e) => {
+  if(e.key === 'ArrowDown'){ e.preventDefault(); ovPal.idx = Math.min(ovPal.results.length - 1, ovPal.idx + 1); ovPaletteRender(); }
+  else if(e.key === 'ArrowUp'){ e.preventDefault(); ovPal.idx = Math.max(0, ovPal.idx - 1); ovPaletteRender(); }
+  else if(e.key === 'Enter'){ e.preventDefault(); if(e.shiftKey || e.altKey) ovPaletteAlt(ovPal.idx); else ovPaletteGo(ovPal.idx); }
+  else if(e.key === 'Escape'){ e.preventDefault(); ovPaletteClose(); }
+};
+document.addEventListener('keydown', (e) => {
+  const u = (typeof currentProfile === 'function') ? currentProfile() : null;
+  if(!u || !u.is_master) return;
+  if((e.ctrlKey || e.metaKey) && (e.key === 'k' || e.key === 'K')){ e.preventDefault(); ovPal.open ? ovPaletteClose() : ovPaletteOpen(); }
+  else if(e.key === '/' && !ovPal.open && !isTypingInField()){ e.preventDefault(); ovPaletteOpen(); }
+  else if(e.key === 'Escape' && ovPal.open) ovPaletteClose();
+});
+
+/* ---------- Réservations : filtre de statut en pastilles avec compteurs ---------- */
+const GESTION_STATUS_CHIPS = [['all', 'Toutes'], ['demande', 'Demandes'], ['accepte', 'Acceptées'], ['loue', 'En cours'], ['retourne', 'Retournées'], ['refuse', 'Refusées']];
+function gestionChipsHtml(){
+  return `<div class="ul-chips">${GESTION_STATUS_CHIPS.map(([f, label]) => {
+    const n = f === 'all' ? state.bookings.length : state.bookings.filter(b => b.status === f).length;
+    if(f === 'refuse' && !n && state.gestionFilter !== 'refuse') return '';
+    return `<button type="button" class="ul-chip ${state.gestionFilter === f ? 'on' : ''}" onclick="onGestionFilter('${f}')">${label} <b>${n}</b></button>`;
+  }).join('')}</div>`;
+}
+
+/* ---------- Stock refondu ---------- */
+const STOCK_FILTERS = [['all', 'Tout'], ['dispo', 'Disponible aujourd\'hui'], ['out', 'Tout loué'], ['owner', 'Propriétaires'], ['own', 'Stock OwlsVision']];
+function stockItemStats(item){
+  const today = todayStr();
+  const rows = state.bookings.filter(b => b.item_id === item.id && b.status !== 'refuse');
+  const enCours = rows.filter(b => b.status === 'loue').length;
+  const demandes = rows.filter(b => b.status === 'demande').length;
+  const aVenir = rows.filter(b => b.status === 'accepte').length;
+  const dispo = Math.max(0, item.qty - activeBookingsCount(item.id, today, today));
+  let encaisse = 0, aEncaisser = 0;
+  rows.forEach(b => { if(b.status === 'demande') return; const a = finBookingAmount(b).amount; if(b.paid) encaisse += a; else aEncaisser += a; });
+  return { enCours, demandes, aVenir, dispo, total: rows.length, encaisse: round2(encaisse), aEncaisser: round2(aEncaisser) };
+}
+function stockFiltered(){
+  const q = (state.stockSearch || '').trim().toLowerCase();
+  const f = state.stockFilter || 'all';
+  return state.items.filter(i => {
+    if(q && !i.name.toLowerCase().includes(q)) return false;
+    if(f === 'owner') return !!i.owner_username;
+    if(f === 'own') return !i.owner_username;
+    if(f === 'dispo') return stockItemStats(i).dispo > 0;
+    if(f === 'out') return stockItemStats(i).dispo === 0;
+    return true;
+  });
+}
+function stockCardHtml(item){
+  const s = stockItemStats(item);
+  const id = esc(item.id);
+  const owner = item.owner_username ? state.profiles.find(p => p.username === item.owner_username) : null;
+  const price = [item.price_per_day != null ? `${Number(item.price_per_day)} €/jour` : '', item.price_per_week != null ? `${Number(item.price_per_week)} €/sem.` : ''].filter(Boolean).join(' · ') || 'Aucun tarif';
+  const level = s.dispo === 0 ? 'out' : s.dispo < item.qty ? 'part' : 'ok';
+  return `
+    <div class="sk-card">
+      <div class="sk-top">
+        ${item.image_url ? `<img class="sk-img" src="${esc(item.image_url)}" alt="">` : `<div class="sk-img sk-img-ph">${tacticalIconSvg('package', { size: 24 })}</div>`}
+        <div class="sk-head">
+          <div class="sk-name">${esc(item.name)}</div>
+          <div class="sk-tags">
+            <span class="ul-tag ${level === 'out' ? 'danger' : level === 'part' ? 'warn' : 'okk'}">${s.dispo} / ${item.qty} dispo</span>
+            ${owner || item.owner_username ? `<span class="owner-tag">${tacticalIconSvg('house', { size: 11 })}${esc(owner ? clientDisplayName(owner) : item.owner_username)}</span>` : ''}
+          </div>
+          <div class="sk-price">${esc(price)}</div>
+        </div>
+      </div>
+      <div class="sk-stats">
+        <div><b>${s.enCours}</b><span>en cours</span></div>
+        <div><b>${s.aVenir}</b><span>à venir</span></div>
+        <div><b>${s.demandes}</b><span>demandes</span></div>
+        <div><b>${finFmtEUR(s.encaisse)}</b><span>encaissé</span></div>
+      </div>
+      ${s.aEncaisser > 0 ? `<div class="sk-due">${finFmtEUR(s.aEncaisser)} restent à encaisser sur ce matériel</div>` : ''}
+      <div class="sk-act">
+        <div class="sk-qty"><button type="button" class="icon-btn" onclick="adjustItemQty('${id}',-1)" ${item.qty <= 0 ? 'disabled' : ''} title="Retirer une unité">−</button><span>${item.qty}</span><button type="button" class="icon-btn" onclick="adjustItemQty('${id}',1)" title="Ajouter une unité">+</button></div>
+        <button type="button" class="btn btn-ghost btn-sm" style="width:auto;" onclick="stockOpenBookings('${id}')">${s.total} réservation${s.total > 1 ? 's' : ''}</button>
+        <button type="button" class="btn btn-ghost btn-sm" style="width:auto;" onclick="openEditItemModal('${id}')">Modifier</button>
+        <button type="button" class="icon-btn danger" title="Supprimer ce matériel" onclick="deleteItem('${id}')">✕</button>
+      </div>
+    </div>`;
+}
+function stockChipsHtml(){
+  return `<div class="ul-chips">${STOCK_FILTERS.map(([f, label]) => {
+    const prev = state.stockFilter; state.stockFilter = f; const n = stockFiltered().length; state.stockFilter = prev;
+    return `<button type="button" class="ul-chip ${(state.stockFilter || 'all') === f ? 'on' : ''}" onclick="onStockFilter('${f}')">${label} <b>${n}</b></button>`;
+  }).join('')}</div>`;
+}
+function stockSummaryHtml(){
+  const stats = state.items.map(i => ({ i, s: stockItemStats(i) }));
+  const units = state.items.reduce((a, i) => a + (Number(i.qty) || 0), 0);
+  const dispo = stats.reduce((a, x) => a + x.s.dispo, 0);
+  const out = stats.reduce((a, x) => a + x.s.enCours, 0);
+  const cell = (v, l) => `<div class="sk-sum-c"><b>${v}</b><span>${l}</span></div>`;
+  return `<div class="sk-sum">${cell(state.items.length, 'références')}${cell(units, 'unités en stock')}${cell(dispo, 'disponibles aujourd\'hui')}${cell(out, 'en cours de location')}${cell(stats.reduce((a, x) => a + x.s.demandes, 0), 'demandes à traiter')}</div>`;
+}
+function stockGridHtml(){
+  const list = stockFiltered();
+  return list.length ? list.map(stockCardHtml).join('') : `<div class="empty" style="grid-column:1/-1;">${state.items.length ? 'Aucun matériel ne correspond.' : 'Aucun matériel enregistré pour le moment.'}</div>`;
+}
+function renderGestionStock(){
+  return `
+    <div class="topbar"><div><h1>Stock</h1><div class="desc">Chaque matériel avec sa disponibilité du jour, ses locations et l'argent qu'il a généré. Cliquez sur « réservations » pour voir son historique.</div></div>
+      <button class="btn btn-primary btn-sm" style="width:auto;" onclick="openNewItemModal()">+ Ajouter un matériel</button>
+    </div>
+    <div id="stock-sum">${stockSummaryHtml()}</div>
+    <div class="filter-bar"><input type="text" id="stock-search" placeholder="Chercher un matériel…" value="${esc(state.stockSearch || '')}" oninput="onStockSearch(this.value)"></div>
+    <div id="stock-chips">${stockChipsHtml()}</div>
+    <div class="sk-grid" id="stock-grid">${stockGridHtml()}</div>`;
+}
+window.onStockSearch = (v) => { state.stockSearch = v; const g = document.getElementById('stock-grid'); if(g) g.innerHTML = stockGridHtml(); const c = document.getElementById('stock-chips'); if(c) c.innerHTML = stockChipsHtml(); };
+window.onStockFilter = (f) => { state.stockFilter = f; const g = document.getElementById('stock-grid'); if(g) g.innerHTML = stockGridHtml(); const c = document.getElementById('stock-chips'); if(c) c.innerHTML = stockChipsHtml(); };
+window.stockOpenBookings = (id) => { const i = state.items.find(x => x.id === id); state.gestionSearch = i ? i.name : ''; state.gestionFilter = 'all'; goto('gestion'); };
+
+/* ---------- Tableau de bord : argent des locations + raccourcis ---------- */
+function dashboardMoneyHtml(){
+  const rows = finRentalsLedger();
+  const prev = state.financePeriod; state.financePeriod = null; finEnsurePeriod();
+  const t = finRentalsTotals(rows);
+  state.financePeriod = prev;
+  const card = (cls, label, value, sub, view) => `<button type="button" class="dash-money ${cls}" onclick="finSetView('locations');goto('finances')"><span class="dm-l">${label}</span><span class="dm-v">${value}</span><span class="dm-s">${sub}</span></button>`;
+  return `<div class="dash-money-row">
+    ${card('good', 'Encaissé ce mois-ci', finFmtEUR(t.paid), `${t.paidRows.length} location${t.paidRows.length > 1 ? 's' : ''} payée${t.paidRows.length > 1 ? 's' : ''}`)}
+    ${card('', 'À encaisser', finFmtEUR(t.due), `${t.dueN} réservation${t.dueN > 1 ? 's' : ''}`)}
+    ${card(t.overdueN ? 'warn' : 'dim', 'En retard de paiement', finFmtEUR(t.overdue), t.overdueN ? `${t.overdueN} à relancer` : 'rien en retard')}
+  </div>`;
+}
+function dashboardShortcutsHtml(){
+  const b = (label, js, primary) => `<button type="button" class="btn ${primary ? 'btn-primary' : 'btn-ghost'} btn-sm" style="width:auto;" onclick="${js}">${label}</button>`;
+  return `<div class="dash-short">
+    ${b('Rechercher <kbd>Ctrl K</kbd>', 'ovPaletteOpen()', true)}
+    ${b('+ Matériel', 'openNewItemModal()')}
+    ${b('+ Utilisateur', 'openNewManualUserModal()')}
+    ${b('Calendrier', 'openBookingCalendarModal()')}
+    ${b('Argent des locations', "finSetView('locations');goto('finances')")}
+  </div>`;
+}
+window.dashGo = (view, filter) => {
+  if(view === 'gestion'){ state.gestionFilter = filter || 'all'; state.gestionSearch = ''; }
+  goto(view);
+};
+
+/* ===== Lot 42 : missions « location » — le client choisit parmi SES locations confirmées ===== */
+// Avant : le client saisissait une date libre, l'équipe validait donc parfois une « location » qui n'était
+// qu'une demande, ou qui n'existait pas. Maintenant la mission n'accepte qu'une location confirmée
+// (acceptée, en cours ou retournée) de ce compte, postérieure au lancement des missions.
+function missionRentalChoices(username){
+  const mine = state.bookings.filter(b => b.username === username);
+  const confirmed = mine.filter(b => ['accepte', 'loue', 'retourne'].includes(b.status));
+  const ok = confirmed.filter(b => b.start_date && b.start_date >= MISSION_LAUNCH_DATE).sort((a, b) => a.start_date < b.start_date ? 1 : -1);
+  return { confirmed, ok, pending: mine.filter(b => b.status === 'demande').length };
+}
+function missionRentalIsValidFor(username, dateStr){
+  return missionRentalChoices(username).ok.some(b => b.start_date === dateStr);
+}
+function missionRentalPickerHtml(username){
+  const { confirmed, ok, pending } = missionRentalChoices(username);
+  if(!ok.length){
+    let msg;
+    if(confirmed.length) msg = tx(`Vos locations datent d'avant le lancement des missions (${fmtDate(MISSION_LAUNCH_DATE)}) : elles ne comptent pas pour cette mission.`, `Your rentals started before missions were launched (${fmtDate(MISSION_LAUNCH_DATE)}), so they do not count for this mission.`);
+    else if(pending) msg = tx("Vous n'avez pas encore de location confirmée chez Owls Vision. Votre demande est en cours d'examen : cette mission sera disponible dès qu'elle sera acceptée.", 'You have no confirmed rental with Owls Vision yet. Your request is being reviewed: this mission will be available as soon as it is accepted.');
+    else msg = tx("Vous n'avez jamais loué chez Owls Vision. Cette mission est réservée aux clients qui ont une location confirmée.", 'You have never rented from Owls Vision. This mission is only for customers with a confirmed rental.');
+    return `<div class="mr-empty">${esc(msg)}</div>`;
+  }
+  const stLabel = { accepte: tx('Acceptée', 'Accepted'), loue: tx('En cours', 'In progress'), retourne: tx('Terminée', 'Completed') };
+  return `<div class="field"><label>${esc(tx('Choisissez la location concernée', 'Choose the rental concerned'))}</label>
+    <div class="mr-list" id="mr-list">${ok.map(b => {
+      const item = state.items.find(i => i.id === b.item_id);
+      return `<button type="button" class="mr-opt" data-date="${esc(b.start_date)}" onclick="pickMissionRental(this)"><b>${esc(item ? item.name : '—')}</b><span>${esc(fmtDate(b.start_date))} → ${esc(fmtDate(b.end_date))}</span><em>${esc(stLabel[b.status] || b.status)}</em></button>`;
+    }).join('')}</div>
+    <input type="hidden" id="ans-date-input" value="">
+    <div style="font-size:12px;color:var(--text-faint);margin-top:8px;line-height:1.5;">${esc(tx("Seules vos locations confirmées apparaissent ici. Une simple demande en attente ne compte pas.", 'Only your confirmed rentals are listed. A pending request does not count.'))}</div></div>`;
+}
+window.pickMissionRental = (btn) => {
+  const input = document.getElementById('ans-date-input');
+  if(input) input.value = btn.getAttribute('data-date');
+  document.querySelectorAll('#mr-list .mr-opt').forEach(b => b.classList.toggle('on', b === btn));
+  if(state.answerError){ state.answerError = ''; const e = document.querySelector('.modal .msg-error'); if(e) e.remove(); }
+};
+// Côté équipe : à quelle réservation du client correspond la date déclarée ?
+function missionRentalCheckHtml(c){
+  if(!c.answer_date) return `<div class="mr-check bad">Aucune location déclarée.</div>`;
+  const rows = state.bookings.filter(b => b.username === c.username && b.start_date === c.answer_date && b.status !== 'refuse');
+  if(!rows.length) return `<div class="mr-check bad">⚠ Aucune réservation de ce client ne commence le ${esc(fmtDate(c.answer_date))} : cette location n'existe pas dans l'appli.</div>`;
+  return rows.map(b => {
+    const item = state.items.find(i => i.id === b.item_id);
+    const real = ['accepte', 'loue', 'retourne'].includes(b.status);
+    const st = { demande: 'simple demande, non acceptée', accepte: 'acceptée', loue: 'en cours', retourne: 'retournée' }[b.status] || b.status;
+    return `<div class="mr-check ${real ? 'good' : 'bad'}">${real ? '✓' : '⚠'} Réservation trouvée : ${esc(item ? item.name : 'matériel supprimé')}, du ${esc(fmtDate(b.start_date))} au ${esc(fmtDate(b.end_date))} — ${st}${real ? (b.paid ? ', payée' : ', non payée') : ''}.</div>`;
+  }).join('');
+}
+
 /* ---------- Assemblage + rafraîchissements ciblés ---------- */
 function finRootHtml(){
   finEnsurePeriod();
+  return finTabsHtml() + ((state.finView || 'locations') === 'locations' ? finRentalsHtml() : finComptaHtml());
+}
+function finComptaHtml(){
+  finEnsurePeriod();
   const t = finComputeAll();
+  const nIssues = finRentalsIssues(finRentalsLedger()).length;
   return `
-    ${bookingRevenueEstimateHtml()}
+    ${nIssues ? `<div class="fin-banner"><span>${nIssues} écart${nIssues>1?'s':''} entre les réservations et la compta (doublons, locations absentes ou montants différents) : les chiffres ci-dessous peuvent être faux.</span><button type="button" class="btn btn-primary btn-sm" style="width:auto;" onclick="finSetView('locations')">Voir et corriger</button></div>` : ''}
     ${finPeriodBarHtml()}
     <div id="fin-hero">${finHeroHtml(t)}</div>
     <div class="panel">
@@ -7838,7 +8568,7 @@ function finRootHtml(){
 }
 function renderFinances(){
   return `
-    <div class="topbar"><div><h1>Finances</h1><div class="desc">Le résultat net de la période en un coup d'œil, son détail juste en dessous, et la saisie des ventes/charges plus bas.</div></div></div>
+    <div class="topbar"><div><h1>Finances</h1><div class="desc">« Argent des locations » : ce qui est encaissé et ce qui reste à encaisser, réservation par réservation. « Comptabilité SASU » : résultat net, ventes de matériel et charges.</div></div></div>
     <div id="fin-root">${finRootHtml()}</div>`;
 }
 function finRefreshInner(){
@@ -8593,6 +9323,7 @@ function contratsRowHtml(usr){
     <div class="list-row">
       <div><div class="t-title">${esc(clientDisplayName(usr))}</div><div class="t-desc">${pill}${bookingSub ? ' · ' + bookingSub : ''}</div></div>
       <div class="btn-row" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+        <button type="button" class="icon-btn" title="Écrire à ce client" onclick="openConversationFromList('${esc(usr.username)}')">${tacticalIconSvg('mail',{size:16})}</button>
         ${!c ? `<button class="btn btn-primary btn-sm" onclick="openGenerateContractModal('${esc(usr.username)}')">Envoyer le contrat</button>` : ''}
         ${stale ? `<button class="btn btn-primary btn-sm" onclick="openGenerateContractForBooking('${esc(usr.username)}','${esc(staleList[0].id)}')">Éditer le contrat</button>` : ''}
         ${c && c.signed_pdf_path ? `<button type="button" class="btn btn-ghost btn-sm" onclick="openContractFile('${esc(usr.username)}','signed')">${stale ? 'Voir ancien contrat signé' : 'Voir contrat signé'}</button>` : ''}
@@ -9312,8 +10043,8 @@ function renderModal(){
       ${task.description ? `<p style="font-size:13.5px;color:var(--text-dim);margin:-6px 0 14px;">${esc(trField(task,'description'))}</p>` : ''}
       ${state.answerError ? `<div class="msg msg-error">${esc(state.answerError)}</div>` : ''}
       ${task.requires_answer ? `<div class="field"><label>${esc(task.answer_label || t('missions.answer.defaultLabel'))}</label><input id="ans-input" placeholder="${esc(t('missions.answer.placeholder'))}"></div>` : ''}
-      ${task.requires_date ? `<div class="field"><label>${esc(t('missions.answer.dateLabel'))}</label><input id="ans-date-input" type="date" min="${MISSION_LAUNCH_DATE}"><div style="font-size:12px;color:var(--text-faint);margin-top:6px;line-height:1.5;">${esc(missionDateTooEarlyMsg())}</div></div>` : ''}
-      <div class="modal-actions"><button class="btn btn-ghost" onclick="closeModal()">${esc(t('common.cancel'))}</button><button class="btn btn-primary" onclick="confirmAnswerTask('${task.id}')">${esc(t('common.validate'))}</button></div>
+      ${task.requires_date ? missionRentalPickerHtml(state.session.username) : ''}
+      <div class="modal-actions"><button class="btn btn-ghost" onclick="closeModal()">${esc(task.requires_date && !missionRentalChoices(state.session.username).ok.length ? tx('Fermer', 'Close') : t('common.cancel'))}</button>${task.requires_date && !missionRentalChoices(state.session.username).ok.length ? '' : `<button class="btn btn-primary" onclick="confirmAnswerTask('${task.id}')">${esc(t('common.validate'))}</button>`}</div>
     </div></div>`;
   }
   if(m.type === "editValidationAnswer"){
@@ -9985,7 +10716,7 @@ window.deleteConversation = async (username) => {
   state.messagesMobileOpen = false;
   render();
 };
-window.onGestionFilter = (v) => { state.gestionFilter = v; refreshGestionView(); };
+window.onGestionFilter = (v) => { state.gestionFilter = v; const c = document.getElementById('gestion-chips'); if(c) c.innerHTML = gestionChipsHtml(); refreshGestionView(); };
 window.onGestionSort = (field) => {
   if(state.gestionSort.field === field) state.gestionSort.dir = state.gestionSort.dir === 'asc' ? 'desc' : 'asc';
   else state.gestionSort = { field, dir: 'asc' };
@@ -10202,7 +10933,7 @@ window.confirmAnswerTask = (taskId) => {
   const val = answerEl ? answerEl.value.trim() : '';
   const dateVal = dateEl ? dateEl.value : '';
   if(task && task.requires_answer && !val){ state.answerError = "Merci de renseigner une réponse."; render(); return; }
-  if(task && task.requires_date && (!dateVal || dateVal < MISSION_LAUNCH_DATE)){ state.answerError = missionDateTooEarlyMsg(); render(); return; }
+  if(task && task.requires_date && !missionRentalIsValidFor(state.session.username, dateVal)){ state.answerError = tx("Choisissez l'une de vos locations confirmées dans la liste.", 'Choose one of your confirmed rentals from the list.'); render(); return; }
   submitTaskCompletion(taskId, val, dateVal);
 };
 // Renvoie {text, danger} plutôt qu'une chaîne seule (Lot 20) : updateAvailabilityPreview colorait
