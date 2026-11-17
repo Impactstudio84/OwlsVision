@@ -1215,6 +1215,182 @@ details.ul-old > summary::-webkit-details-marker{display:none;}
 .mr-check.bad{background:var(--danger-soft);color:#FFB3A6;}
 </style>
 
+<style id="lot42b-css">
+/* ===== Lot 42 : Réservations en cartes ===== */
+.gestion-date-group{overflow:visible;}
+.gestion-date-head{padding:14px 16px;border-radius:var(--r-md);}
+.gestion-date-label{font-family:var(--font-disp);font-size:16px;font-weight:700;}
+.gestion-date-count{margin-left:auto;font-size:12px;font-weight:700;color:var(--text-dim);background:rgba(255,255,255,0.06);padding:4px 10px;border-radius:99px;white-space:nowrap;}
+.gestion-date-rename{margin-left:2px;}
+.gestion-date-body{padding:2px 12px 14px;}
+.gb-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(370px,1fr));gap:12px;}
+.gb-card{background:rgba(255,255,255,0.03);border:1px solid var(--border-soft);border-radius:var(--r-md);padding:14px;display:flex;flex-direction:column;gap:12px;min-width:0;}
+.gb-card.st-demande{border-color:rgba(255,184,76,0.4);background:rgba(255,184,76,0.04);}
+.gb-card.st-refuse{opacity:.6;}
+.gb-top{display:flex;align-items:center;justify-content:space-between;gap:10px;}
+.gb-who{all:unset;box-sizing:border-box;display:flex;align-items:center;gap:10px;min-width:0;cursor:pointer;flex:1;}
+.gb-who:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:10px;}
+.gb-av{width:40px;height:40px;border-radius:13px;background:var(--accent-soft);border:1px solid var(--accent-soft-2);color:var(--accent);display:flex;align-items:center;justify-content:center;font-family:var(--font-disp);font-weight:700;font-size:15px;flex-shrink:0;}
+.gb-who-t{min-width:0;display:flex;flex-direction:column;}
+.gb-who-t b{font-size:15px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.gb-who-t small{font-size:12px;color:var(--text-faint);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.gb-item{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:12px;align-items:center;background:rgba(255,255,255,0.04);border-radius:12px;padding:10px 12px;}
+.gb-thumb{width:46px;height:46px;border-radius:11px;object-fit:cover;flex-shrink:0;}
+.gb-thumb-ph{background:rgba(255,255,255,0.06);display:flex;align-items:center;justify-content:center;color:var(--text-faint);}
+.gb-item-t{min-width:0;display:flex;flex-direction:column;}
+.gb-item-t b{font-size:14.5px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.gb-item-t small{font-size:12.5px;color:var(--text-dim);}
+.gb-price{text-align:right;display:flex;flex-direction:column;}
+.gb-price b{font-family:var(--font-disp);font-size:18px;font-weight:700;font-variant-numeric:tabular-nums;}
+.gb-price small{font-size:11px;color:var(--text-faint);}
+.gb-tiles{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;}
+.gb-tile{all:unset;box-sizing:border-box;display:flex;flex-direction:column;gap:1px;min-height:62px;padding:9px 11px;border-radius:12px;border:1px solid var(--border-soft);background:rgba(255,255,255,0.03);cursor:pointer;min-width:0;transition:filter .15s,transform .1s;}
+.gb-tile:hover{filter:brightness(1.18);}
+.gb-tile:active{transform:scale(.98);}
+.gb-tile:focus-visible{outline:2px solid var(--accent);outline-offset:2px;}
+.gb-tile.off{cursor:default;opacity:.5;}
+.gb-tile.off:hover{filter:none;}
+.gb-tile-l{font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--text-faint);}
+.gb-tile-v{font-size:14px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.gb-tile-x{font-size:10.5px;line-height:1.25;color:var(--text-faint);}
+.gb-tile.ok{background:var(--accent-soft);border-color:var(--accent-soft-2);} .gb-tile.ok .gb-tile-v{color:var(--accent);}
+.gb-tile.todo{background:var(--amber-soft);border-color:rgba(255,184,76,0.5);} .gb-tile.todo .gb-tile-v{color:var(--amber);}
+.gb-tile.wait{background:var(--blue-soft);border-color:rgba(120,170,255,0.35);} .gb-tile.wait .gb-tile-v{color:var(--blue);}
+.gb-tile.bad{background:var(--danger-soft);border-color:rgba(255,107,87,0.45);} .gb-tile.bad .gb-tile-v{color:#FFB3A6;}
+.gb-hint{font-size:13px;color:var(--amber);line-height:1.45;}
+.gb-act{display:flex;align-items:center;gap:8px;}
+.gb-main{flex:1;min-height:46px;width:auto;justify-content:center;}
+.gb-done{flex:1;font-size:13px;color:var(--text-faint);}
+.gb-icons{display:inline-flex;gap:6px;margin-left:auto;align-items:center;}
+.gb-icons .icon-btn,.gb-icons a.icon-btn{width:46px;height:46px;display:inline-flex;align-items:center;justify-content:center;text-decoration:none;color:inherit;}
+.gb-more{position:relative;}
+.gb-more > summary{list-style:none;cursor:pointer;font-size:20px;line-height:1;}
+.gb-more > summary::-webkit-details-marker{display:none;}
+.gb-menu{position:absolute;right:0;bottom:calc(100% + 6px);min-width:230px;background:var(--surface-2,#121915);border:1px solid var(--border);border-radius:12px;box-shadow:0 18px 50px rgba(0,0,0,.55);padding:6px;z-index:40;display:flex;flex-direction:column;}
+.gb-menu button{all:unset;box-sizing:border-box;padding:13px 14px;border-radius:9px;font-size:14px;font-weight:600;cursor:pointer;color:var(--text);}
+.gb-menu button:hover{background:rgba(255,255,255,0.07);}
+.gb-menu button.danger{color:#FFB3A6;}
+@media (max-width:620px){
+  .gb-grid{grid-template-columns:minmax(0,1fr);}
+  .gestion-date-body{padding:2px 8px 12px;}
+  .gb-act{flex-wrap:wrap;}
+  .gb-main{min-height:50px;font-size:15px;min-width:120px;}
+  .gb-done{flex-basis:100%;}
+  .gb-icons{margin-left:0;width:100%;}
+  .gb-icons > .icon-btn,.gb-icons > a.icon-btn,.gb-icons > .gb-more{flex:1;}
+  .gb-icons .gb-more > summary{width:100%;}
+  .gb-icons .icon-btn,.gb-icons a.icon-btn{width:auto;height:50px;}
+  .gb-tile{min-height:66px;}
+  .gb-menu{min-width:min(260px,calc(100vw - 48px));}
+}
+</style>
+
+<style id="lot44-css">
+/* ===== Lot 44 : exemplaires, reversements, sans contrat ===== */
+.un-banner{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;margin:0 0 14px;padding:12px 14px;border-radius:var(--r-md);border:1px solid rgba(255,184,76,.4);background:rgba(255,184,76,.07);font-size:13.5px;line-height:1.45;}
+.un-banner.warn{border-color:var(--border);background:rgba(255,255,255,.03);color:var(--text-dim);}
+.un-banner code{font-size:12px;background:rgba(255,255,255,.08);padding:1px 6px;border-radius:6px;}
+.un-modal{max-width:760px;width:100%;}
+.un-lead{font-size:13px;color:var(--text-dim);margin:-2px 0 12px;line-height:1.5;display:flex;flex-wrap:wrap;gap:6px 10px;align-items:center;}
+.un-sum{font-size:12px;padding:3px 9px;border-radius:99px;background:rgba(255,255,255,.06);color:var(--text-dim);}
+.un-sum.own{background:var(--accent-soft);color:var(--accent);}
+.un-sum b{font-weight:800;}
+.un-list{display:flex;flex-direction:column;gap:10px;max-height:52vh;overflow:auto;padding-right:2px;}
+.un-row{border:1px solid var(--border-soft);border-radius:var(--r-md);padding:12px;background:rgba(255,255,255,.025);}
+.un-row.off{opacity:.55;}
+.un-row-h{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px;}
+.un-use{font-size:12px;color:var(--text-faint);}
+.un-row-act{margin-left:auto;display:flex;gap:6px;align-items:center;}
+.un-grid{display:grid;grid-template-columns:1.1fr 1.5fr .8fr 1fr 1.3fr;gap:8px 10px;}
+@media (max-width:680px){.un-grid{grid-template-columns:1fr 1fr;}}
+.un-grid input,.un-grid select{min-width:0;width:100%;}
+.un-grid .field{margin:0;}
+.un-add{display:flex;align-items:flex-end;gap:10px;flex-wrap:wrap;margin-top:12px;padding-top:12px;border-top:1px dashed var(--border-soft);}
+.un-add .field{margin:0;}
+.un-add .field input{width:84px;}
+.un-note{font-size:12px;color:var(--text-faint);margin-top:10px;line-height:1.5;}
+.un-toast{position:fixed;left:50%;bottom:28px;transform:translateX(-50%);z-index:9999;background:var(--accent);color:#04120a;font-weight:700;font-size:13.5px;padding:10px 16px;border-radius:99px;box-shadow:0 8px 30px rgba(0,0,0,.45);}
+.up-modal{max-width:520px;width:100%;}
+.up-list{display:flex;flex-direction:column;gap:8px;max-height:50vh;overflow:auto;}
+.up-row{all:unset;box-sizing:border-box;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 14px;border:1px solid var(--border-soft);border-radius:var(--r-md);background:rgba(255,255,255,.03);cursor:pointer;min-height:56px;}
+.up-row:hover:not(.busy){background:var(--accent-soft);border-color:var(--accent-soft-2);}
+.up-row.on{border-color:var(--accent);background:var(--accent-soft);}
+.up-row.busy{opacity:.55;cursor:not-allowed;}
+.up-row:focus-visible{outline:2px solid var(--accent);outline-offset:2px;}
+.up-main,.up-side{display:flex;flex-direction:column;min-width:0;gap:2px;}
+.up-side{align-items:flex-end;text-align:right;}
+.up-main b{font-size:14.5px;}
+.up-main small,.up-side small{font-size:11.5px;color:var(--text-faint);}
+.gb-unit{all:unset;box-sizing:border-box;display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 12px;border-radius:11px;border:1px solid var(--border-soft);background:rgba(255,255,255,.03);font-size:12.5px;color:var(--text-dim);min-width:0;}
+button.gb-unit{cursor:pointer;}
+button.gb-unit:hover{filter:brightness(1.2);}
+button.gb-unit:focus-visible{outline:2px solid var(--accent);outline-offset:2px;}
+.gb-unit b{color:var(--text);font-weight:700;}
+.gb-unit i{font-style:normal;font-size:11.5px;color:var(--text-faint);white-space:nowrap;}
+.gb-unit.own{border-color:var(--accent-soft-2);background:var(--accent-soft);}
+.gb-unit.own i{color:var(--accent);font-weight:700;}
+.gb-unit.todo{border-color:rgba(255,184,76,.5);background:rgba(255,184,76,.08);color:var(--amber);}
+.gb-unit.todo b{color:var(--amber);}
+.gb-unit.info{font-size:12px;}
+.gb-unit .warn{color:var(--amber);}
+.sk-units{display:inline-flex;align-items:center;gap:6px;}
+.sk-top-act{display:flex;gap:8px;flex-wrap:wrap;align-items:center;}
+.ob-panel{display:flex;flex-direction:column;gap:2px;margin-bottom:16px;}
+.ob-head{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;flex-wrap:wrap;margin-bottom:8px;}
+.ob-head h2{margin:0 0 2px;}
+.ob-total{text-align:right;display:flex;flex-direction:column;}
+.ob-total span{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--text-faint);font-weight:700;}
+.ob-total b{font-family:var(--font-disp);font-size:24px;font-variant-numeric:tabular-nums;}
+.ob-total.due b{color:var(--amber);}
+.ob-row{display:grid;grid-template-columns:minmax(150px,1.6fr) repeat(3,minmax(90px,1fr)) auto;gap:10px;align-items:center;padding:10px 0;border-top:1px solid var(--border-soft);}
+.ob-who{display:flex;flex-direction:column;min-width:0;}
+.ob-who small{font-size:12px;color:var(--text-faint);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.ob-n{display:flex;flex-direction:column;}
+.ob-n span{font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--text-faint);font-weight:700;}
+.ob-n b{font-variant-numeric:tabular-nums;font-size:15px;}
+.ob-n.due b{color:var(--amber);}
+.ob-act{display:flex;gap:6px;}
+.ob-opts{display:flex;gap:18px;flex-wrap:wrap;margin-top:10px;padding-top:12px;border-top:1px dashed var(--border-soft);font-size:12.5px;color:var(--text-dim);}
+.ob-opts label{display:flex;flex-direction:column;gap:4px;}
+.ob-opts select{min-width:220px;}
+@media (max-width:760px){.ob-row{grid-template-columns:1fr 1fr 1fr;}.ob-who{grid-column:1/-1;}.ob-act{grid-column:1/-1;}.ob-act .btn{flex:1;}}
+.os-modal{max-width:820px;width:100%;}
+.os-kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-bottom:12px;}
+.os-k{display:flex;flex-direction:column;padding:10px 12px;border-radius:12px;border:1px solid var(--border-soft);background:rgba(255,255,255,.03);min-width:0;}
+.os-k span{font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--text-faint);font-weight:700;}
+.os-k b{font-family:var(--font-disp);font-size:20px;font-variant-numeric:tabular-nums;}
+.os-k small{font-size:11px;color:var(--text-faint);}
+.os-k.due{border-color:rgba(255,184,76,.5);background:rgba(255,184,76,.08);}
+.os-k.due b{color:var(--amber);}
+.os-k.ok{border-color:var(--accent-soft-2);background:var(--accent-soft);}
+.os-k.dim{opacity:.75;}
+.os-pay{display:none;gap:10px;align-items:flex-end;flex-wrap:wrap;margin-bottom:12px;padding:12px;border:1px dashed var(--accent-soft-2);border-radius:12px;}
+.os-pay.open{display:flex;}
+.os-pay .field{margin:0;}
+.os-pay .os-note{flex:1;min-width:160px;}
+.os-scroll{max-height:42vh;overflow:auto;}
+.os-h{font-size:11px;letter-spacing:.07em;text-transform:uppercase;color:var(--text-faint);font-weight:700;margin:12px 0 4px;}
+.os-tbl{width:100%;border-collapse:collapse;font-size:13px;}
+.os-tbl th{font-size:10.5px;text-transform:uppercase;letter-spacing:.05em;color:var(--text-faint);text-align:left;padding:4px 8px;}
+.os-tbl td{padding:7px 8px;border-top:1px solid var(--border-soft);vertical-align:top;font-variant-numeric:tabular-nums;}
+.os-tbl td small{display:block;font-size:11px;color:var(--text-faint);}
+.os-tbl .r{text-align:right;white-space:nowrap;}
+.os-tbl.dim{opacity:.6;}
+@media (max-width:640px){.os-kpis{grid-template-columns:repeat(2,minmax(0,1fr));}.os-scroll{overflow-x:auto;}}
+.mg-modal{max-width:620px;width:100%;}
+.mg-sugg{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-bottom:10px;font-size:13px;}
+.mg-list{display:flex;flex-direction:column;gap:6px;max-height:44vh;overflow:auto;}
+.mg-row{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:9px 12px;border:1px solid var(--border-soft);border-radius:11px;font-size:13.5px;}
+.mg-row.on{border-color:var(--accent-soft-2);background:var(--accent-soft);}
+.mg-row small{color:var(--text-faint);margin-left:6px;}
+.mg-keep{font-size:12px;color:var(--accent);white-space:nowrap;}
+.un-info{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;padding:12px 14px;border-radius:12px;border:1px solid var(--accent-soft-2);background:var(--accent-soft);font-size:13px;margin-bottom:10px;}
+.wv-list{display:flex;flex-direction:column;gap:8px;}
+.wv-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:10px 12px;border:1px solid var(--border-soft);border-radius:12px;background:rgba(255,255,255,.03);}
+.wv-t{display:flex;flex-direction:column;flex:1;min-width:140px;}
+.wv-t small,.wv-wait{font-size:12px;color:var(--text-faint);}
+</style>
+
 </head>
 <body>
 <div id="app"></div>
@@ -1483,6 +1659,7 @@ let state = {
   clientActiveThread: 'team', // (client) 'team' = fil privé avec l'équipe, sinon l'id d'un canal
   clientMessagesMobileOpen: false, // (client, mobile) même principe que messagesMobileOpen/channelsMobileOpen
   financeSales: [], financeCharges: [], financeSettings: null,
+  itemUnits: [], ownerPayouts: [], unitsReady: false, // Lot 44 : exemplaires (voir g1_units)
   funnelEvents: [], // Lot 37 : journal des étapes du parcours de réservation (voir fetchAll)
   financePeriod: null, // {mode,start,end} — initialisé au premier affichage de l'onglet (finEnsurePeriod)
   financeStatsOpen: false,
@@ -1700,8 +1877,8 @@ function maybeShowPaymentReminder(){
   if(!u || u.is_master) return;
   if(state.modal) return; // ne pas couper une autre fenêtre déjà ouverte (ex. lien de notification)
   const c = state.contracts.find(x => x.username === u.username);
-  if(!c || !c.signed_at) return;
-  const unpaid = state.bookings.find(b => b.username === u.username && (b.status === 'accepte' || b.status === 'loue') && !b.paid);
+  const signedOk = !!(c && c.signed_at);
+  const unpaid = state.bookings.find(b => b.username === u.username && (b.status === 'accepte' || b.status === 'loue') && !b.paid && (signedOk || b.contract_waived));
   if(!unpaid) return;
   state.modal = { type: 'paymentReminder' };
 }
@@ -1849,7 +2026,7 @@ function logFunnelEventDebounced(eventType, itemId, start, end){
 
 /* ---------- Boot & data ---------- */
 async function fetchAll(){
-  const [profiles, items, bookings, tasks, completions, contracts, groups, rewards, redemptions, ownerContracts, platformDocs, rankConfig, messages, financeSales, financeCharges, financeSettings, crmCompanies, crmActivities, crmTasks, bookingDateLabels, invoices, crmTaskNotes, funnelEvents, channels, channelMembers, channelMessages] = await Promise.all([
+  const [profiles, items, bookings, tasks, completions, contracts, groups, rewards, redemptions, ownerContracts, platformDocs, rankConfig, messages, financeSales, financeCharges, financeSettings, crmCompanies, crmActivities, crmTasks, bookingDateLabels, invoices, crmTaskNotes, funnelEvents, channels, channelMembers, channelMessages, itemUnitsRes, ownerPayoutsRes] = await Promise.all([
     sb.from('profiles').select('*'),
     sb.from('items').select('*').order('sort_order', { ascending: true, nullsFirst: false }).order('created_at', { ascending: true }),
     sb.from('bookings').select('*'),
@@ -1876,6 +2053,8 @@ async function fetchAll(){
     sb.from('channels').select('*').order('created_at', { ascending: true }),
     sb.from('channel_members').select('*'),
     sb.from('channel_messages').select('*').order('created_at', { ascending: true }),
+    sb.from('item_units').select('*').order('created_at', { ascending: true }),
+    sb.from('owner_payouts').select('*').order('paid_on', { ascending: false }),
   ]);
   state.profiles = profiles.data || [];
   state.items = items.data || [];
@@ -1931,6 +2110,11 @@ async function fetchAll(){
   state.channels = channels.data || [];
   state.channelMembers = channelMembers.data || [];
   state.channelMessages = channelMessages.data || [];
+  // Lot 44 : tant que migration_lot43_exemplaires.sql n'est pas passée, ces lectures échouent
+  // silencieusement et tout reste sur l'ancien rattachement (items.owner_username).
+  state.unitsReady = !itemUnitsRes.error;
+  state.itemUnits = itemUnitsRes.error ? [] : (itemUnitsRes.data || []);
+  state.ownerPayouts = ownerPayoutsRes.error ? [] : (ownerPayoutsRes.data || []);
 }
 
 async function boot(){
@@ -2062,7 +2246,7 @@ function renderUnlessTyping(){
 const OV_REALTIME_TABLES = ['items','bookings','tasks','task_completions','contracts','owner_contracts','profiles','mission_groups','rewards','reward_redemptions','messages','finance_sales','finance_charges','finance_settings','invoices','crm_task_notes','crm_companies','crm_activities','crm_tasks','booking_date_labels','platform_docs','rank_config','funnel_events','channels','channel_members','channel_messages'];
 function subscribeRealtime(){
   const channel = sb.channel('ov-sync');
-  OV_REALTIME_TABLES.forEach(table => {
+  (state.unitsReady ? OV_REALTIME_TABLES.concat(['item_units', 'owner_payouts']) : OV_REALTIME_TABLES).forEach(table => {
     channel.on('postgres_changes', { event:'*', schema:'public', table }, () => {
       clearTimeout(window.__ovSyncTimer);
       window.__ovSyncTimer = setTimeout(async () => {
@@ -2531,6 +2715,11 @@ async function setBookingStatus(id, status){
   if(error){ alert("Erreur : " + error.message); return; }
   const idx = state.bookings.findIndex(b => b.id === id);
   if(idx > -1) state.bookings[idx] = data;
+  // Lot 44 : une demande acceptée (ou passée en location) reçoit seule un exemplaire libre.
+  if(idx > -1 && ['accepte', 'loue'].includes(status)){
+    const res = await autoAssignUnitFor(state.bookings[idx]);
+    if(res && res.none) alert("Aucun exemplaire libre sur ces dates (tous attribués à d'autres locations). Choisissez-en un à la main depuis la carte, ou retirez une autre attribution.");
+  }
   render();
 }
 // Lot 25 : simple bascule Payée / Non payée sur une réservation (voir gestionRowHtml). Mise à jour
@@ -2578,7 +2767,7 @@ async function finSyncBookingToSales(b){
     ttc, cout_ht: 0,
     booking_id: b.id,
   };
-  if(item && item.owner_username) payload.retribution_proprietaire = round2(ttc * finOwnerPct() / 100);
+  if(bookingOwnerUsername(b)) payload.retribution_proprietaire = bookingOwnerShare(b, ttc);
   const { data, error } = await sb.from('finance_sales').insert(payload).select().single();
   if(!error && data) state.financeSales.push(data);
 }
@@ -2599,6 +2788,7 @@ async function createItem(name, description, xpValue, qty, imageUrl, pricePerDay
   const { data, error } = await sb.from('items').insert({ name, description, xp_value: Number(xpValue)||10, qty: Number(qty)||1, image_url: imageUrl || null, price_per_day: (pricePerDay===''||pricePerDay==null)?null:Number(pricePerDay), price_per_week: (pricePerWeek===''||pricePerWeek==null)?null:Number(pricePerWeek), reference_value: (referenceValue===''||referenceValue==null)?null:Number(referenceValue), sort_order: nextSortOrder, owner_username: of.owner_username || null, owner_numero_serie: of.owner_numero_serie || null, owner_date_acquisition: of.owner_date_acquisition || null, owner_etat: of.owner_etat || null }).select().single();
   if(error){ alert("Erreur : " + error.message); return; }
   state.items.push(data);
+  if(unitsEnabled() && Number(data.qty) > 0) await createUnits(data.id, Number(data.qty), { owner_username: of.owner_username || null, serial: of.owner_numero_serie || null, etat: of.owner_etat || null, acquired_on: of.owner_date_acquisition || null });
   state.modal = null;
   render();
   autoTranslateContent('items', data.id, { name: data.name, description: data.description });
@@ -3042,6 +3232,7 @@ async function deleteProfile(username){
   state.funnelEvents = state.funnelEvents.filter(e => e.username !== username);
   if(state.messagesSelectedUser === username) state.messagesSelectedUser = null;
   state.items.forEach(i => { if(i.owner_username === username) i.owner_username = null; });
+  state.itemUnits.forEach(u => { if(u.owner_username === username) u.owner_username = null; });
   state.modal = null;
   render();
 }
@@ -4634,13 +4825,14 @@ window.confirmGenerateContract = async (e, username) => {
   const item = booking ? state.items.find(i => i.id === booking.item_id) : null;
   // Bascule Variante A / Variante B (voir ownerBlockContent) : pilotée uniquement par
   // items.owner_username, jamais improvisée ici.
-  const isOwnerRental = !!(item && item.owner_username);
+  const ownerUsernameGC = booking ? bookingOwnerUsername(booking) : null;
+  const isOwnerRental = !!ownerUsernameGC;
   let proprietaire_nom = 'en cours de modification', proprietaire_prenom = '', date_contrat_proprietaire = 'en cours de modification';
   if(isOwnerRental){
-    const owner = state.profiles.find(x => x.username === item.owner_username);
+    const owner = state.profiles.find(x => x.username === ownerUsernameGC);
     proprietaire_nom = owner?.nom || 'en cours de modification';
     proprietaire_prenom = owner?.prenom || '';
-    const ownerContract = state.owner_contracts.find(oc => oc.username === item.owner_username);
+    const ownerContract = state.owner_contracts.find(oc => oc.username === ownerUsernameGC);
     date_contrat_proprietaire = ownerContract?.signed_at ? fmtDate(ownerContract.signed_at) : 'en cours de modification';
   }
   const fields = {
@@ -4764,7 +4956,7 @@ window.openGenerateOwnerContractModal = (username) => { state.modal = { type:"ge
 window.confirmGenerateOwnerContract = async (e, username) => {
   const errEl = document.getElementById('goc-error');
   const p = state.profiles.find(x => x.username === username);
-  const myItems = state.items.filter(i => i.owner_username === username);
+  const myItems = ownerContractMateriel(username);
   const civilite = document.getElementById('goc-civilite').value;
   const dateNaissanceRaw = document.getElementById('goc-date-naissance').value;
   const lieuNaissance = document.getElementById('goc-lieu-naissance').value.trim();
@@ -4804,10 +4996,10 @@ window.confirmGenerateOwnerContract = async (e, username) => {
     proprietaire_iban: document.getElementById('goc-iban').value.trim(),
     materiel: myItems.map(i => ({
       designation: i.name,
-      numero_serie: i.owner_numero_serie || '',
-      valeur: i.reference_value != null ? fmtDecimalFr(i.reference_value) : '',
-      date_acquisition: i.owner_date_acquisition ? fmtDate(i.owner_date_acquisition) : '',
-      etat: i.owner_etat || '',
+      numero_serie: i.serial || '',
+      valeur: i.ref != null ? fmtDecimalFr(i.ref) : '',
+      date_acquisition: i.acquired ? fmtDate(i.acquired) : '',
+      etat: i.etat || '',
     })),
     lieu_signature: document.getElementById('goc-lieu-signature').value.trim() || CONTRACT_OWNER.lieuSignatureDefaut,
     date_signature: fmtDate(document.getElementById('goc-date-signature').value),
@@ -4845,6 +5037,7 @@ function tacticalIconSvg(name, opts){
   opts = opts || {};
   const size = opts.size || 20;
   const paths = {
+    phone: '<path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2Z"/>',
     warning: '<path d="M12 3.4 2.4 20h19.2L12 3.4Z"/><path d="M12 9.6v5"/><path d="M12 17.4h.01"/>',
     eye: '<path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/>',
     'eye-off': '<path d="M3 3l18 18"/><path d="M10.6 5.2A10.6 10.6 0 0 1 12 5c6.4 0 10 7 10 7a17.7 17.7 0 0 1-3.4 4.3M6.5 6.6C3.7 8.5 2 12 2 12s1.4 2.7 4 4.6"/><path d="M9.9 9.9a3 3 0 0 0 4.2 4.2"/>',
@@ -5387,7 +5580,7 @@ function renderMesReservations(){
 function gestionFilteredSorted(){
   const q = (state.gestionSearch||'').trim().toLowerCase();
   let list = state.bookings.filter(b => {
-    if(state.gestionFilter !== 'all' && b.status !== state.gestionFilter) return false;
+    if(state.gestionFilter === 'todo' ? !gbNeedsAction(b) : (state.gestionFilter !== 'all' && b.status !== state.gestionFilter)) return false;
     if(!q) return true;
     const p = state.profiles.find(x => x.username === b.username);
     const item = state.items.find(i => i.id === b.item_id);
@@ -5551,7 +5744,7 @@ function gestionDateGroupHtml(group){
         <button type="button" class="gestion-date-rename" onclick="event.stopPropagation(); openRenameBookingDateGroup('${date}')" title="Renommer ce groupe">✎</button>
         <span class="gestion-date-count">${bookings.length} location${bookings.length>1?'s':''}</span>
       </div>
-      ${!collapsed ? `<div class="gestion-date-body"><table class="tbl-cards-mobile"><thead>${gestionTheadHtml()}</thead><tbody>${bookings.map(gestionRowHtml).join('')}</tbody></table></div>` : ''}
+      ${!collapsed ? `<div class="gestion-date-body"><div class="gb-grid">${bookings.map(gestionCardHtml).join('')}</div></div>` : ''}
     </div>`;
 }
 window.toggleGestionDateGroup = (date) => {
@@ -5592,6 +5785,7 @@ function refreshGestionView(){
   const container = document.getElementById('gestion-groups');
   const count = document.getElementById('gestion-count');
   if(!container) return;
+  const chipsEl = document.getElementById('gestion-chips'); if(chipsEl) chipsEl.innerHTML = gestionAllChipsHtml();
   container.innerHTML = groups.length ? groups.map(gestionDateGroupHtml).join('') : `<div class="panel"><div class="empty">Aucune location ne correspond à cette recherche.</div></div>`;
   count.textContent = `${totalCount} location${totalCount>1?'s':''}`;
 }
@@ -5784,7 +5978,7 @@ function renderGestionLocation(){
     <div class="filter-bar">
       <input type="text" placeholder="Rechercher un client, un matériel..." value="${esc(state.gestionSearch)}" oninput="onGestionSearch(this.value)">
     </div>
-    <div id="gestion-chips">${gestionChipsHtml()}</div>
+    ${unitsBannerHtml()}<div id="gestion-chips">${gestionAllChipsHtml()}</div>
     <div class="result-count" id="gestion-count">${totalCount} location${totalCount>1?'s':''}</div>
     <div id="gestion-groups">${groups.length ? groups.map(gestionDateGroupHtml).join('') : `<div class="panel"><div class="empty">Aucune location ne correspond à cette recherche.</div></div>`}</div>
   `;
@@ -5830,7 +6024,8 @@ function renderGestionProprietaires(){
   const owners = state.profiles.filter(p => p.is_owner);
   const rows = owners.map(p => {
     const oc = state.owner_contracts.find(x => x.username === p.username);
-    const myItems = state.items.filter(i => i.owner_username === p.username);
+    const myItems = ownerContractMateriel(p.username);
+    const stm = ownerStatement(p.username);
     let pill = `<span class="status-pill none">Aucun contrat envoyé</span>`;
     if(oc && oc.signed_at) pill = `<span class="status-pill ok">Signé le ${fmtDate(oc.signed_at)}</span>`;
     else if(oc) pill = `<span class="status-pill pending">En attente de signature</span>`;
@@ -5840,11 +6035,13 @@ function renderGestionProprietaires(){
         <div>
           <div class="t-title">${esc(clientDisplayName(p))} <span class="owner-tag">${tacticalIconSvg('house',{size:11})}Propriétaire</span> ${isNew ? `<span class="badge-dot" style="position:static;display:inline-flex;">Nouveau</span>` : ''}</div>
           <div class="t-desc">${esc(p.username)} — ${pill}</div>
-          <div class="t-desc" style="margin-top:4px;">Matériel rattaché (informatif) : ${myItems.length ? myItems.map(i => esc(i.name)).join(', ') : 'aucun'}</div>
+          <div class="t-desc" style="margin-top:4px;">Matériel rattaché : ${esc(ownerUnitsText(p.username) || (myItems.length ? myItems.map(i => i.name).join(', ') : 'aucun'))}</div>
+          <div class="t-desc" style="margin-top:2px;">Gagné ${finFmtEUR2(stm.owed)} · versé ${finFmtEUR2(stm.reversed)} · <b style="color:${stm.balance > 0.005 ? 'var(--amber)' : 'inherit'};">reste à verser ${finFmtEUR2(stm.balance)}</b></div>
         </div>
         <div class="btn-row" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
           <button type="button" class="icon-btn" title="Écrire à ce propriétaire" onclick="openConversationFromList('${esc(p.username)}')">${tacticalIconSvg('mail',{size:16})}</button>
           <button type="button" class="icon-btn" title="Fiche" onclick="openViewProfile('${esc(p.username)}')">${tacticalIconSvg('id-badge',{size:16})}</button>
+          <button type="button" class="btn btn-ghost btn-sm" onclick="openOwnerStatement('${esc(p.username)}')">Relevé</button>
           ${oc && oc.signed_pdf_path ? `<button type="button" class="btn btn-ghost btn-sm" onclick="openOwnerContractFile('${esc(p.username)}','signed')">Voir contrat signé</button>` : ''}
           <button class="btn btn-primary btn-sm" onclick="openGenerateOwnerContractModal('${esc(p.username)}')">${oc ? 'Régénérer' : 'Envoyer'} le contrat propriétaire</button>
           ${oc ? `<button type="button" class="btn btn-danger btn-sm" onclick="deleteOwnerContract('${esc(p.username)}')">Supprimer le contrat</button>` : ''}
@@ -5854,6 +6051,7 @@ function renderGestionProprietaires(){
   }).join("");
   return `
     <div class="topbar"><div><h1>Contrats propriétaire</h1><div class="desc">Le contrat (mandat de gestion) entre OwlsVision et chaque <strong>Propriétaire tiers</strong> qui met du matériel en location via la Plateforme — distinct du <a href="#" onclick="goto('contrats');return false;" style="color:var(--accent);">contrat de location du client qui loue</a>. Le matériel affiché ici est indicatif : sa disponibilité à la location se règle toujours manuellement depuis Gestion de stock.</div></div></div>
+    ${owners.length ? ownersBalancesPanelHtml(owners) : ''}
     ${!owners.length ? `<div class="empty">Aucun compte Propriétaire pour le moment — ouvrez la fiche d'un utilisateur (onglet Utilisateurs) et utilisez le bouton "Marquer Propriétaire" pour en désigner un.</div>` : `<div style="display:flex;flex-direction:column;gap:10px;">${rows}</div>`}
   `;
 }
@@ -5905,7 +6103,7 @@ function bookingRevenueEstimateHtml(){
   const atterrissage = landingBookings.reduce((sum, b) => sum + (estimatedBookingPrice(b) || 0), 0);
   const landingUnsignedCount = landingBookings.filter(b => {
     const c = state.contracts.find(x => x.username === b.username);
-    return !(c && c.signed_at);
+    return !(c && c.signed_at) && !b.contract_waived;
   }).length;
   return `
     <div class="panel" style="margin-bottom:18px;">
@@ -8015,18 +8213,17 @@ function finRentalsLedger(){
       const { amount, source } = finBookingAmount(b);
       const linked = sales.filter(s => s.booking_id === b.id);
       const sale = linked[0] || null;
-      const isOwner = !!(item && item.owner_username);
-      let share = 0;
-      if(isOwner){
-        const manual = sale && Number(sale.retribution_proprietaire) > 0 ? Number(sale.retribution_proprietaire) : null;
-        share = manual != null ? manual : round2(amount * pct / 100);
-      }
+      const ownerU = bookingOwnerUsername(b);
+      const unit = bookingUnit(b);
+      const isOwner = !!ownerU;
+      const rate = isOwner ? bookingRate(b) : 0;
+      const share = isOwner ? bookingOwnerShare(b, amount) : 0;
       let st;
       if(b.status === 'demande') st = 'pipeline';
       else if(b.paid) st = 'paid';
       else if(b.status === 'retourne' || (b.end_date && b.end_date < today)) st = 'overdue';
       else st = 'due';
-      return { b, item, profile, amount, source, sale, linked, isOwner, share, net: round2(amount - share), st,
+      return { b, item, profile, amount, source, sale, linked, isOwner, ownerU, unit, rate, share, net: round2(amount - share), st,
         refDate: st === 'paid' ? finPaidDate(b) : b.start_date };
     });
 }
@@ -8059,6 +8256,10 @@ function finRentalsIssues(rows){
   rows.filter(r => r.sale && Math.abs(Number(r.sale.ttc) - r.amount) > 0.5 && r.st === 'paid').forEach(r => issues.push({ kind: 'diff', r }));
   // 3. Plusieurs lignes compta pour une seule réservation
   rows.filter(r => r.linked.length > 1).forEach(r => r.linked.slice(1).forEach(s => issues.push({ kind: 'dup', r, sale: s })));
+  // 3b. Reversement différent de celui de l'exemplaire attribué
+  rows.filter(r => r.sale && r.st === 'paid' && Math.abs((Number(r.sale.retribution_proprietaire) || 0) - r.share) > 0.5).forEach(r => issues.push({ kind: 'share', r }));
+  // 3c. Plusieurs propriétaires possibles et aucun exemplaire attribué : impossible de savoir qui payer
+  rows.filter(r => r.b.status !== 'demande' && !r.b.unit_id && bookingNeedsUnit(r.b) && itemUniformOwner(r.item) === undefined).forEach(r => issues.push({ kind: 'nounit', r }));
   // 4. Ligne compta liée à une réservation non payée ou disparue
   state.financeSales.filter(s => s.booking_id).forEach(s => {
     const r = byBooking.get(s.booking_id);
@@ -8080,7 +8281,7 @@ function finRentalRowHtml(r){
   const dateTxt = b.start_date ? finShortRange(b.start_date, b.end_date) : '—';
   const paidTxt = r.st === 'paid' ? `<small>payé le ${fmtDate(r.refDate)}</small>` : `<small>${esc(stLabel)}</small>`;
   const shareCell = r.isOwner
-    ? `<b>${finFmtEUR2(r.net)}</b><small>proprio ${finFmtEUR2(r.share)} · ${esc(clientDisplayName(state.profiles.find(p => p.username === r.item.owner_username)) || r.item.owner_username)}</small>`
+    ? `<b>${finFmtEUR2(r.net)}</b><small>proprio ${finFmtEUR2(r.share)} · ${esc(ownerLabel(r.ownerU))}${r.unit && r.unit.serial ? ' · n°' + esc(r.unit.serial) : ''}</small>`
     : `<b>${finFmtEUR2(r.net)}</b><small>matériel OwlsVision</small>`;
   const payBtn = b.status === 'demande' ? '' : r.st === 'paid'
     ? `<button type="button" class="btn btn-ghost btn-sm" style="width:auto;" onclick="toggleBookingPaid('${b.id}')" title="Annuler le paiement">Annuler</button>`
@@ -8148,15 +8349,15 @@ function finRentalsBreakdownHtml(t){
   };
   const list = (arr, empty) => arr.length ? arr.slice(0, 8).map(e => `<div class="rl-bd-row"><span>${esc(e.label)}<small>${e.n} location${e.n > 1 ? 's' : ''}</small></span><b>${finFmtEUR(e.amount)}</b></div>`).join('') : `<div class="empty" style="padding:14px;">${empty}</div>`;
   const byItem = group(r => r.item ? r.item.id : 'x', r => r.item ? r.item.name : 'Matériel supprimé');
-  const byOwner = group(r => r.isOwner ? r.item.owner_username : '_own', r => r.isOwner ? (clientDisplayName(state.profiles.find(p => p.username === r.item.owner_username)) || r.item.owner_username) : 'Stock OwlsVision');
-  const ownerRows = [...new Map(t.paidRows.filter(r => r.isOwner).map(r => [r.item.owner_username, 0])).keys()].map(u => {
-    const rs = t.paidRows.filter(r => r.isOwner && r.item.owner_username === u);
-    return { label: clientDisplayName(state.profiles.find(p => p.username === u)) || u, n: rs.length, amount: rs.reduce((s, r) => s + r.share, 0) };
+  const byOwner = group(r => r.ownerU || '_own', r => r.ownerU ? ownerLabel(r.ownerU) : 'Stock OwlsVision');
+  const ownerRows = [...new Map(t.paidRows.filter(r => r.isOwner).map(r => [r.ownerU, 0])).keys()].map(u => {
+    const rs = t.paidRows.filter(r => r.isOwner && r.ownerU === u);
+    return { u, label: ownerLabel(u), n: rs.length, amount: rs.reduce((s, r) => s + r.share, 0) };
   }).sort((a, b) => b.amount - a.amount);
   return `<div class="rl-3col">
     <div class="panel"><h2>Par matériel</h2><div class="rl-h2sub">Encaissé sur la période</div>${list(byItem, 'Rien d\'encaissé sur la période.')}</div>
     <div class="panel"><h2>Par propriétaire</h2><div class="rl-h2sub">Chiffre généré par le matériel de chacun</div>${list(byOwner, 'Rien d\'encaissé sur la période.')}</div>
-    <div class="panel"><h2>À reverser</h2><div class="rl-h2sub">Part propriétaire sur la période (${finOwnerPct()} % par défaut)</div>${ownerRows.length ? ownerRows.map(e => `<div class="rl-bd-row"><span>${esc(e.label)}<small>${e.n} location${e.n > 1 ? 's' : ''}</small></span><b>${finFmtEUR(e.amount)}</b></div>`).join('') : `<div class="empty" style="padding:14px;">Aucun matériel de propriétaire loué et payé sur la période.</div>`}</div>
+    <div class="panel"><h2>À reverser</h2><div class="rl-h2sub">Part propriétaire sur la période (${finOwnerPct()} % par défaut)</div>${ownerRows.length ? ownerRows.map(e => `<button type="button" class="rl-bd-row rl-bd-link" onclick="openOwnerStatement('${esc(e.u)}')" title="Ouvrir son relevé"><span>${esc(e.label)}<small>${e.n} location${e.n > 1 ? 's' : ''} · relevé</small></span><b>${finFmtEUR(e.amount)}</b></button>`).join('') : `<div class="empty" style="padding:14px;">Aucun matériel de propriétaire loué et payé sur la période.</div>`}</div>
   </div>`;
 }
 function finIssueHtml(i){
@@ -8164,6 +8365,8 @@ function finIssueHtml(i){
   if(i.kind === 'missing') return `<div class="rl-issue"><div><b>${nm(i.r)}</b> est payée (${finFmtEUR2(i.r.amount)}) mais absente de la compta.</div><button class="btn btn-primary btn-sm" style="width:auto;" onclick="finFixAddSale('${i.r.b.id}')">Ajouter à la compta</button></div>`;
   if(i.kind === 'twin') return `<div class="rl-issue"><div><b>Doublon probable :</b> la saisie « ${esc(i.sale.label)} » (${finFmtEUR2(Number(i.sale.ttc))}, ${fmtDate(i.sale.date)}) ressemble à <b>${nm(i.r)}</b>. Les deux seraient comptées si la réservation était ajoutée.</div><button class="btn btn-primary btn-sm" style="width:auto;" onclick="finFixLinkSale('${i.sale.id}','${i.r.b.id}')">Relier la saisie à la réservation</button></div>`;
   if(i.kind === 'diff') return `<div class="rl-issue"><div><b>${nm(i.r)}</b> : ${finFmtEUR2(i.r.amount)} dans la réservation, ${finFmtEUR2(Number(i.r.sale.ttc))} dans la compta.</div><button class="btn btn-primary btn-sm" style="width:auto;" onclick="finFixAlignSale('${i.r.sale.id}','${i.r.b.id}')">Aligner la compta</button></div>`;
+  if(i.kind === 'share') return `<div class="rl-issue"><div><b>${nm(i.r)}</b> : la compta indique ${finFmtEUR2(Number(i.r.sale.retribution_proprietaire) || 0)} de reversement, l'exemplaire attribué donne ${finFmtEUR2(i.r.share)}.</div><button class="btn btn-primary btn-sm" style="width:auto;" onclick="finFixAlignShare('${i.r.sale.id}','${i.r.b.id}')">Aligner</button></div>`;
+  if(i.kind === 'nounit') return `<div class="rl-issue"><div><b>${nm(i.r)}</b> : ce matériel a plusieurs propriétaires et aucun exemplaire n'est attribué — le reversement est inconnu.</div><button class="btn btn-primary btn-sm" style="width:auto;" onclick="openUnitPicker('${i.r.b.id}')">Choisir l'exemplaire</button></div>`;
   if(i.kind === 'dup') return `<div class="rl-issue"><div><b>${nm(i.r)}</b> apparaît deux fois en compta (${finFmtEUR2(Number(i.sale.ttc))}).</div><button class="btn btn-danger btn-sm" style="width:auto;" onclick="finFixDeleteSale('${i.sale.id}')">Supprimer le doublon</button></div>`;
   return `<div class="rl-issue"><div><b>${esc(i.sale.label)}</b> (${finFmtEUR2(Number(i.sale.ttc))}) : ${esc(i.why)}.</div><button class="btn btn-danger btn-sm" style="width:auto;" onclick="finFixDeleteSale('${i.sale.id}')">Retirer de la compta</button></div>`;
 }
@@ -8298,7 +8501,7 @@ function ovPaletteIndex(){
     out.push({ kind: 'Client', icon: 'id-badge', label: name, sub: p.username + (p.telephone ? ' · ' + p.telephone : ''), hay: [name, p.username, p.telephone, p.ville, p.nom, p.prenom].filter(Boolean).join(' ').toLowerCase(),
       run: () => openViewProfile(p.username), alt: { label: 'Message', run: () => openConversationFromList(p.username) } });
   });
-  state.items.forEach(i => out.push({ kind: 'Matériel', icon: 'package', label: i.name, sub: i.owner_username ? 'Propriétaire : ' + i.owner_username : 'Stock OwlsVision', hay: i.name.toLowerCase(),
+  state.items.forEach(i => out.push({ kind: 'Matériel', icon: 'package', label: i.name, sub: (() => { const o = itemOwnerSummary(i).filter(s => s.owner); return o.length ? 'Propriétaire : ' + o.map(s => ownerLabel(s.owner) + (itemHasUnits(i.id) ? ' ×' + s.n : '')).join(', ') : 'Stock OwlsVision'; })(), hay: i.name.toLowerCase(),
     run: () => { state.stockSearch = i.name; state.stockFilter = 'all'; goto('stock'); }, alt: { label: 'Réservations', run: () => { state.gestionSearch = i.name; state.gestionFilter = 'all'; goto('gestion'); } } }));
   return out;
 }
@@ -8360,10 +8563,10 @@ document.addEventListener('keydown', (e) => {
 });
 
 /* ---------- Réservations : filtre de statut en pastilles avec compteurs ---------- */
-const GESTION_STATUS_CHIPS = [['all', 'Toutes'], ['demande', 'Demandes'], ['accepte', 'Acceptées'], ['loue', 'En cours'], ['retourne', 'Retournées'], ['refuse', 'Refusées']];
+const GESTION_STATUS_CHIPS = [['all', 'Toutes'], ['todo', 'À traiter'], ['demande', 'Demandes'], ['accepte', 'Acceptées'], ['loue', 'En cours'], ['retourne', 'Retournées'], ['refuse', 'Refusées']];
 function gestionChipsHtml(){
   return `<div class="ul-chips">${GESTION_STATUS_CHIPS.map(([f, label]) => {
-    const n = f === 'all' ? state.bookings.length : state.bookings.filter(b => b.status === f).length;
+    const n = f === 'all' ? state.bookings.length : f === 'todo' ? state.bookings.filter(gbNeedsAction).length : state.bookings.filter(b => b.status === f).length;
     if(f === 'refuse' && !n && state.gestionFilter !== 'refuse') return '';
     return `<button type="button" class="ul-chip ${state.gestionFilter === f ? 'on' : ''}" onclick="onGestionFilter('${f}')">${label} <b>${n}</b></button>`;
   }).join('')}</div>`;
@@ -8387,8 +8590,8 @@ function stockFiltered(){
   const f = state.stockFilter || 'all';
   return state.items.filter(i => {
     if(q && !i.name.toLowerCase().includes(q)) return false;
-    if(f === 'owner') return !!i.owner_username;
-    if(f === 'own') return !i.owner_username;
+    if(f === 'owner') return itemOwnerSummary(i).some(s => s.owner);
+    if(f === 'own') return itemOwnerSummary(i).some(s => !s.owner);
     if(f === 'dispo') return stockItemStats(i).dispo > 0;
     if(f === 'out') return stockItemStats(i).dispo === 0;
     return true;
@@ -8408,7 +8611,7 @@ function stockCardHtml(item){
           <div class="sk-name">${esc(item.name)}</div>
           <div class="sk-tags">
             <span class="ul-tag ${level === 'out' ? 'danger' : level === 'part' ? 'warn' : 'okk'}">${s.dispo} / ${item.qty} dispo</span>
-            ${owner || item.owner_username ? `<span class="owner-tag">${tacticalIconSvg('house', { size: 11 })}${esc(owner ? clientDisplayName(owner) : item.owner_username)}</span>` : ''}
+            ${stockOwnerTagsHtml(item)}
           </div>
           <div class="sk-price">${esc(price)}</div>
         </div>
@@ -8421,7 +8624,7 @@ function stockCardHtml(item){
       </div>
       ${s.aEncaisser > 0 ? `<div class="sk-due">${finFmtEUR(s.aEncaisser)} restent à encaisser sur ce matériel</div>` : ''}
       <div class="sk-act">
-        <div class="sk-qty"><button type="button" class="icon-btn" onclick="adjustItemQty('${id}',-1)" ${item.qty <= 0 ? 'disabled' : ''} title="Retirer une unité">−</button><span>${item.qty}</span><button type="button" class="icon-btn" onclick="adjustItemQty('${id}',1)" title="Ajouter une unité">+</button></div>
+        ${stockQtyHtml(item)}
         <button type="button" class="btn btn-ghost btn-sm" style="width:auto;" onclick="stockOpenBookings('${id}')">${s.total} réservation${s.total > 1 ? 's' : ''}</button>
         <button type="button" class="btn btn-ghost btn-sm" style="width:auto;" onclick="openEditItemModal('${id}')">Modifier</button>
         <button type="button" class="icon-btn danger" title="Supprimer ce matériel" onclick="deleteItem('${id}')">✕</button>
@@ -8449,8 +8652,9 @@ function stockGridHtml(){
 function renderGestionStock(){
   return `
     <div class="topbar"><div><h1>Stock</h1><div class="desc">Chaque matériel avec sa disponibilité du jour, ses locations et l'argent qu'il a généré. Cliquez sur « réservations » pour voir son historique.</div></div>
-      <button class="btn btn-primary btn-sm" style="width:auto;" onclick="openNewItemModal()">+ Ajouter un matériel</button>
+      <div class="sk-top-act">${unitsEnabled() ? '<button class="btn btn-ghost btn-sm" style="width:auto;" onclick="openMergeItems()">Fusionner des fiches</button>' : ''}<button class="btn btn-primary btn-sm" style="width:auto;" onclick="openNewItemModal()">+ Ajouter un matériel</button></div>
     </div>
+    ${unitsBannerHtml()}
     <div id="stock-sum">${stockSummaryHtml()}</div>
     <div class="filter-bar"><input type="text" id="stock-search" placeholder="Chercher un matériel…" value="${esc(state.stockSearch || '')}" oninput="onStockSearch(this.value)"></div>
     <div id="stock-chips">${stockChipsHtml()}</div>
@@ -8537,6 +8741,741 @@ function missionRentalCheckHtml(c){
     return `<div class="mr-check ${real ? 'good' : 'bad'}">${real ? '✓' : '⚠'} Réservation trouvée : ${esc(item ? item.name : 'matériel supprimé')}, du ${esc(fmtDate(b.start_date))} au ${esc(fmtDate(b.end_date))} — ${st}${real ? (b.paid ? ', payée' : ', non payée') : ''}.</div>`;
   }).join('');
 }
+
+/* ===== Lot 42 : Réservations refondues — une carte par location, pensée pour le téléphone ===== */
+function gbContractState(b){
+  const c = state.contracts.find(x => x.username === b.username) || null;
+  const redo = !!(c && ['accepte', 'loue'].includes(b.status) && c.uploaded_at && b.created_at && new Date(b.created_at).getTime() > new Date(c.uploaded_at).getTime());
+  return { c, redo, signed: !!(c && c.signed_at && !redo), waived: !!b.contract_waived };
+}
+function gbTileHtml(kind, label, value, js, extra){
+  const tag = js ? 'button' : 'div';
+  return `<${tag}${js ? ` type="button" onclick="${js}"` : ''} class="gb-tile ${kind}${js ? '' : ' off'}"><span class="gb-tile-l">${label}</span><span class="gb-tile-v">${value}</span>${extra ? `<span class="gb-tile-x">${extra}</span>` : ''}</${tag}>`;
+}
+function gestionCardHtml(b){
+  const item = state.items.find(i => i.id === b.item_id);
+  const p = state.profiles.find(x => x.username === b.username);
+  const name = p ? clientDisplayName(p) : b.username;
+  const u = esc(b.username);
+  const { amount, source } = finBookingAmount(b);
+  const days = bookingDurationDays(b);
+  const confirmed = ['accepte', 'loue', 'retourne'].includes(b.status);
+  const { c, redo, signed, waived } = gbContractState(b);
+  const cOk = signed || waived;
+  const inv = state.invoices.find(x => x.booking_id === b.id);
+
+  let tiles = '';
+  if(confirmed){
+    const ct = waived ? gbTileHtml('ok', 'Contrat', 'Sans contrat', `toggleContractWaived('${b.id}')`, 'dispensé · toucher pour exiger') : !c ? gbTileHtml('todo', 'Contrat', 'À envoyer', `openGenerateContractModal('${u}')`)
+      : redo ? gbTileHtml('todo', 'Contrat', 'À refaire', `openGenerateContractModal('${u}')`, 'nouvelle location')
+      : signed ? gbTileHtml('ok', 'Contrat', 'Signé', `openGenerateContractModal('${u}')`, fmtDate(c.signed_at))
+      : gbTileHtml('wait', 'Contrat', 'Envoyé', `openGenerateContractModal('${u}')`, 'signature attendue');
+    const iv = !cOk ? gbTileHtml('off', 'Facture', '—', '', 'après signature ou dispense')
+      : inv ? gbTileHtml(inv.read_at ? 'ok' : 'wait', 'Facture', esc(inv.invoice_number || 'Envoyée'), `openInvoiceFile('${esc(inv.pdf_path)}','${esc(inv.id)}')`, inv.read_at ? 'lue le ' + fmtDate(inv.read_at) : 'pas encore lue')
+      : gbTileHtml('todo', 'Facture', 'À envoyer', `openSendInvoiceModal('${esc(b.id)}')`);
+    const pay = b.paid ? gbTileHtml('ok', 'Paiement', 'Payée', `toggleBookingPaid('${b.id}')`, b.paid_at ? 'le ' + fmtDate(b.paid_at) : '')
+      : gbTileHtml('bad', 'Paiement', 'Non payée', `toggleBookingPaid('${b.id}')`, 'toucher pour encaisser');
+    tiles = `<div class="gb-tiles">${ct}${iv}${pay}</div>`;
+  } else if(b.status === 'demande'){
+    tiles = `<div class="gb-hint">Demande reçue ${b.created_at ? 'le ' + esc(fmtDate(b.created_at)) : ''} : à accepter ou refuser.</div>`;
+  }
+
+  const main = [];
+  if(b.status === 'demande'){
+    main.push(`<button type="button" class="btn btn-primary gb-main" onclick="setBookingStatus('${b.id}','accepte')">Accepter</button>`);
+    main.push(`<button type="button" class="btn btn-ghost gb-main" onclick="setBookingStatus('${b.id}','refuse')">Refuser</button>`);
+  } else if(b.status === 'accepte'){
+    main.push(`<button type="button" class="btn btn-primary gb-main" onclick="setBookingStatus('${b.id}','loue')">Marquer loué</button>`);
+  } else if(b.status === 'loue'){
+    main.push(`<button type="button" class="btn btn-primary gb-main" onclick="setBookingStatus('${b.id}','retourne')">Marquer retourné</button>`);
+  } else if(b.status === 'retourne'){
+    main.push(`<span class="gb-done">Matériel rendu</span>`);
+  }
+  const tel = p && p.telephone ? `<a class="icon-btn" href="tel:${esc(String(p.telephone).replace(/[^\d+]/g, ''))}" title="Appeler ${esc(p.telephone)}">${tacticalIconSvg('phone', { size: 16 })}</a>` : '';
+  const menu = `<details class="gb-more"><summary class="icon-btn" title="Plus d'actions">⋯</summary><div class="gb-menu">
+      ${inv && cOk ? `<button type="button" onclick="this.closest('details').removeAttribute('open');reissueInvoice('${esc(b.id)}')">Réémettre la facture</button>` : ''}
+      ${confirmed && !signed ? `<button type="button" onclick="this.closest('details').removeAttribute('open');toggleContractWaived('${esc(b.id)}')">${waived ? 'Exiger un contrat' : 'Gérer sans contrat'}</button>` : ''}
+      <button type="button" onclick="this.closest('details').removeAttribute('open');waiveAllForClient('${u}')">Sans contrat : toutes ses locations</button>
+      <button type="button" onclick="this.closest('details').removeAttribute('open');openViewProfile('${u}')">Fiche client</button>
+      <button type="button" class="danger" onclick="this.closest('details').removeAttribute('open');cancelBooking('${b.id}')">Supprimer la réservation</button>
+    </div></details>`;
+  return `
+    <div class="gb-card st-${esc(b.status)}">
+      <div class="gb-top">
+        <button type="button" class="gb-who" onclick="openViewProfile('${u}')" title="Ouvrir la fiche">
+          <span class="gb-av">${esc(userInitials(p || { username: b.username }))}</span>
+          <span class="gb-who-t"><b>${esc(name)}</b><small>${esc(b.username)}</small></span>
+        </button>
+        ${statusPillHtml(b.status)}
+      </div>
+      <div class="gb-item">
+        ${item && item.image_url ? `<img class="gb-thumb" src="${esc(item.image_url)}" alt="">` : `<span class="gb-thumb gb-thumb-ph">${tacticalIconSvg('package', { size: 20 })}</span>`}
+        <div class="gb-item-t"><b>${esc(item ? item.name : 'Matériel supprimé')}</b><small>${esc(finShortRange(b.start_date, b.end_date))} · ${days} jour${days > 1 ? 's' : ''}</small></div>
+        <div class="gb-price"><b>${amount ? finFmtEUR2(amount) : '—'}</b><small>${source === 'facture' ? 'facturé' : source === 'estime' ? 'estimé' : 'sans tarif'}</small></div>
+      </div>
+      ${gbUnitChipHtml(b, item)}
+      ${tiles}
+      <div class="gb-act">${main.join('')}<span class="gb-icons"><button type="button" class="icon-btn" title="Écrire au client" onclick="openConversationFromList('${u}')">${tacticalIconSvg('mail', { size: 16 })}</button>${tel}${menu}</span></div>
+    </div>`;
+}
+document.addEventListener('click', (e) => { document.querySelectorAll('details.gb-more[open]').forEach(d => { if(!d.contains(e.target)) d.removeAttribute('open'); }); });
+const GESTION_SORTS = [['start_date', 'Date'], ['client', 'Client'], ['item', 'Matériel'], ['status', 'Statut']];
+function gestionSortChipsHtml(){
+  return `<div class="ul-chips"><span class="ul-chips-label">Trier par</span>${GESTION_SORTS.map(([f, l]) => {
+    const on = state.gestionSort.field === f;
+    return `<button type="button" class="ul-chip ${on ? 'on' : ''}" onclick="onGestionSort('${f}')">${l}${on ? ` ${state.gestionSort.dir === 'asc' ? '▲' : '▼'}` : ''}</button>`;
+  }).join('')}</div>`;
+}
+
+function gbNeedsAction(b){
+  if(b.status === 'demande') return true;
+  if(!['accepte','loue','retourne'].includes(b.status)) return false;
+  const { signed } = gbContractState(b);
+  const inv = state.invoices.find(x => x.booking_id === b.id);
+  const unitMissing = bookingNeedsUnit(b) && itemUniformOwner(state.items.find(i => i.id === b.item_id)) === undefined;
+  return !(signed || b.contract_waived) || !inv || !b.paid || unitMissing;
+}
+function gestionAllChipsHtml(){ return gestionChipsHtml() + gestionSortChipsHtml(); }
+
+/* ===== Lot 44 : exemplaires (n° de série + propriétaire), reversements, attribution automatique =====
+   Avant : un matériel avait UN propriétaire (items.owner_username) pour toute sa quantité. Trois
+   propriétaires pour quatre PVS-14 imposaient trois fiches catalogue différentes.
+   Maintenant : le catalogue garde UNE fiche « PVS-14 » (quantité = nombre d'exemplaires actifs) et
+   chaque exemplaire (item_units) porte son n° de série, son propriétaire et, au besoin, son propre
+   taux. Une location reçoit un exemplaire (bookings.unit_id) : c'est lui qui désigne la personne à
+   payer et le montant. Tant que la migration n'est pas passée (state.unitsReady = false), tout
+   retombe sur l'ancien comportement (items.owner_username). */
+function unitsEnabled(){ return !!state.unitsReady; }
+function unitsOf(itemId, withRetired){ return state.itemUnits.filter(u => u.item_id === itemId && (withRetired || u.active !== false)).sort(unitSort); }
+function unitSort(a, b){ return String(a.created_at || '').localeCompare(String(b.created_at || '')) || String(a.id).localeCompare(String(b.id)); }
+function itemHasUnits(itemId){ return unitsEnabled() && state.itemUnits.some(u => u.item_id === itemId); }
+function unitById(id){ return id ? state.itemUnits.find(u => u.id === id) || null : null; }
+function unitIndex(u){ const l = state.itemUnits.filter(x => x.item_id === u.item_id).sort(unitSort); return l.findIndex(x => x.id === u.id) + 1; }
+function unitLabel(u){ return u ? (u.serial && u.serial.trim() ? u.serial.trim() : 'Exemplaire n°' + unitIndex(u)) : '—'; }
+function ownerLabel(username){
+  if(!username) return 'OwlsVision';
+  const p = state.profiles.find(x => x.username === username);
+  return clientDisplayName(p) || username;
+}
+// Propriétaire commun à tous les exemplaires actifs d'un matériel : un nom, null (tout OwlsVision) ou
+// undefined (propriétaires différents → il faut l'exemplaire pour savoir).
+function itemUniformOwner(item){
+  if(!item) return null;
+  const us = itemHasUnits(item.id) ? unitsOf(item.id) : null;
+  if(!us || !us.length) return item.owner_username || null;
+  const set = new Set(us.map(u => u.owner_username || null));
+  return set.size === 1 ? [...set][0] : undefined;
+}
+function itemOwnerSummary(item){
+  // [{ owner: username|null, n }] dans l'ordre : OwlsVision d'abord, puis les propriétaires.
+  if(!item) return [];
+  const us = itemHasUnits(item.id) ? unitsOf(item.id) : null;
+  if(!us) return [{ owner: item.owner_username || null, n: Number(item.qty) || 0 }];
+  const m = new Map();
+  us.forEach(u => { const k = u.owner_username || ''; m.set(k, (m.get(k) || 0) + 1); });
+  return [...m.entries()].map(([k, n]) => ({ owner: k || null, n })).sort((a, b) => (a.owner ? 1 : 0) - (b.owner ? 1 : 0) || String(a.owner).localeCompare(String(b.owner)));
+}
+function bookingUnit(b){ return b ? unitById(b.unit_id) : null; }
+function bookingOwnerUsername(b){
+  if(!b) return null;
+  const u = bookingUnit(b);
+  if(u) return u.owner_username || null;
+  const item = state.items.find(i => i.id === b.item_id);
+  if(!item) return null;
+  const o = itemUniformOwner(item);
+  return o === undefined ? null : o;
+}
+// Vrai quand on ne peut pas savoir qui payer : matériel à propriétaires multiples et aucun exemplaire attribué.
+function bookingNeedsUnit(b){
+  if(!unitsEnabled() || !b || b.unit_id && bookingUnit(b)) return false;
+  if(!['accepte', 'loue', 'retourne'].includes(b.status)) return false;
+  const item = state.items.find(i => i.id === b.item_id);
+  return !!(item && itemHasUnits(item.id) && unitsOf(item.id).length);
+}
+function unitRatePct(u){
+  if(u && u.share_pct != null && u.share_pct !== '' && isFinite(Number(u.share_pct))) return Number(u.share_pct);
+  return finOwnerPct();
+}
+function bookingRate(b){ return unitRatePct(bookingUnit(b)); }
+function finOwnerBase(){ return (finSettings().owner_share_base === 'ht') ? 'ht' : 'ttc'; }
+// Base du calcul : TTC (montant de la facture) ou HT (facture, sinon TTC / (1 + TVA)).
+function ownerShareBaseAmount(b, amountTtc){
+  if(finOwnerBase() !== 'ht') return amountTtc;
+  const inv = state.invoices.find(x => x.booking_id === b.id);
+  if(inv && inv.amount_ht != null && isFinite(Number(inv.amount_ht))) return round2(Number(inv.amount_ht));
+  const tva = Number(finSettings().tva); const rate = isFinite(tva) ? tva : 20;
+  return round2(amountTtc / (1 + rate / 100));
+}
+function bookingOwnerShare(b, amountTtc){
+  if(!bookingOwnerUsername(b)) return 0;
+  return round2(ownerShareBaseAmount(b, amountTtc) * bookingRate(b) / 100);
+}
+
+/* ---------- Disponibilité par exemplaire + attribution automatique ---------- */
+function unitBusyWith(u, start, end, exceptBookingId){
+  return state.bookings.find(b => b.unit_id === u.id && b.id !== exceptBookingId && ['demande', 'accepte', 'loue'].includes(b.status) && overlaps(b.start_date, b.end_date, start, end)) || null;
+}
+function freeUnitsFor(itemId, start, end, exceptBookingId){
+  return unitsOf(itemId).filter(u => !unitBusyWith(u, start, end, exceptBookingId));
+}
+function unitLoadDays(u){
+  return state.bookings.filter(b => b.unit_id === u.id && ['accepte', 'loue', 'retourne'].includes(b.status)).reduce((s, b) => s + bookingDurationDays(b), 0);
+}
+function finAssignMode(){ return finSettings().unit_assign_mode === 'societe' ? 'societe' : 'equitable'; }
+function pickUnitFor(b){
+  const free = freeUnitsFor(b.item_id, b.start_date, b.end_date, b.id);
+  // Locations déjà confirmées sans exemplaire (reprise de l'existant) : elles occupent une place sans qu'on sache laquelle.
+  const loose = state.bookings.filter(x => x.id !== b.id && x.item_id === b.item_id && !x.unit_id && ['accepte', 'loue'].includes(x.status) && overlaps(x.start_date, x.end_date, b.start_date, b.end_date)).length;
+  if(free.length - loose <= 0) return null;
+  const mode = finAssignMode();
+  return free.map(u => ({ u, load: unitLoadDays(u), own: u.owner_username ? 1 : 0 }))
+    .sort((a, c) => (mode === 'societe' ? a.own - c.own : 0) || a.load - c.load || unitSort(a.u, c.u))[0].u;
+}
+
+async function syncSaleShare(b){
+  const sale = state.financeSales.find(s => s.booking_id === b.id);
+  if(!sale) return;
+  const share = bookingOwnerUsername(b) ? bookingOwnerShare(b, Number(sale.ttc) || 0) : 0;
+  if(Math.abs((Number(sale.retribution_proprietaire) || 0) - share) < 0.005) return;
+  const { error } = await sb.from('finance_sales').update({ retribution_proprietaire: share }).eq('id', sale.id);
+  if(!error) sale.retribution_proprietaire = share;
+}
+async function assignUnit(bookingId, unitId, opts){
+  const b = state.bookings.find(x => x.id === bookingId);
+  if(!b) return false;
+  const prev = b.unit_id || null;
+  b.unit_id = unitId || null;
+  const { error } = await sb.from('bookings').update({ unit_id: unitId || null }).eq('id', bookingId);
+  if(error){
+    b.unit_id = prev;
+    if(!(opts && opts.silent)) alert("L'exemplaire n'a pas pu être attribué : " + error.message + "\nExécutez d'abord migration_lot43_exemplaires.sql dans Supabase.");
+    return false;
+  }
+  await syncSaleShare(b);
+  if(!(opts && opts.noRender)) render();
+  return true;
+}
+// Appelée quand une demande est acceptée / passe en location : attribue seule un exemplaire libre.
+async function autoAssignUnitFor(b){
+  if(!unitsEnabled() || !b || b.unit_id) return { ok: true, skipped: true };
+  const item = state.items.find(i => i.id === b.item_id);
+  if(!item || !itemHasUnits(item.id) || !unitsOf(item.id).length) return { ok: true, skipped: true };
+  const u = pickUnitFor(b);
+  if(!u) return { ok: false, none: true };
+  const ok = await assignUnit(b.id, u.id, { silent: true, noRender: true });
+  return { ok, unit: u };
+}
+function unassignedBookings(){
+  return state.bookings.filter(b => bookingNeedsUnit(b)).sort((a, c) => String(a.start_date).localeCompare(String(c.start_date)));
+}
+window.unitsAssignAll = async () => {
+  if(!state.session.isMaster) return;
+  const list = unassignedBookings();
+  if(!list.length) return;
+  const mode = finAssignMode() === 'societe' ? 'les exemplaires OwlsVision d\'abord' : 'en répartissant équitablement entre les exemplaires';
+  if(!confirm(`Attribuer un exemplaire à ${list.length} réservation${list.length > 1 ? 's' : ''} (${mode}) ?\n\nLe montant dû à chaque propriétaire se calcule d'après cette attribution. Vous pourrez changer l'exemplaire de n'importe quelle réservation ensuite.`)) return;
+  let done = 0, none = 0;
+  for(const b of list){
+    const u = pickUnitFor(b);
+    if(!u){ none++; continue; }
+    if(await assignUnit(b.id, u.id, { silent: true, noRender: true })) done++;
+  }
+  render();
+  alert(`${done} réservation${done > 1 ? 's' : ''} attribuée${done > 1 ? 's' : ''}.` + (none ? `\n${none} sans exemplaire libre sur leurs dates (à régler une par une depuis la carte).` : ''));
+};
+window.unitsSetAssignMode = async (mode) => {
+  state.financeSettings = { ...(state.financeSettings || finSettings()), unit_assign_mode: mode };
+  render();
+  const id = (state.financeSettings && state.financeSettings.id) || 1;
+  const { error } = await sb.from('finance_settings').update({ unit_assign_mode: mode }).eq('id', id);
+  if(error) alert("Réglage non enregistré : " + error.message + "\nExécutez d'abord migration_lot43_exemplaires.sql.");
+};
+window.unitsSetShareBase = async (base) => {
+  state.financeSettings = { ...(state.financeSettings || finSettings()), owner_share_base: base };
+  render();
+  const id = (state.financeSettings && state.financeSettings.id) || 1;
+  const { error } = await sb.from('finance_settings').update({ owner_share_base: base }).eq('id', id);
+  if(error) alert("Réglage non enregistré : " + error.message + "\nExécutez d'abord migration_lot43_exemplaires.sql.");
+};
+
+/* ---------- Exemplaires : création / modification ---------- */
+function refreshItemQtyLocal(itemId){
+  const item = state.items.find(i => i.id === itemId);
+  if(item && itemHasUnits(itemId)) item.qty = unitsOf(itemId).length;
+}
+async function createUnits(itemId, n, fields){
+  const rows = [];
+  for(let i = 0; i < n; i++) rows.push({ item_id: itemId, active: true, ...(i === 0 ? fields : { ...fields, serial: null }) });
+  if(!rows.length) return [];
+  const { data, error } = await sb.from('item_units').insert(rows).select();
+  if(error){ alert("Erreur : " + error.message); return null; }
+  state.itemUnits.push(...(data || []));
+  refreshItemQtyLocal(itemId);
+  return data;
+}
+// Matériel créé avant la migration / par l'ancien formulaire : crée autant d'exemplaires que la quantité.
+async function ensureUnits(item){
+  if(!unitsEnabled() || !item) return false;
+  if(state.itemUnits.some(u => u.item_id === item.id)) return true;
+  const n = Math.max(0, Number(item.qty) || 0);
+  const fields = { owner_username: item.owner_username || null, serial: item.owner_numero_serie || null, etat: item.owner_etat || null, acquired_on: item.owner_date_acquisition || null };
+  if(!n) return true;
+  return !!(await createUnits(item.id, n, fields));
+}
+window.openUnitsModal = async (itemId) => {
+  if(!state.session.isMaster) return;
+  if(!unitsEnabled()){ alert("La gestion par exemplaire n'est pas encore activée : exécutez migration_lot43_exemplaires.sql dans Supabase (SQL Editor), puis rechargez la page."); return; }
+  const item = state.items.find(i => i.id === itemId);
+  if(!item) return;
+  await ensureUnits(item);
+  state.modal = { type: 'units', itemId };
+  render();
+};
+window.unitsAdd = async (itemId) => {
+  const us = unitsOf(itemId);
+  const last = us[us.length - 1];
+  const n = Math.max(1, Math.min(50, parseInt((document.getElementById('un-add-n') || {}).value, 10) || 1));
+  const ownerSel = document.getElementById('un-add-owner');
+  const owner = ownerSel ? (ownerSel.value || null) : (last ? last.owner_username || null : null);
+  await createUnits(itemId, n, { owner_username: owner });
+  render();
+};
+window.unitsSaveAll = async (itemId) => {
+  const rows = [...document.querySelectorAll('[data-unit-row]')];
+  let changed = 0, failed = null;
+  for(const el of rows){
+    const id = el.getAttribute('data-unit-row');
+    const u = unitById(id); if(!u) continue;
+    const g = (k) => el.querySelector(`[data-f="${k}"]`);
+    const rate = g('share_pct').value.trim();
+    const next = {
+      serial: g('serial').value.trim() || null,
+      owner_username: g('owner').value || null,
+      share_pct: rate === '' ? null : Math.max(0, Math.min(100, Number(rate))),
+      etat: g('etat').value || null,
+      acquired_on: g('acquired').value || null,
+    };
+    const diff = {};
+    Object.keys(next).forEach(k => { const a = next[k], c = u[k] == null || u[k] === '' ? null : u[k]; if(String(a == null ? '' : a) !== String(c == null ? '' : c)) diff[k] = a; });
+    if(!Object.keys(diff).length) continue;
+    const { data, error } = await sb.from('item_units').update(diff).eq('id', id).select().single();
+    if(error){ failed = error.message; break; }
+    Object.assign(u, data); changed++;
+    // Le propriétaire ou le taux a pu changer : les lignes de compta des locations de cet exemplaire suivent.
+    for(const b of state.bookings.filter(x => x.unit_id === id)) await syncSaleShare(b);
+  }
+  if(failed){ alert("Erreur : " + failed); return; }
+  render();
+  if(changed) unitsToast(changed + ' exemplaire' + (changed > 1 ? 's' : '') + ' enregistré' + (changed > 1 ? 's' : ''));
+};
+function unitsToast(msg){
+  const el = document.createElement('div');
+  el.className = 'un-toast'; el.textContent = msg; document.body.appendChild(el);
+  setTimeout(() => el.remove(), 2200);
+}
+window.unitsToggleActive = async (id) => {
+  const u = unitById(id); if(!u) return;
+  const next = u.active === false;
+  if(!next){
+    const used = state.bookings.filter(b => b.unit_id === id && ['demande', 'accepte', 'loue'].includes(b.status) && b.end_date >= todayStr()).length;
+    if(used && !confirm(`Cet exemplaire a ${used} location${used > 1 ? 's' : ''} en cours ou à venir. Le retirer du stock quand même ? (Les locations restent, pensez à leur donner un autre exemplaire.)`)) return;
+  }
+  const { data, error } = await sb.from('item_units').update({ active: next }).eq('id', id).select().single();
+  if(error){ alert("Erreur : " + error.message); return; }
+  Object.assign(u, data);
+  refreshItemQtyLocal(u.item_id);
+  render();
+};
+window.unitsDelete = async (id) => {
+  const u = unitById(id); if(!u) return;
+  const used = state.bookings.filter(b => b.unit_id === id).length;
+  if(!confirm(used
+    ? `Supprimer définitivement cet exemplaire ? ${used} location${used > 1 ? 's' : ''} y ${used > 1 ? 'sont' : 'est'} rattachée${used > 1 ? 's' : ''} : ${used > 1 ? 'elles' : 'elle'} gard${used > 1 ? 'ent' : 'e'} leurs montants mais perdr${used > 1 ? 'ont' : 'a'} l'exemplaire (donc le propriétaire). Préférez « Retirer » pour garder l'historique.`
+    : 'Supprimer définitivement cet exemplaire ?')) return;
+  const { error } = await sb.from('item_units').delete().eq('id', id);
+  if(error){ alert("Erreur : " + error.message); return; }
+  state.itemUnits = state.itemUnits.filter(x => x.id !== id);
+  state.bookings.forEach(b => { if(b.unit_id === id) b.unit_id = null; });
+  refreshItemQtyLocal(u.item_id);
+  render();
+};
+
+/* ---------- Choix de l'exemplaire d'une réservation ---------- */
+window.openUnitPicker = (bookingId) => {
+  if(!state.session.isMaster) return;
+  if(!unitsEnabled()){ alert("Exécutez d'abord migration_lot43_exemplaires.sql dans Supabase."); return; }
+  state.modal = { type: 'unitPicker', bookingId }; render();
+};
+window.pickUnit = async (bookingId, unitId) => {
+  const ok = await assignUnit(bookingId, unitId || null);
+  if(ok){ state.modal = null; render(); }
+};
+
+/* ---------- Relevés propriétaires ---------- */
+function ownerPayoutsOf(username){ return state.ownerPayouts.filter(p => p.owner_username === username).sort((a, c) => String(c.paid_on).localeCompare(String(a.paid_on)) || String(c.created_at || '').localeCompare(String(a.created_at || ''))); }
+function ownerStatement(username){
+  const rows = finRentalsLedger().filter(r => r.ownerU === username && r.b.status !== 'demande');
+  const paid = rows.filter(r => r.st === 'paid');
+  const open = rows.filter(r => r.st !== 'paid');
+  const payouts = ownerPayoutsOf(username);
+  const sum = (a, f) => round2(a.reduce((s, x) => s + f(x), 0));
+  const owed = sum(paid, r => r.share);
+  const reversed = sum(payouts, p => Number(p.amount));
+  return { rows, paid, open, payouts, owed, reversed, balance: round2(owed - reversed), pending: sum(open, r => r.share), gross: sum(paid, r => r.amount) };
+}
+function ownerUnitsText(username){
+  const us = state.itemUnits.filter(u => u.owner_username === username && u.active !== false);
+  if(!us.length) return null;
+  const m = new Map();
+  us.forEach(u => { const it = state.items.find(i => i.id === u.item_id); const k = it ? it.name : 'Matériel supprimé'; (m.get(k) || m.set(k, []).get(k)).push(u); });
+  return [...m.entries()].map(([name, l]) => name + (l.length > 1 ? ' ×' + l.length : '') + (l.some(u => u.serial) ? ' (' + l.map(u => u.serial).filter(Boolean).join(', ') + ')' : '')).join(' · ');
+}
+function ownersBalancesPanelHtml(owners){
+  const list = owners.map(p => ({ p, s: ownerStatement(p.username) }));
+  const totalBal = round2(list.reduce((a, x) => a + x.s.balance, 0));
+  const row = ({ p, s }) => `<div class="ob-row">
+    <div class="ob-who"><b>${esc(clientDisplayName(p))}</b><small>${esc(ownerUnitsText(p.username) || 'aucun exemplaire')}</small></div>
+    <div class="ob-n"><span>Gagné</span><b>${finFmtEUR2(s.owed)}</b></div>
+    <div class="ob-n"><span>Versé</span><b>${finFmtEUR2(s.reversed)}</b></div>
+    <div class="ob-n ${s.balance > 0.005 ? 'due' : ''}"><span>Reste à verser</span><b>${finFmtEUR2(s.balance)}</b></div>
+    <div class="ob-act"><button type="button" class="btn btn-ghost btn-sm" style="width:auto;" onclick="openOwnerStatement('${esc(p.username)}')">Relevé</button><button type="button" class="btn btn-primary btn-sm" style="width:auto;" onclick="openOwnerStatement('${esc(p.username)}',true)">Verser</button></div>
+  </div>`;
+  return `<div class="panel ob-panel">
+    <div class="ob-head"><div><h2>À reverser aux propriétaires</h2><div class="rl-h2sub" style="margin:0;">Calculé sur les locations <b>encaissées</b>, exemplaire par exemplaire. Base : ${finOwnerBase() === 'ht' ? 'HT' : 'TTC'} · taux par défaut ${finOwnerPct()} %.</div></div><div class="ob-total ${totalBal > 0.005 ? 'due' : ''}"><span>Total restant dû</span><b>${finFmtEUR2(totalBal)}</b></div></div>
+    ${list.length ? list.map(row).join('') : ''}
+    <div class="ob-opts">
+      <label>Calcul sur
+        <select onchange="unitsSetShareBase(this.value)"><option value="ttc" ${finOwnerBase() === 'ttc' ? 'selected' : ''}>le montant TTC facturé</option><option value="ht" ${finOwnerBase() === 'ht' ? 'selected' : ''}>le montant HT</option></select></label>
+      <label>Attribution automatique
+        <select onchange="unitsSetAssignMode(this.value)"><option value="equitable" ${finAssignMode() === 'equitable' ? 'selected' : ''}>équitable (l'exemplaire le moins loué)</option><option value="societe" ${finAssignMode() === 'societe' ? 'selected' : ''}>OwlsVision d'abord</option></select></label>
+    </div>
+  </div>`;
+}
+window.openOwnerStatement = (username, pay) => { state.modal = { type: 'ownerStatement', username, pay: !!pay }; render(); };
+window.addOwnerPayoutFromModal = async (username) => {
+  const amount = round2(document.getElementById('po-amount').value);
+  const date = document.getElementById('po-date').value || todayStr();
+  const note = document.getElementById('po-note').value.trim();
+  if(!(amount > 0)){ alert('Saisissez un montant supérieur à 0.'); return; }
+  const st = ownerStatement(username);
+  if(amount > st.balance + 0.005 && !confirm(`Ce versement (${finFmtEUR2(amount)}) dépasse ce qui reste à verser (${finFmtEUR2(st.balance)}). L'enregistrer quand même ?`)) return;
+  const { data, error } = await sb.from('owner_payouts').insert({ owner_username: username, amount, paid_on: date, note: note || null }).select().single();
+  if(error){ alert("Versement non enregistré : " + error.message + "\nExécutez d'abord migration_lot43_exemplaires.sql."); return; }
+  state.ownerPayouts.push(data);
+  state.modal = { type: 'ownerStatement', username, pay: false };
+  render();
+};
+window.deleteOwnerPayout = async (id) => {
+  const p = state.ownerPayouts.find(x => x.id === id); if(!p) return;
+  if(!confirm(`Supprimer le versement de ${finFmtEUR2(Number(p.amount))} du ${fmtDate(p.paid_on)} ? Le solde à verser sera recalculé.`)) return;
+  const { error } = await sb.from('owner_payouts').delete().eq('id', id);
+  if(error){ alert("Erreur : " + error.message); return; }
+  state.ownerPayouts = state.ownerPayouts.filter(x => x.id !== id);
+  render();
+};
+function unitsDownload(filename, text, mime){
+  const blob = new Blob(['﻿' + text], { type: (mime || 'text/csv') + ';charset=utf-8' });
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = filename;
+  document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 500);
+}
+function ownerStatementCsv(username){
+  const s = ownerStatement(username);
+  const q = v => '"' + String(v == null ? '' : v).replace(/"/g, '""') + '"';
+  const n = v => String(round2(v)).replace('.', ',');
+  const lines = [['Date encaissement', 'Client', 'Matériel', 'N° de série', 'Montant TTC', 'Taux %', 'Part propriétaire'].map(q).join(';')];
+  s.paid.slice().sort((a, c) => String(a.refDate).localeCompare(String(c.refDate))).forEach(r => lines.push([r.refDate, r.profile ? clientDisplayName(r.profile) : r.b.username, r.item ? r.item.name : '', r.unit ? unitLabel(r.unit) : '', n(r.amount), n(r.rate), n(r.share)].map(q).join(';')));
+  lines.push('');
+  lines.push(['Total gagné', '', '', '', '', '', n(s.owed)].map(q).join(';'));
+  s.payouts.slice().reverse().forEach(p => lines.push(['Versement', p.paid_on, p.note || '', '', '', '', '-' + n(Number(p.amount))].map(q).join(';')));
+  lines.push(['Reste à verser', '', '', '', '', '', n(s.balance)].map(q).join(';'));
+  return lines.join('\r\n');
+}
+window.exportOwnerStatement = (username) => unitsDownload('releve-' + String(username).replace(/[^a-z0-9]+/gi, '-') + '-' + todayStr() + '.csv', ownerStatementCsv(username));
+window.printOwnerStatement = (username) => {
+  const s = ownerStatement(username);
+  const w = window.open('', '_blank'); if(!w){ alert('Autorisez les fenêtres pop-up pour imprimer.'); return; }
+  const rows = s.paid.slice().sort((a, c) => String(a.refDate).localeCompare(String(c.refDate))).map(r => `<tr><td>${esc(fmtDate(r.refDate))}</td><td>${esc(r.profile ? clientDisplayName(r.profile) : r.b.username)}</td><td>${esc(r.item ? r.item.name : '')}${r.unit && r.unit.serial ? ' · ' + esc(r.unit.serial) : ''}</td><td class="r">${finFmtEUR2(r.amount)}</td><td class="r">${r.rate} %</td><td class="r">${finFmtEUR2(r.share)}</td></tr>`).join('');
+  const pays = s.payouts.slice().reverse().map(p => `<tr><td>${esc(fmtDate(p.paid_on))}</td><td colspan="4">Versement ${esc(p.note || '')}</td><td class="r">- ${finFmtEUR2(Number(p.amount))}</td></tr>`).join('');
+  w.document.write(`<!doctype html><meta charset="utf-8"><title>Relevé ${esc(ownerLabel(username))}</title><style>body{font:13px/1.5 system-ui,sans-serif;margin:32px;color:#111}h1{font-size:20px;margin:0}table{border-collapse:collapse;width:100%;margin-top:14px}th,td{border-bottom:1px solid #ddd;padding:6px 8px;text-align:left}th{font-size:11px;text-transform:uppercase;color:#555}.r{text-align:right}.tot td{font-weight:700;border-top:2px solid #111}</style>
+    <h1>Relevé de reversement — ${esc(ownerLabel(username))}</h1><div>OwlsVision · édité le ${esc(fmtDate(todayStr()))} · base ${finOwnerBase() === 'ht' ? 'HT' : 'TTC'}</div>
+    <table><thead><tr><th>Date</th><th>Client</th><th>Matériel</th><th class="r">Montant</th><th class="r">Taux</th><th class="r">Part</th></tr></thead><tbody>${rows}<tr class="tot"><td colspan="5">Total gagné</td><td class="r">${finFmtEUR2(s.owed)}</td></tr>${pays}<tr class="tot"><td colspan="5">Reste à verser</td><td class="r">${finFmtEUR2(s.balance)}</td></tr></tbody></table><script>setTimeout(function(){print()},300)<\/script>`);
+  w.document.close();
+};
+
+/* ---------- Fusion de fiches doublons (un PVS-14 par propriétaire → un seul PVS-14) ---------- */
+function itemNameKey(name){ return String(name || '').toLowerCase().replace(/\([^)]*\)/g, '').replace(/[^a-z0-9]+/g, ''); }
+function mergeSuggestions(){
+  const m = new Map();
+  state.items.forEach(i => { const k = itemNameKey(i.name); if(!k) return; (m.get(k) || m.set(k, []).get(k)).push(i); });
+  return [...m.values()].filter(l => l.length > 1);
+}
+window.openMergeItems = (ids) => {
+  if(!unitsEnabled()){ alert("Exécutez d'abord migration_lot43_exemplaires.sql dans Supabase (SQL Editor), puis rechargez la page."); return; }
+  const sel = (ids && ids.length ? ids : []).slice();
+  state.modal = { type: 'mergeItems', selected: sel, target: sel[0] || null }; render();
+};
+window.mergeToggle = (id) => {
+  const m = state.modal; if(!m || m.type !== 'mergeItems') return;
+  m.selected = m.selected.includes(id) ? m.selected.filter(x => x !== id) : [...m.selected, id];
+  if(!m.selected.includes(m.target)) m.target = m.selected[0] || null;
+  render();
+};
+window.mergeSetTarget = (id) => { const m = state.modal; if(m && m.type === 'mergeItems'){ m.target = id; render(); } };
+window.mergeConfirm = async () => {
+  const m = state.modal; if(!m || m.type !== 'mergeItems') return;
+  const target = state.items.find(i => i.id === m.target);
+  const sources = m.selected.filter(id => id !== m.target).map(id => state.items.find(i => i.id === id)).filter(Boolean);
+  if(!target || !sources.length){ alert('Choisissez au moins deux fiches et celle à conserver.'); return; }
+  const nb = state.bookings.filter(b => sources.some(s => s.id === b.item_id)).length;
+  if(!confirm(`Fusionner ${sources.map(s => '« ' + s.name + ' »').join(', ')} dans « ${target.name} » ?\n\n• Les exemplaires (n° de série, propriétaires) et les ${nb} réservation${nb > 1 ? 's' : ''} sont déplacés sur « ${target.name} ».\n• Nom, photo, description et tarifs de « ${target.name} » sont conservés.\n• Les fiches fusionnées sont supprimées.\n• Le catalogue client affichera une seule fiche avec la quantité totale.`)) return;
+  for(const s of sources){ if(!(await ensureUnits(s))) return; }
+  await ensureUnits(target);
+  for(const s of sources){
+    // Les locations déjà confirmées sans exemplaire gardent leur propriétaire d'avant : on leur donne un
+    // exemplaire de leur ancienne fiche (qui avait un seul propriétaire), un libre à leurs dates si possible.
+    const sUnits = unitsOf(s.id);
+    for(const b of state.bookings.filter(x => x.item_id === s.id && !x.unit_id && ['accepte', 'loue', 'retourne'].includes(x.status))){
+      const u = sUnits.find(x => !unitBusyWith(x, b.start_date, b.end_date, b.id)) || sUnits[0];
+      if(!u) continue;
+      const rb = await sb.from('bookings').update({ unit_id: u.id }).eq('id', b.id);
+      if(rb.error){ alert('Erreur (attribution) : ' + rb.error.message); return; }
+      b.unit_id = u.id;
+    }
+    let r = await sb.from('item_units').update({ item_id: target.id }).eq('item_id', s.id);
+    if(r.error){ alert('Erreur (exemplaires) : ' + r.error.message); return; }
+    r = await sb.from('bookings').update({ item_id: target.id }).eq('item_id', s.id);
+    if(r.error){ alert('Erreur (réservations) : ' + r.error.message); return; }
+    state.itemUnits.forEach(u => { if(u.item_id === s.id) u.item_id = target.id; });
+    state.bookings.forEach(b => { if(b.item_id === s.id) b.item_id = target.id; });
+    r = await sb.from('items').delete().eq('id', s.id);
+    if(r.error){ alert('Les données sont déplacées mais la fiche « ' + s.name + ' » n\'a pas pu être supprimée : ' + r.error.message); }
+    else state.items = state.items.filter(i => i.id !== s.id);
+  }
+  refreshItemQtyLocal(target.id);
+  state.modal = null; render();
+  unitsToast('Fusion terminée : ' + unitsOf(target.id).length + ' exemplaires dans « ' + target.name + ' »');
+};
+
+/* ---------- Gérer un client / une location sans contrat ---------- */
+window.toggleContractWaived = async (bookingId) => {
+  if(!state.session.isMaster) return;
+  const b = state.bookings.find(x => x.id === bookingId); if(!b) return;
+  const next = !b.contract_waived;
+  const name = clientDisplayName(state.profiles.find(p => p.username === b.username)) || b.username;
+  if(next && !confirm(`Gérer cette location de ${name} sans contrat ?\n\nLa facture et le suivi du paiement deviennent disponibles sans signature. Le client verra sa facture et son rappel de paiement. Vous pourrez toujours lui envoyer un contrat plus tard.`)) return;
+  const prev = b.contract_waived; b.contract_waived = next; render();
+  const { error } = await sb.from('bookings').update({ contract_waived: next }).eq('id', bookingId);
+  if(error){ b.contract_waived = prev; render(); alert("Non enregistré : " + error.message + "\nExécutez d'abord migration_lot43_exemplaires.sql dans Supabase."); }
+};
+window.waiveAllForClient = async (username) => {
+  if(!state.session.isMaster) return;
+  const name = clientDisplayName(state.profiles.find(p => p.username === username)) || username;
+  const list = state.bookings.filter(b => b.username === username && ['demande', 'accepte', 'loue'].includes(b.status) && !b.contract_waived);
+  if(!list.length){ alert('Aucune réservation en cours à dispenser pour ' + name + '.'); return; }
+  if(!confirm(`Gérer les ${list.length} réservation${list.length > 1 ? 's' : ''} en cours de ${name} sans contrat ?`)) return;
+  const { error } = await sb.from('bookings').update({ contract_waived: true }).in('id', list.map(b => b.id));
+  if(error){ alert("Non enregistré : " + error.message + "\nExécutez d'abord migration_lot43_exemplaires.sql dans Supabase."); return; }
+  list.forEach(b => { b.contract_waived = true; });
+  render();
+};
+// Panneau côté client : ses locations gérées sans contrat (facture + état du paiement).
+function waivedBookingsPanelHtml(username){
+  const list = state.bookings.filter(b => b.username === username && b.contract_waived && ['accepte', 'loue', 'retourne'].includes(b.status))
+    .sort((a, c) => String(c.start_date).localeCompare(String(a.start_date)));
+  if(!list.length) return '';
+  const rows = list.map(b => {
+    const it = state.items.find(i => i.id === b.item_id);
+    const inv = state.invoices.find(x => x.booking_id === b.id);
+    return `<div class="wv-row"><div class="wv-t"><b>${esc(it ? it.name : tx('Matériel', 'Equipment'))}</b><small>${esc(fmtDate(b.start_date))} → ${esc(fmtDate(b.end_date))}</small></div>
+      <span class="status-pill ${b.paid ? 'ok' : 'pending'}">${esc(b.paid ? t('contrat.paymentStatus.paid') : t('contrat.paymentStatus.pending'))}</span>
+      ${inv ? `<button type="button" class="btn btn-ghost btn-sm" style="width:auto;" onclick="openInvoiceFile('${esc(inv.pdf_path)}','${esc(inv.id)}')">${tacticalIconSvg('doc', { size: 15 })} ${esc(t('contrat.invoice.view', { number: inv.invoice_number }))}</button>` : `<small class="wv-wait">${esc(tx('Facture bientôt disponible', 'Invoice coming soon'))}</small>`}</div>`;
+  }).join('');
+  return `<div class="panel"><div class="section-title" style="margin-top:0;">${esc(tx('Mes locations', 'My rentals'))}</div><div class="wv-list">${rows}</div></div>`;
+}
+
+/* ===== Lot 44 : interface exemplaires / reversements ===== */
+function unitOwnerOptionsHtml(selected){
+  const owners = state.profiles.filter(p => p.is_owner);
+  const known = new Set(owners.map(o => o.username));
+  const extra = selected && !known.has(selected) ? `<option value="${esc(selected)}" selected>${esc(selected)}</option>` : '';
+  return `<option value="">OwlsVision (stock propre)</option>${owners.map(o => `<option value="${esc(o.username)}" ${selected === o.username ? 'selected' : ''}>${esc(clientDisplayName(o))}</option>`).join('')}${extra}`;
+}
+function unitStats(u){
+  const bs = state.bookings.filter(b => b.unit_id === u.id && ['accepte', 'loue', 'retourne'].includes(b.status));
+  const rows = finRentalsLedger().filter(r => r.unit && r.unit.id === u.id && r.st === 'paid');
+  return { n: bs.length, days: bs.reduce((s, b) => s + bookingDurationDays(b), 0), gross: round2(rows.reduce((s, r) => s + r.amount, 0)), share: round2(rows.reduce((s, r) => s + r.share, 0)) };
+}
+function unitsModalHtml(m){
+  const item = state.items.find(i => i.id === m.itemId);
+  if(!item) return '';
+  const all = unitsOf(item.id, true);
+  const active = all.filter(u => u.active !== false);
+  const sum = itemOwnerSummary(item).map(s => `<span class="un-sum ${s.owner ? 'own' : ''}"><b>${s.n}</b> ${esc(ownerLabel(s.owner))}</span>`).join('');
+  const rowHtml = (u, i) => {
+    const st = unitStats(u);
+    const off = u.active === false;
+    return `<div class="un-row ${off ? 'off' : ''}" data-unit-row="${esc(u.id)}">
+      <div class="un-row-h"><b>#${i + 1}</b>${off ? '<span class="status-pill none">Retiré du stock</span>' : '<span class="status-pill ok">Actif</span>'}
+        <span class="un-use">${st.n} location${st.n > 1 ? 's' : ''} · ${st.days} j${st.share > 0 ? ` · ${finFmtEUR2(st.share)} à ${esc(ownerLabel(u.owner_username))}` : ''}</span>
+        <span class="un-row-act"><button type="button" class="btn btn-ghost btn-sm" style="width:auto;" onclick="unitsToggleActive('${esc(u.id)}')">${off ? 'Remettre' : 'Retirer'}</button><button type="button" class="icon-btn danger" title="Supprimer définitivement" onclick="unitsDelete('${esc(u.id)}')">✕</button></span></div>
+      <div class="un-grid">
+        <div class="field"><label>N° de série</label><input data-f="serial" value="${esc(u.serial || '')}" placeholder="ex. 12345"></div>
+        <div class="field"><label>Propriétaire</label><select data-f="owner">${unitOwnerOptionsHtml(u.owner_username)}</select></div>
+        <div class="field"><label>Taux (%)</label><input data-f="share_pct" type="number" min="0" max="100" step="0.5" value="${u.share_pct != null ? esc(u.share_pct) : ''}" placeholder="${finOwnerPct()} (défaut)"></div>
+        <div class="field"><label>État</label><select data-f="etat"><option value="">—</option>${['Neuf', 'Bon état', "État d'usage", 'Très usagé'].map(e => `<option ${u.etat === e ? 'selected' : ''}>${esc(e)}</option>`).join('')}</select></div>
+        <div class="field"><label>Acquis le</label><input data-f="acquired" type="date" value="${esc(u.acquired_on || '')}"></div>
+      </div></div>`;
+  };
+  return `
+  <div class="modal-bg" onclick="closeModalBg(event)"><div class="modal un-modal">
+    <h3>Exemplaires — ${esc(item.name)}</h3>
+    <div class="un-lead"><b>${active.length}</b> exemplaire${active.length > 1 ? 's' : ''} actif${active.length > 1 ? 's' : ''} : c'est cette quantité que le client voit dans le catalogue. ${sum}</div>
+    <div class="un-list">${all.length ? all.map(rowHtml).join('') : '<div class="empty">Aucun exemplaire. Ajoutez-en ci-dessous.</div>'}</div>
+    <div class="un-add">
+      <div class="field"><label>Ajouter</label><input id="un-add-n" type="number" min="1" max="50" value="1"></div>
+      <div class="field"><label>Propriétaire</label><select id="un-add-owner">${unitOwnerOptionsHtml('')}</select></div>
+      <button type="button" class="btn btn-ghost" style="width:auto;" onclick="unitsAdd('${esc(item.id)}')">+ Ajouter</button>
+    </div>
+    <div class="un-note">Le taux laissé vide utilise le taux par défaut (${finOwnerPct()} %, modifiable dans Finances). Le reversement ne se déclenche que quand la location est marquée <b>payée</b>.</div>
+    <div class="modal-actions"><button class="btn btn-ghost" onclick="closeModal()">Fermer</button><button class="btn btn-primary" onclick="unitsSaveAll('${esc(item.id)}')">Enregistrer les modifications</button></div>
+  </div></div>`;
+}
+function unitPickerModalHtml(m){
+  const b = state.bookings.find(x => x.id === m.bookingId);
+  if(!b) return '';
+  const item = state.items.find(i => i.id === b.item_id);
+  const { amount } = finBookingAmount(b);
+  const us = item ? unitsOf(item.id) : [];
+  const cur = bookingUnit(b);
+  const rowHtml = (u) => {
+    const busy = unitBusyWith(u, b.start_date, b.end_date, b.id);
+    const mine = cur && cur.id === u.id;
+    const share = u.owner_username ? round2(ownerShareBaseAmount(b, amount) * unitRatePct(u) / 100) : 0;
+    const who = busy ? clientDisplayName(state.profiles.find(p => p.username === busy.username)) || busy.username : '';
+    return `<button type="button" class="up-row ${mine ? 'on' : ''} ${busy ? 'busy' : ''}" ${busy ? 'disabled' : `onclick="pickUnit('${esc(b.id)}','${esc(u.id)}')"`}>
+      <span class="up-main"><b>${esc(unitLabel(u))}</b><small>${esc(ownerLabel(u.owner_username))}${u.owner_username ? ' · ' + unitRatePct(u) + ' %' : ''}</small></span>
+      <span class="up-side">${busy ? `<span class="status-pill danger">Occupé</span><small>${esc(who)} · ${esc(finShortRange(busy.start_date, busy.end_date))}</small>` : mine ? '<span class="status-pill ok">Attribué</span>' : '<span class="status-pill pending">Libre</span>'}${!busy && u.owner_username && amount ? `<small>proprio ${finFmtEUR2(share)}</small>` : ''}</span>
+    </button>`;
+  };
+  return `
+  <div class="modal-bg" onclick="closeModalBg(event)"><div class="modal up-modal">
+    <h3>Quel exemplaire ?</h3>
+    <div class="un-lead">${esc(item ? item.name : '')} · ${esc(finShortRange(b.start_date, b.end_date))} · ${esc(clientDisplayName(state.profiles.find(p => p.username === b.username)) || b.username)}</div>
+    <div class="up-list">${us.length ? us.map(rowHtml).join('') : '<div class="empty">Aucun exemplaire actif sur ce matériel.</div>'}</div>
+    <div class="modal-actions">${cur ? `<button class="btn btn-ghost" onclick="pickUnit('${esc(b.id)}',null)">Retirer l'attribution</button>` : ''}<button class="btn btn-ghost" onclick="closeModal()">Fermer</button></div>
+  </div></div>`;
+}
+function ownerStatementModalHtml(m){
+  const p = state.profiles.find(x => x.username === m.username);
+  const s = ownerStatement(m.username);
+  const kpi = (cls, l, v, sub) => `<div class="os-k ${cls}"><span>${l}</span><b>${v}</b>${sub ? `<small>${sub}</small>` : ''}</div>`;
+  const lines = s.paid.slice().sort((a, c) => String(c.refDate).localeCompare(String(a.refDate))).map(r => `<tr><td>${esc(fmtDate(r.refDate))}</td><td>${esc(r.profile ? clientDisplayName(r.profile) : r.b.username)}</td><td>${esc(r.item ? r.item.name : '')}<small>${esc(r.unit ? unitLabel(r.unit) : 'sans exemplaire')}</small></td><td class="r">${finFmtEUR2(r.amount)}</td><td class="r">${r.rate} %</td><td class="r"><b>${finFmtEUR2(r.share)}</b></td></tr>`).join('');
+  const open = s.open.map(r => `<tr><td>${esc(finShortRange(r.b.start_date, r.b.end_date))}</td><td>${esc(r.profile ? clientDisplayName(r.profile) : r.b.username)}</td><td>${esc(r.item ? r.item.name : '')}<small>${esc(r.unit ? unitLabel(r.unit) : '')}</small></td><td class="r">${finFmtEUR2(r.amount)}</td><td class="r">${r.rate} %</td><td class="r">${finFmtEUR2(r.share)}</td></tr>`).join('');
+  const pays = s.payouts.map(x => `<tr><td>${esc(fmtDate(x.paid_on))}</td><td colspan="4">${esc(x.note || 'Versement')}</td><td class="r"><b>${finFmtEUR2(Number(x.amount))}</b> <button type="button" class="icon-btn danger" title="Supprimer ce versement" onclick="deleteOwnerPayout('${esc(x.id)}')">✕</button></td></tr>`).join('');
+  return `
+  <div class="modal-bg" onclick="closeModalBg(event)"><div class="modal os-modal">
+    <h3>Relevé — ${esc(clientDisplayName(p) || m.username)}</h3>
+    <div class="os-kpis">
+      ${kpi('', 'Gagné (encaissé)', finFmtEUR2(s.owed), `${s.paid.length} location${s.paid.length > 1 ? 's' : ''}`)}
+      ${kpi('', 'Déjà versé', finFmtEUR2(s.reversed), `${s.payouts.length} versement${s.payouts.length > 1 ? 's' : ''}`)}
+      ${kpi(s.balance > 0.005 ? 'due' : 'ok', 'Reste à verser', finFmtEUR2(s.balance), '')}
+      ${kpi('dim', 'À venir (pas encore payé)', finFmtEUR2(s.pending), `${s.open.length} location${s.open.length > 1 ? 's' : ''}`)}
+    </div>
+    <div class="os-pay ${m.pay ? 'open' : ''}">
+      <div class="field"><label for="po-amount">Montant versé (€)</label><input id="po-amount" type="number" step="0.01" min="0" value="${s.balance > 0 ? s.balance.toFixed(2) : ''}"></div>
+      <div class="field"><label for="po-date">Date</label><input id="po-date" type="date" value="${todayStr()}"></div>
+      <div class="field os-note"><label for="po-note">Note (virement, espèces…)</label><input id="po-note" placeholder="ex. virement du mois"></div>
+      <button type="button" class="btn btn-primary" style="width:auto;" onclick="addOwnerPayoutFromModal('${esc(m.username)}')">Enregistrer le versement</button>
+    </div>
+    <div class="os-scroll">
+      <div class="os-h">Locations encaissées</div>
+      ${s.paid.length ? `<table class="os-tbl"><thead><tr><th>Payée le</th><th>Client</th><th>Matériel</th><th class="r">Montant</th><th class="r">Taux</th><th class="r">Part</th></tr></thead><tbody>${lines}</tbody></table>` : '<div class="empty" style="padding:12px;">Rien d\'encaissé sur ses exemplaires pour l\'instant.</div>'}
+      ${s.open.length ? `<div class="os-h">Pas encore payées (non comptées)</div><table class="os-tbl dim"><tbody>${open}</tbody></table>` : ''}
+      ${s.payouts.length ? `<div class="os-h">Versements</div><table class="os-tbl"><tbody>${pays}</tbody></table>` : ''}
+    </div>
+    <div class="modal-actions"><button class="btn btn-ghost" onclick="exportOwnerStatement('${esc(m.username)}')">Exporter (CSV)</button><button class="btn btn-ghost" onclick="printOwnerStatement('${esc(m.username)}')">Imprimer</button><button class="btn btn-primary" onclick="closeModal()">Fermer</button></div>
+  </div></div>`;
+}
+function mergeItemsModalHtml(m){
+  const sugg = mergeSuggestions();
+  const sel = new Set(m.selected);
+  const rows = state.items.map(i => `<div class="mg-row ${sel.has(i.id) ? 'on' : ''}">
+    <label><input type="checkbox" ${sel.has(i.id) ? 'checked' : ''} onchange="mergeToggle('${esc(i.id)}')"> <b>${esc(i.name)}</b> <small>${esc(itemOwnerSummary(i).map(s => s.n + ' ' + ownerLabel(s.owner)).join(' · '))}</small></label>
+    ${sel.has(i.id) && sel.size > 1 ? `<label class="mg-keep"><input type="radio" name="mg-target" ${m.target === i.id ? 'checked' : ''} onchange="mergeSetTarget('${esc(i.id)}')"> garder cette fiche</label>` : ''}</div>`).join('');
+  return `
+  <div class="modal-bg" onclick="closeModalBg(event)"><div class="modal mg-modal">
+    <h3>Fusionner des fiches en une seule</h3>
+    <div class="un-lead">Idéal quand vous avez créé un « PVS-14 » par propriétaire : le client ne verra plus qu'un seul PVS-14, avec la quantité totale. Les exemplaires, n° de série, propriétaires et réservations sont conservés.</div>
+    ${sugg.length ? `<div class="mg-sugg"><b>Doublons probables :</b> ${sugg.map(l => `<button type="button" class="ul-chip" onclick="openMergeItems(${esc(JSON.stringify(l.map(i => i.id)))})">${esc(l.map(i => i.name).join(' + '))}</button>`).join('')}</div>` : ''}
+    <div class="mg-list">${rows}</div>
+    <div class="modal-actions"><button class="btn btn-ghost" onclick="closeModal()">Annuler</button><button class="btn btn-primary" ${sel.size > 1 && m.target ? '' : 'disabled'} onclick="mergeConfirm()">Fusionner (${Math.max(0, sel.size)})</button></div>
+  </div></div>`;
+}
+function unitsRenderModal(m){
+  if(m.type === 'units') return unitsModalHtml(m);
+  if(m.type === 'unitPicker') return unitPickerModalHtml(m);
+  if(m.type === 'ownerStatement') return ownerStatementModalHtml(m);
+  if(m.type === 'mergeItems') return mergeItemsModalHtml(m);
+  return null;
+}
+
+/* ---------- Pastilles / bandeaux ---------- */
+// Carte réservation : quel exemplaire (donc quel propriétaire) porte cette location.
+function gbUnitChipHtml(b, item){
+  if(!unitsEnabled() || !item || !itemHasUnits(item.id) || !unitsOf(item.id).length) return '';
+  const id = esc(b.id);
+  if(b.status === 'demande'){
+    const total = unitsOf(item.id).length;
+    const free = freeUnitsFor(item.id, b.start_date, b.end_date, b.id).length;
+    return `<div class="gb-unit info"><span>${free} / ${total} exemplaire${total > 1 ? 's' : ''} libre${free > 1 ? 's' : ''} sur ces dates</span>${free === 0 ? '<b class="warn">Aucun libre</b>' : ''}</div>`;
+  }
+  if(!['accepte', 'loue', 'retourne'].includes(b.status)) return '';
+  const u = bookingUnit(b);
+  if(!u) return `<button type="button" class="gb-unit todo" onclick="openUnitPicker('${id}')"><span>Exemplaire à attribuer</span><b>Choisir</b></button>`;
+  const { amount } = finBookingAmount(b);
+  const share = u.owner_username && amount ? bookingOwnerShare(b, amount) : 0;
+  return `<button type="button" class="gb-unit ${u.owner_username ? 'own' : ''}" onclick="openUnitPicker('${id}')" title="Changer d'exemplaire"><span><b>${esc(unitLabel(u))}</b> · ${esc(ownerLabel(u.owner_username))}</span>${share ? `<i>proprio ${finFmtEUR2(share)}</i>` : '<i>stock OwlsVision</i>'}</button>`;
+}
+function unitsBannerHtml(){
+  if(!state.session.isMaster) return '';
+  if(!unitsEnabled()) return `<div class="un-banner warn"><div><b>Exemplaires non activés.</b> Exécutez <code>migration_lot43_exemplaires.sql</code> dans Supabase pour rattacher un n° de série et un propriétaire à chaque exemplaire.</div></div>`;
+  const n = unassignedBookings().length;
+  if(!n) return '';
+  return `<div class="un-banner"><div><b>${n} réservation${n > 1 ? 's' : ''} sans exemplaire.</b> L'exemplaire désigne le propriétaire à payer et le n° de série du contrat.</div><button type="button" class="btn btn-primary btn-sm" style="width:auto;" onclick="unitsAssignAll()">Attribuer automatiquement</button></div>`;
+}
+function stockOwnerTagsHtml(item){
+  const sum = itemOwnerSummary(item);
+  if(!sum.length) return '';
+  const owners = sum.filter(s => s.owner);
+  if(!owners.length) return '';
+  if(!itemHasUnits(item.id)) return `<span class="owner-tag">${tacticalIconSvg('house', { size: 11 })}${esc(ownerLabel(owners[0].owner))}</span>`;
+  return sum.map(s => `<span class="${s.owner ? 'owner-tag' : 'ul-tag'}">${s.owner ? tacticalIconSvg('house', { size: 11 }) : ''}${s.n} ${esc(ownerLabel(s.owner))}</span>`).join('');
+}
+function stockQtyHtml(item){
+  const id = esc(item.id);
+  if(unitsEnabled()) return `<button type="button" class="btn btn-ghost btn-sm sk-units" style="width:auto;" onclick="openUnitsModal('${id}')" title="N° de série, propriétaires, retraits du stock">${tacticalIconSvg('package', { size: 14 })} ${item.qty} exemplaire${item.qty > 1 ? 's' : ''}</button>`;
+  return `<div class="sk-qty"><button type="button" class="icon-btn" onclick="adjustItemQty('${id}',-1)" ${item.qty <= 0 ? 'disabled' : ''} title="Retirer une unité">−</button><span>${item.qty}</span><button type="button" class="icon-btn" onclick="adjustItemQty('${id}',1)" title="Ajouter une unité">+</button></div>`;
+}
+// Matériel d'un propriétaire pour les contrats : une ligne par exemplaire (sinon l'ancien rattachement).
+function ownerContractMateriel(username){
+  const us = state.itemUnits.filter(u => u.owner_username === username && u.active !== false).sort((a, c) => String(a.item_id).localeCompare(String(c.item_id)) || unitSort(a, c));
+  if(us.length) return us.map(u => { const it = state.items.find(i => i.id === u.item_id); return { name: it ? it.name : 'Matériel', serial: u.serial || '', acquired: u.acquired_on || '', etat: u.etat || '', ref: it && it.reference_value != null ? it.reference_value : null, item: it, unit: u }; });
+  return state.items.filter(i => i.owner_username === username).map(i => ({ name: i.name, serial: i.owner_numero_serie || '', acquired: i.owner_date_acquisition || '', etat: i.owner_etat || '', ref: i.reference_value != null ? i.reference_value : null, item: i, unit: null }));
+}
+
+// N° de série proposé dans le contrat de location : celui de l'exemplaire attribué à la réservation.
+function gcSerialFor(booking, item){
+  const u = booking ? bookingUnit(booking) : null;
+  if(u && u.serial) return u.serial;
+  if(booking && itemHasUnits(booking.item_id)) return '';
+  return item && item.owner_numero_serie ? item.owner_numero_serie : '';
+}
+// Contrôle Finances : la ligne de compta ne reflète pas l'exemplaire attribué.
+window.finFixAlignShare = async (saleId, bookingId) => {
+  const b = state.bookings.find(x => x.id === bookingId); if(!b) return;
+  await syncSaleShare(b);
+  finRefreshInner();
+};
 
 /* ---------- Assemblage + rafraîchissements ciblés ---------- */
 function finRootHtml(){
@@ -9270,7 +10209,7 @@ function contractNewBookingsFor(username){
   if(!c || !c.uploaded_at) return [];
   const madeAt = new Date(c.uploaded_at).getTime();
   return state.bookings
-    .filter(b => b.username === username && ['demande','accepte','loue'].includes(b.status) && b.created_at && new Date(b.created_at).getTime() > madeAt)
+    .filter(b => b.username === username && ['demande','accepte','loue'].includes(b.status) && !b.contract_waived && b.created_at && new Date(b.created_at).getTime() > madeAt)
     .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
 }
 function contractIsStaleFor(username){ return contractNewBookingsFor(username).length > 0; }
@@ -9407,6 +10346,7 @@ function renderContratClient(){
   const oc = state.owner_contracts.find(x => x.username === u.username);
   return `
     <div class="topbar"><div><h1>${esc(t('contrat.title'))}</h1><div class="desc">${esc(t('contrat.desc'))}</div></div>${xpBarHtml(u)}</div>
+    ${waivedBookingsPanelHtml(u.username)}
     <div class="panel">
       <div class="section-title" style="margin-top:0;">${esc(t('contrat.location.title'))}</div>
       ${!c ? `<div class="empty">${esc(t('contrat.none'))}</div>` : `
@@ -9660,6 +10600,7 @@ function clientHistoryHtml(username){
 function renderModal(){
   if(!state.modal) return "";
   const m = state.modal;
+  { const _un = unitsRenderModal(m); if(_un !== null) return _un; }
   if(m.type === "tasksCalendar"){
     return tasksCalendarModalHtml();
   }
@@ -9772,14 +10713,15 @@ function renderModal(){
     }).join('');
     const days = booking ? bookingDurationDays(booking) : 1;
     const estPrice = booking ? estimatedBookingPrice(booking) : null;
-    const isOwnerRental = !!(item && item.owner_username);
-    const owner = isOwnerRental ? state.profiles.find(x => x.username === item.owner_username) : null;
+    const ownerUsernameM = booking ? bookingOwnerUsername(booking) : null;
+    const isOwnerRental = !!ownerUsernameM;
+    const owner = isOwnerRental ? state.profiles.find(x => x.username === ownerUsernameM) : null;
     return `
     <div class="modal-bg" onclick="closeModalBg(event)"><div class="modal" style="max-width:560px;">
       <h3>Générer le contrat — ${esc(clientDisplayName(p))}</h3>
       ${missing.length ? `<div class="msg msg-error">Fiche client incomplète (${missing.join(', ')}) — ces informations apparaîtront vides dans le contrat. Complétez-les dans sa fiche avant de générer si possible.</div>` : ''}
       ${!clientBookings.length ? `<div class="msg msg-error">Aucune réservation trouvée pour ce client — les champs matériel/prix/dates resteront vides, à compléter à la main ci-dessous n'est pas possible pour le matériel : créez d'abord une réservation.</div>` : ''}
-      ${isOwnerRental ? `<div class="msg msg-info">Matériel rattaché au Propriétaire ${esc(clientDisplayName(owner) || item.owner_username)} — le contrat utilisera automatiquement la Variante B (OwlsVision mandataire).</div>` : `<div class="msg msg-info">Matériel du stock propre OwlsVision — le contrat utilisera la Variante A.</div>`}
+      ${isOwnerRental ? `<div class="msg msg-info">Matériel rattaché au Propriétaire ${esc(clientDisplayName(owner) || ownerUsernameM)} — le contrat utilisera automatiquement la Variante B (OwlsVision mandataire).</div>` : `<div class="msg msg-info">Matériel du stock propre OwlsVision — le contrat utilisera la Variante A.</div>`}
       <div class="field"><label>Réservation utilisée pour le contrat</label><select id="gc-booking" onchange="onGenerateContractBookingChange('${esc(m.username)}', this.value)">${clientBookings.length ? bookingOptions : '<option>—</option>'}</select></div>
       <div class="row">
         <div class="field"><label>Catégorie (matériel)</label><input id="gc-categorie" value="${esc(item?item.name:'')}"></div>
@@ -9787,7 +10729,7 @@ function renderModal(){
       </div>
       <div class="field"><label>Description du matériel</label><textarea id="gc-description" rows="2">${esc(item?item.description||'':'')}</textarea></div>
       <div class="row">
-        <div class="field"><label>N° de série (optionnel)</label><input id="gc-numero-serie" value="${esc(item&&item.owner_numero_serie?item.owner_numero_serie:'')}"></div>
+        <div class="field"><label>N° de série (optionnel)</label><input id="gc-numero-serie" value="${esc(gcSerialFor(booking, item))}"></div>
         <div class="field"><label>Montant de la caution (€, optionnel)</label><input id="gc-caution" type="number" step="0.01" placeholder="laisser vide si non exigée"></div>
       </div>
       <div class="row">
@@ -9885,7 +10827,7 @@ function renderModal(){
         </div>
       </div></div>`;
     }
-    const myItems = state.items.filter(i => i.owner_username === m.username);
+    const myItems = ownerContractMateriel(m.username);
     const missing = ['nom','prenom','date_naissance','adresse'].filter(f => !p[f]);
     return `
     <div class="modal-bg" onclick="closeModalBg(event)"><div class="modal" style="max-width:560px;">
@@ -9928,7 +10870,7 @@ function renderModal(){
       <div class="field"><label>Description</label><textarea id="it-desc" rows="3" placeholder="Détails techniques, usage recommandé...">${editing?esc(it.description||''):''}</textarea></div>
       <div class="row">
         <div class="field"><label>XP gagnée à la location</label><input id="it-xp" type="number" value="${editing?it.xp_value:20}" min="1"></div>
-        <div class="field"><label>Quantité en stock</label><input id="it-qty" type="number" value="${editing?it.qty:1}" min="0"></div>
+        <div class="field"><label>Quantité en stock</label><input id="it-qty" type="number" value="${editing?it.qty:1}" min="0" ${editing && itemHasUnits(it.id) ? 'disabled title="Quantité = nombre d\'exemplaires actifs"' : ''}></div>
       </div>
       <div class="row">
         <div class="field"><label>Prix journalier de référence (€)</label><input id="it-price-day" type="number" step="0.01" min="0" placeholder="ex. 25" value="${editing&&it.price_per_day!=null?it.price_per_day:''}"></div>
@@ -9936,7 +10878,8 @@ function renderModal(){
       </div>
       <div class="field"><label>Valeur de référence (remplacement en cas de perte/vol/casse)</label><input id="it-refval" type="number" step="0.01" min="0" placeholder="ex. 3490" value="${editing&&it.reference_value!=null?it.reference_value:''}"></div>
       <div style="font-size:11.5px;color:var(--text-faint);margin:-4px 0 10px;">Utilisée dans le contrat de location (article 1 et 8) pour fixer le montant dû en cas de perte totale, vol ou destruction.</div>
-      <div class="field"><label>Propriétaire du matériel</label><select id="it-owner">
+      ${editing && itemHasUnits(it.id) ? `<div class="un-info"><span><b>${unitsOf(it.id).length} exemplaire${unitsOf(it.id).length > 1 ? 's' : ''}</b> · ${esc(itemOwnerSummary(it).map(s => s.n + ' ' + ownerLabel(s.owner)).join(' · '))}<br><small style="color:var(--text-faint);">Propriétaire, n° de série et état se règlent exemplaire par exemplaire.</small></span><button type="button" class="btn btn-primary btn-sm" style="width:auto;" onclick="openUnitsModal('${it.id}')">Gérer les exemplaires</button></div>
+      ` : `<div class="field"><label>Propriétaire du matériel</label><select id="it-owner">
         <option value="">OwlsVision (stock propre — Variante A)</option>
         ${state.profiles.filter(p => p.is_owner).map(o => `<option value="${esc(o.username)}" ${editing&&it.owner_username===o.username?'selected':''}>${esc(clientDisplayName(o))} (${esc(o.username)}) — Variante B</option>`).join('')}
       </select></div>
@@ -9952,6 +10895,7 @@ function renderModal(){
         <option ${editing&&it.owner_etat==="État d'usage"?'selected':''}>État d'usage</option>
         <option ${editing&&it.owner_etat==='Très usagé'?'selected':''}>Très usagé</option>
       </select></div>
+      `}
       <div class="field"><label>Photo ${editing?'(laisser vide pour garder la photo actuelle)':'(optionnel)'}</label><input id="it-photo" type="file" accept="image/*"></div>
       ${editing && it.image_url ? `<img src="${it.image_url}" style="width:100%;height:110px;object-fit:cover;border-radius:var(--r-sm);margin:-4px 0 6px;">` : ''}
       <div id="it-error"></div>
@@ -10095,7 +11039,7 @@ function renderModal(){
       ` : ''}
       <div class="section-title" style="margin-top:6px;">Propriétaire</div>
       ${p.is_owner ? `
-      <div style="font-size:12.5px;color:var(--text-dim);line-height:1.55;margin-bottom:8px;">Matériel rattaché (informatif) : ${state.items.filter(i => i.owner_username === p.username).map(i => esc(i.name)).join(', ') || 'aucun'}. Édition et envoi du contrat : onglet Gestion → Gestion propriétaire.</div>
+      <div style="font-size:12.5px;color:var(--text-dim);line-height:1.55;margin-bottom:8px;">Matériel rattaché : ${esc(ownerUnitsText(p.username) || state.items.filter(i => i.owner_username === p.username).map(i => i.name).join(', ') || 'aucun')}. Édition et envoi du contrat : onglet Gestion → Gestion propriétaire.</div>
       <button class="btn btn-ghost btn-sm" onclick="closeModal(); openMarkAsOwnerModal('${esc(p.username)}');">Modifier ses informations Propriétaire</button>
       ` : `
       <div style="font-size:12.5px;color:var(--text-dim);line-height:1.55;margin-bottom:8px;">Ce compte n'est pas Propriétaire.</div>
@@ -10716,7 +11660,7 @@ window.deleteConversation = async (username) => {
   state.messagesMobileOpen = false;
   render();
 };
-window.onGestionFilter = (v) => { state.gestionFilter = v; const c = document.getElementById('gestion-chips'); if(c) c.innerHTML = gestionChipsHtml(); refreshGestionView(); };
+window.onGestionFilter = (v) => { state.gestionFilter = v; const c = document.getElementById('gestion-chips'); if(c) c.innerHTML = gestionAllChipsHtml(); refreshGestionView(); };
 window.onGestionSort = (field) => {
   if(state.gestionSort.field === field) state.gestionSort.dir = state.gestionSort.dir === 'asc' ? 'desc' : 'asc';
   else state.gestionSort = { field, dir: 'asc' };
@@ -10811,6 +11755,7 @@ window.confirmNewItem = async (e, itemId) => {
     if(itemId){
       const fields = { name, description: desc, xp_value: Number(xp)||10, qty: Number(qty)||0, price_per_day: priceDay===''?null:Number(priceDay), price_per_week: priceWeek===''?null:Number(priceWeek), reference_value: refVal===''?null:Number(refVal), ...ownerFields };
       if(imageUrl) fields.image_url = imageUrl;
+      if(itemHasUnits(itemId)){ delete fields.qty; Object.keys(ownerFields).forEach(k => delete fields[k]); }
       const ok = await updateItem(itemId, fields);
       if(ok) state.modal = null;
       render();
