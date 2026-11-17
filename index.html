@@ -1391,6 +1391,95 @@ button.gb-unit:focus-visible{outline:2px solid var(--accent);outline-offset:2px;
 .wv-t small,.wv-wait{font-size:12px;color:var(--text-faint);}
 </style>
 
+<style id="lot45-css">
+/* ===== Lot 45 : interface allégée ===== */
+/* Réservations */
+.gestion-date-group{background:none;border:0;box-shadow:none;padding:0;margin:0 0 6px;}
+.gestion-date-head{padding:12px 4px 8px;background:transparent;border:0;box-shadow:none;}
+.gestion-date-label{font-size:14px;font-weight:700;color:var(--text-dim);}
+.gestion-date-count{background:none;padding:0 0 0 2px;font-size:12px;color:var(--text-faint);}
+.gestion-date-body{padding:0 0 6px;}
+.gb-grid{grid-template-columns:repeat(auto-fill,minmax(340px,1fr));}
+.gb-card{gap:10px;padding:14px 16px;}
+.gb-card .gb-who{flex:1;}
+.gb-card .gb-who b{font-size:15.5px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:block;}
+.gb-line{display:flex;align-items:baseline;justify-content:space-between;gap:12px;}
+.gb-what{display:flex;flex-direction:column;min-width:0;}
+.gb-what b{font-size:14px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.gb-what small{font-size:12.5px;color:var(--text-faint);}
+.gb-card .gb-price{display:block;font-family:var(--font-disp);font-size:18px;font-weight:700;white-space:nowrap;font-variant-numeric:tabular-nums;text-align:right;}
+.gb-steps{display:flex;flex-wrap:wrap;gap:8px;}
+.gb-step{all:unset;box-sizing:border-box;display:inline-flex;align-items:center;gap:7px;min-height:38px;padding:0 14px;border-radius:99px;font-size:13px;font-weight:600;cursor:pointer;border:1px solid var(--border-soft);background:rgba(255,255,255,.03);color:var(--text-dim);transition:filter .15s;}
+.gb-step::before{content:"";width:8px;height:8px;border-radius:50%;background:currentColor;flex-shrink:0;}
+.gb-step:hover:not(:disabled){filter:brightness(1.25);}
+.gb-step:focus-visible{outline:2px solid var(--accent);outline-offset:2px;}
+.gb-step.ok{color:var(--accent);background:var(--accent-soft);border-color:var(--accent-soft-2);}
+.gb-step.todo{color:var(--amber);background:rgba(255,184,76,.08);border-color:rgba(255,184,76,.4);}
+.gb-step.wait{color:var(--blue,#7db4ff);background:rgba(125,180,255,.08);border-color:rgba(125,180,255,.3);}
+.gb-step.bad{color:#ff9c88;background:rgba(255,120,100,.09);border-color:rgba(255,120,100,.38);}
+.gb-step.off{opacity:.45;cursor:default;}
+.gb-step.off::before{background:transparent;border:1.5px solid currentColor;}
+.gb-own{all:unset;box-sizing:border-box;display:flex;align-items:center;justify-content:space-between;gap:10px;font-size:12.5px;color:var(--text-dim);min-width:0;}
+.gb-own i{font-style:normal;font-weight:700;color:var(--accent);white-space:nowrap;}
+button.gb-own{cursor:pointer;min-height:30px;}
+button.gb-own:hover{color:var(--text);}
+button.gb-own:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:6px;}
+.gb-own.todo,.gb-own.warn{color:var(--amber);}
+.gb-own.todo i{color:var(--amber);}
+.gb-act .gb-more{margin-left:auto;}
+.gb-act .gb-more > summary{width:46px;height:46px;display:inline-flex;align-items:center;justify-content:center;}
+.gb-menu a{display:block;padding:13px 14px;border-radius:9px;font-size:14px;font-weight:600;color:var(--text);text-decoration:none;}
+.gb-menu a:hover{background:rgba(255,255,255,.07);}
+.gb-bar{display:flex;align-items:center;justify-content:space-between;gap:10px 16px;flex-wrap:wrap;}
+.gb-bar .ul-chips{margin:0;}
+.gb-sort{display:inline-flex;align-items:center;gap:8px;font-size:12.5px;color:var(--text-faint);}
+.gb-sort select{background:rgba(255,255,255,.05);border:1px solid var(--border-soft);color:var(--text);border-radius:99px;padding:7px 12px;font:inherit;font-size:13px;}
+@media (max-width:700px){.gb-step{min-height:44px;}button.gb-own{min-height:44px;}.gb-grid{grid-template-columns:minmax(0,1fr);}}
+.un-banner{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin:0 0 12px;padding:8px 12px;border:1px solid var(--border-soft);border-left:3px solid var(--amber);border-radius:10px;background:transparent;font-size:13px;color:var(--text-dim);}
+.un-banner b{color:var(--text);}
+.un-banner.mute{border-left-color:var(--border);}
+/* Stock */
+.sk-card{gap:10px;padding:14px 16px;}
+.sk-top{align-items:center;gap:12px;}
+.sk-img{width:48px;height:48px;border-radius:12px;}
+.sk-owners{display:flex;align-items:center;gap:6px;font-size:12.5px;color:var(--accent);}
+.sk-facts{font-size:12.5px;color:var(--text-faint);line-height:1.45;}
+.sk-sum-line{display:flex;gap:4px 20px;flex-wrap:wrap;font-size:13px;color:var(--text-dim);margin:0 0 12px;}
+.sk-sum-line b{color:var(--text);font-size:15px;}
+.sk-sum-line .warn,.sk-sum-line .warn b{color:var(--amber);}
+/* Finances */
+.rl{--cols:minmax(0,2fr) minmax(0,1.2fr) 120px minmax(0,1.2fr) 190px;}
+.rl-kpi{padding:14px 16px;}
+.rl-kpi-v{font-size:26px;}
+.rl-ok{font-size:13px;color:var(--accent);margin:0 0 14px;padding:2px 2px;}
+.rl-more{margin:6px 0 14px;}
+.rl-more > summary{cursor:pointer;font-size:13px;color:var(--text-dim);padding:10px 4px;}
+.rl-bd-link{all:unset;box-sizing:border-box;display:flex;width:100%;justify-content:space-between;gap:12px;padding:9px 0;border-top:1px solid var(--border-soft);font-size:13px;cursor:pointer;}
+/* Propriétaires */
+.ob-row{grid-template-columns:minmax(0,1.6fr) minmax(0,1.5fr) auto;}
+.ob-due{display:flex;flex-direction:column;min-width:0;}
+.ob-due b{font-size:20px;font-variant-numeric:tabular-nums;}
+.ob-due.due b{color:var(--amber);}
+.ob-due small{font-size:12px;color:var(--text-faint);}
+.ob-set{margin-top:12px;border-top:1px dashed var(--border-soft);padding-top:10px;}
+.ob-set > summary{cursor:pointer;font-size:13px;color:var(--text-dim);}
+.ob-opts{margin-top:12px;border-top:0;padding-top:0;}
+.ob-pct input{width:70px;text-align:right;}
+.ob-hint{font-size:12px;color:var(--text-faint);margin-top:10px;}
+@media (max-width:760px){.ob-row{grid-template-columns:1fr;}.ob-who,.ob-act{grid-column:auto;}.ob-act .btn{flex:1;}}
+/* Nouveau message */
+.nc-search{width:100%;margin:0 0 10px;padding:12px 14px;background:rgba(255,255,255,.05);border:1px solid var(--border-soft);border-radius:var(--r-sm);color:var(--text);font:inherit;font-size:15px;}
+.nc-search:focus{outline:none;border-color:var(--accent-soft-2);}
+.nc-list{display:flex;flex-direction:column;gap:2px;max-height:50vh;overflow:auto;}
+.nc-row{all:unset;box-sizing:border-box;display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 12px;min-height:50px;border-radius:10px;cursor:pointer;}
+.nc-row:hover,.nc-row:focus-visible{background:rgba(255,255,255,.07);}
+.nc-n{display:flex;flex-direction:column;min-width:0;}
+.nc-n b{font-size:14.5px;}
+.nc-n small{font-size:12px;color:var(--text-faint);overflow:hidden;text-overflow:ellipsis;}
+.nc-tag{font-size:11px;color:var(--accent);background:var(--accent-soft);padding:2px 9px;border-radius:99px;white-space:nowrap;}
+.nc-more{font-size:12px;color:var(--text-faint);padding:8px 12px;}
+</style>
+
 </head>
 <body>
 <div id="app"></div>
@@ -5732,21 +5821,6 @@ function bookingDateLabel(date){
   const row = state.bookingDateLabels.find(x => x.date === date);
   return (row && row.label && row.label.trim()) ? row.label : fmtDate(date);
 }
-function gestionDateGroupHtml(group){
-  const { date, bookings } = group;
-  const collapsed = !!state.gestionCollapsedDates[date];
-  const label = bookingDateLabel(date);
-  return `
-    <div class="gestion-date-group">
-      <div class="gestion-date-head" onclick="toggleGestionDateGroup('${date}')">
-        <span class="gestion-date-chevron">${collapsed ? '▸' : '▾'}</span>
-        <span class="gestion-date-label">${esc(label)}</span>
-        <button type="button" class="gestion-date-rename" onclick="event.stopPropagation(); openRenameBookingDateGroup('${date}')" title="Renommer ce groupe">✎</button>
-        <span class="gestion-date-count">${bookings.length} location${bookings.length>1?'s':''}</span>
-      </div>
-      ${!collapsed ? `<div class="gestion-date-body"><div class="gb-grid">${bookings.map(gestionCardHtml).join('')}</div></div>` : ''}
-    </div>`;
-}
 window.toggleGestionDateGroup = (date) => {
   state.gestionCollapsedDates[date] = !state.gestionCollapsedDates[date];
   saveGestionCollapsedDates(state.gestionCollapsedDates);
@@ -6020,41 +6094,6 @@ function renderGestionStockOld(){
    informatif — la disponibilité à la location reste 100% manuelle via Gestion de stock, jamais
    automatique), édition/envoi du Contrat Propriétaire, suivi de signature. Pour marquer un
    nouvel utilisateur comme Propriétaire, voir le bouton dédié depuis sa fiche (Utilisateurs). */
-function renderGestionProprietaires(){
-  const owners = state.profiles.filter(p => p.is_owner);
-  const rows = owners.map(p => {
-    const oc = state.owner_contracts.find(x => x.username === p.username);
-    const myItems = ownerContractMateriel(p.username);
-    const stm = ownerStatement(p.username);
-    let pill = `<span class="status-pill none">Aucun contrat envoyé</span>`;
-    if(oc && oc.signed_at) pill = `<span class="status-pill ok">Signé le ${fmtDate(oc.signed_at)}</span>`;
-    else if(oc) pill = `<span class="status-pill pending">En attente de signature</span>`;
-    const isNew = oc && oc.signed_at && oc.signed_seen_by_master === false;
-    return `
-      <div class="list-row">
-        <div>
-          <div class="t-title">${esc(clientDisplayName(p))} <span class="owner-tag">${tacticalIconSvg('house',{size:11})}Propriétaire</span> ${isNew ? `<span class="badge-dot" style="position:static;display:inline-flex;">Nouveau</span>` : ''}</div>
-          <div class="t-desc">${esc(p.username)} — ${pill}</div>
-          <div class="t-desc" style="margin-top:4px;">Matériel rattaché : ${esc(ownerUnitsText(p.username) || (myItems.length ? myItems.map(i => i.name).join(', ') : 'aucun'))}</div>
-          <div class="t-desc" style="margin-top:2px;">Gagné ${finFmtEUR2(stm.owed)} · versé ${finFmtEUR2(stm.reversed)} · <b style="color:${stm.balance > 0.005 ? 'var(--amber)' : 'inherit'};">reste à verser ${finFmtEUR2(stm.balance)}</b></div>
-        </div>
-        <div class="btn-row" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
-          <button type="button" class="icon-btn" title="Écrire à ce propriétaire" onclick="openConversationFromList('${esc(p.username)}')">${tacticalIconSvg('mail',{size:16})}</button>
-          <button type="button" class="icon-btn" title="Fiche" onclick="openViewProfile('${esc(p.username)}')">${tacticalIconSvg('id-badge',{size:16})}</button>
-          <button type="button" class="btn btn-ghost btn-sm" onclick="openOwnerStatement('${esc(p.username)}')">Relevé</button>
-          ${oc && oc.signed_pdf_path ? `<button type="button" class="btn btn-ghost btn-sm" onclick="openOwnerContractFile('${esc(p.username)}','signed')">Voir contrat signé</button>` : ''}
-          <button class="btn btn-primary btn-sm" onclick="openGenerateOwnerContractModal('${esc(p.username)}')">${oc ? 'Régénérer' : 'Envoyer'} le contrat propriétaire</button>
-          ${oc ? `<button type="button" class="btn btn-danger btn-sm" onclick="deleteOwnerContract('${esc(p.username)}')">Supprimer le contrat</button>` : ''}
-          <button type="button" class="btn btn-danger btn-sm" onclick="confirmUnmarkOwner('${esc(p.username)}')">Retirer le statut</button>
-        </div>
-      </div>`;
-  }).join("");
-  return `
-    <div class="topbar"><div><h1>Contrats propriétaire</h1><div class="desc">Le contrat (mandat de gestion) entre OwlsVision et chaque <strong>Propriétaire tiers</strong> qui met du matériel en location via la Plateforme — distinct du <a href="#" onclick="goto('contrats');return false;" style="color:var(--accent);">contrat de location du client qui loue</a>. Le matériel affiché ici est indicatif : sa disponibilité à la location se règle toujours manuellement depuis Gestion de stock.</div></div></div>
-    ${owners.length ? ownersBalancesPanelHtml(owners) : ''}
-    ${!owners.length ? `<div class="empty">Aucun compte Propriétaire pour le moment — ouvrez la fiche d'un utilisateur (onglet Utilisateurs) et utilisez le bouton "Marquer Propriétaire" pour en désigner un.</div>` : `<div style="display:flex;flex-direction:column;gap:10px;">${rows}</div>`}
-  `;
-}
 
 /* ---------- Tableau de bord (équipe) ---------- */
 function gaugeHtml(label, value, total, color){
@@ -8272,35 +8311,6 @@ function finRentalPill(r){
   const m = { paid: ['ok', 'Encaissé'], due: ['pending', 'À encaisser'], overdue: ['danger', 'En retard'], pipeline: ['none', 'Demande'] }[r.st];
   return `<span class="status-pill ${m[0]}">${m[1]}</span>`;
 }
-function finRentalRowHtml(r){
-  const { b } = r;
-  const u = esc(b.username);
-  const name = r.profile ? clientDisplayName(r.profile) : b.username;
-  const stLabel = { demande: 'Demande', accepte: 'Acceptée', loue: 'En cours', retourne: 'Retournée' }[b.status] || b.status;
-  const src = r.source === 'facture' ? `<span class="rl-src ok" title="Montant de la facture émise">facturé</span>` : r.source === 'estime' ? `<span class="rl-src" title="Tarif catalogue × durée : pas encore de facture">estimé</span>` : `<span class="rl-src warn" title="Aucun tarif sur ce matériel">sans tarif</span>`;
-  const dateTxt = b.start_date ? finShortRange(b.start_date, b.end_date) : '—';
-  const paidTxt = r.st === 'paid' ? `<small>payé le ${fmtDate(r.refDate)}</small>` : `<small>${esc(stLabel)}</small>`;
-  const shareCell = r.isOwner
-    ? `<b>${finFmtEUR2(r.net)}</b><small>proprio ${finFmtEUR2(r.share)} · ${esc(ownerLabel(r.ownerU))}${r.unit && r.unit.serial ? ' · n°' + esc(r.unit.serial) : ''}</small>`
-    : `<b>${finFmtEUR2(r.net)}</b><small>matériel OwlsVision</small>`;
-  const payBtn = b.status === 'demande' ? '' : r.st === 'paid'
-    ? `<button type="button" class="btn btn-ghost btn-sm" style="width:auto;" onclick="toggleBookingPaid('${b.id}')" title="Annuler le paiement">Annuler</button>`
-    : `<button type="button" class="btn btn-primary btn-sm" style="width:auto;" onclick="toggleBookingPaid('${b.id}')">Marquer payé</button>`;
-  return `
-    <div class="rl-row">
-      <div class="rl-who"><div class="rl-name">${esc(name)}</div><div class="rl-sub">${esc(r.item ? r.item.name : 'Matériel supprimé')}</div></div>
-      <div class="rl-cell" data-label="Dates"><b>${esc(dateTxt)}</b>${paidTxt}</div>
-      <div class="rl-cell" data-label="État">${finRentalPill(r)}</div>
-      <div class="rl-cell rl-num" data-label="Montant TTC"><b>${finFmtEUR2(r.amount)}</b>${src}</div>
-      <div class="rl-cell rl-num" data-label="Net OwlsVision">${shareCell}</div>
-      <div class="rl-act">
-        ${payBtn}
-        <button type="button" class="icon-btn" title="Écrire au client" onclick="openConversationFromList('${u}')">${tacticalIconSvg('mail',{size:15})}</button>
-        <button type="button" class="icon-btn" title="Fiche client" onclick="openViewProfile('${u}')">${tacticalIconSvg('id-badge',{size:15})}</button>
-        <button type="button" class="icon-btn" title="Voir dans Réservations" onclick="finGoBooking('${b.id}')">${tacticalIconSvg('doc',{size:15})}</button>
-      </div>
-    </div>`;
-}
 function finShortRange(a, b){
   const y = new Date().getFullYear();
   const f = (iso, withYear) => new Date(iso + 'T00:00:00').toLocaleDateString('fr-FR', withYear ? { day: 'numeric', month: 'short', year: 'numeric' } : { day: 'numeric', month: 'short' });
@@ -8341,25 +8351,6 @@ function finRentalsMonthBars(rows){
     </div>`).join('')}</div>
     <div class="rl-legend"><span><i class="paid"></i>Encaissé</span><span><i class="due"></i>À encaisser (par date de début)</span></div>`;
 }
-function finRentalsBreakdownHtml(t){
-  const group = (keyFn, labelFn) => {
-    const m = new Map();
-    t.paidRows.forEach(r => { const k = keyFn(r); const e = m.get(k) || { label: labelFn(r), n: 0, amount: 0, share: 0 }; e.n++; e.amount += r.amount; e.share += r.share; m.set(k, e); });
-    return [...m.values()].sort((a, b) => b.amount - a.amount);
-  };
-  const list = (arr, empty) => arr.length ? arr.slice(0, 8).map(e => `<div class="rl-bd-row"><span>${esc(e.label)}<small>${e.n} location${e.n > 1 ? 's' : ''}</small></span><b>${finFmtEUR(e.amount)}</b></div>`).join('') : `<div class="empty" style="padding:14px;">${empty}</div>`;
-  const byItem = group(r => r.item ? r.item.id : 'x', r => r.item ? r.item.name : 'Matériel supprimé');
-  const byOwner = group(r => r.ownerU || '_own', r => r.ownerU ? ownerLabel(r.ownerU) : 'Stock OwlsVision');
-  const ownerRows = [...new Map(t.paidRows.filter(r => r.isOwner).map(r => [r.ownerU, 0])).keys()].map(u => {
-    const rs = t.paidRows.filter(r => r.isOwner && r.ownerU === u);
-    return { u, label: ownerLabel(u), n: rs.length, amount: rs.reduce((s, r) => s + r.share, 0) };
-  }).sort((a, b) => b.amount - a.amount);
-  return `<div class="rl-3col">
-    <div class="panel"><h2>Par matériel</h2><div class="rl-h2sub">Encaissé sur la période</div>${list(byItem, 'Rien d\'encaissé sur la période.')}</div>
-    <div class="panel"><h2>Par propriétaire</h2><div class="rl-h2sub">Chiffre généré par le matériel de chacun</div>${list(byOwner, 'Rien d\'encaissé sur la période.')}</div>
-    <div class="panel"><h2>À reverser</h2><div class="rl-h2sub">Part propriétaire sur la période (${finOwnerPct()} % par défaut)</div>${ownerRows.length ? ownerRows.map(e => `<button type="button" class="rl-bd-row rl-bd-link" onclick="openOwnerStatement('${esc(e.u)}')" title="Ouvrir son relevé"><span>${esc(e.label)}<small>${e.n} location${e.n > 1 ? 's' : ''} · relevé</small></span><b>${finFmtEUR(e.amount)}</b></button>`).join('') : `<div class="empty" style="padding:14px;">Aucun matériel de propriétaire loué et payé sur la période.</div>`}</div>
-  </div>`;
-}
 function finIssueHtml(i){
   const nm = r => esc((r.profile ? clientDisplayName(r.profile) : r.b.username) + ' — ' + (r.item ? r.item.name : 'matériel'));
   if(i.kind === 'missing') return `<div class="rl-issue"><div><b>${nm(i.r)}</b> est payée (${finFmtEUR2(i.r.amount)}) mais absente de la compta.</div><button class="btn btn-primary btn-sm" style="width:auto;" onclick="finFixAddSale('${i.r.b.id}')">Ajouter à la compta</button></div>`;
@@ -8369,46 +8360,6 @@ function finIssueHtml(i){
   if(i.kind === 'nounit') return `<div class="rl-issue"><div><b>${nm(i.r)}</b> : ce matériel a plusieurs propriétaires et aucun exemplaire n'est attribué — le reversement est inconnu.</div><button class="btn btn-primary btn-sm" style="width:auto;" onclick="openUnitPicker('${i.r.b.id}')">Choisir l'exemplaire</button></div>`;
   if(i.kind === 'dup') return `<div class="rl-issue"><div><b>${nm(i.r)}</b> apparaît deux fois en compta (${finFmtEUR2(Number(i.sale.ttc))}).</div><button class="btn btn-danger btn-sm" style="width:auto;" onclick="finFixDeleteSale('${i.sale.id}')">Supprimer le doublon</button></div>`;
   return `<div class="rl-issue"><div><b>${esc(i.sale.label)}</b> (${finFmtEUR2(Number(i.sale.ttc))}) : ${esc(i.why)}.</div><button class="btn btn-danger btn-sm" style="width:auto;" onclick="finFixDeleteSale('${i.sale.id}')">Retirer de la compta</button></div>`;
-}
-function finRentalsHtml(){
-  const rows = finRentalsLedger();
-  const t = finRentalsTotals(rows);
-  const issues = finRentalsIssues(rows);
-  const list = finRentalsFiltered(rows);
-  const chips = FIN_RL_FILTERS.map(([f, label]) => {
-    const n = f === 'all' ? rows.filter(r => r.st !== 'paid' || finInRange(r.refDate)).length : f === 'due' ? t.dueN : f === 'overdue' ? t.overdueN : f === 'paid' ? t.paidRows.length : t.pipeN;
-    const on = (state.finRentalFilter || 'all') === f;
-    return `<button type="button" class="ul-chip ${on ? 'on' : ''}" onclick="finSetRentalFilter('${f}')">${label} <b>${n}</b></button>`;
-  }).join('');
-  const kpi = (cls, label, value, sub) => `<div class="rl-kpi ${cls}"><div class="rl-kpi-l">${label}</div><div class="rl-kpi-v">${value}</div><div class="rl-kpi-s">${sub}</div></div>`;
-  return `
-    ${finPeriodBarHtml(true)}
-    <div class="rl-kpis">
-      ${kpi('good', 'Encaissé sur la période', finFmtEUR(t.paid), `${t.paidRows.length} location${t.paidRows.length > 1 ? 's' : ''} payée${t.paidRows.length > 1 ? 's' : ''}`)}
-      ${kpi('', 'Net OwlsVision', finFmtEUR(t.paidNet), t.paidShare > 0 ? `après ${finFmtEUR(t.paidShare)} reversés aux propriétaires` : 'aucune part propriétaire')}
-      ${kpi(t.overdueN ? 'warn' : '', 'À encaisser (total)', finFmtEUR(t.due), `${t.dueN} réservation${t.dueN > 1 ? 's' : ''}${t.overdueN ? ` dont ${finFmtEUR(t.overdue)} en retard` : ''}`)}
-      ${kpi('dim', 'Demandes en attente', finFmtEUR(t.pipe), `${t.pipeN} demande${t.pipeN > 1 ? 's' : ''}, pas encore acceptée${t.pipeN > 1 ? 's' : ''}`)}
-    </div>
-    <div class="rl-note">Un seul calcul, une ligne par réservation : le montant vient de la facture (sinon du tarif catalogue), l'état vient du bouton « Payé ». Les demandes non acceptées ne sont <b>jamais</b> additionnées à l'encaissé. Les ventes de matériel sont dans l'onglet « Comptabilité ».</div>
-    <div class="panel rl-issues-panel ${issues.length ? 'has' : ''}">
-      <h2>Contrôles avec la compta ${issues.length ? `<span class="rl-count warn">${issues.length}</span>` : `<span class="rl-count ok">OK</span>`}</h2>
-      ${issues.length ? `<div class="rl-h2sub">Écarts qui font que les chiffres de la compta ne correspondent pas aux réservations. Chaque ligne se corrige en un clic.</div>${issues.map(finIssueHtml).join('')}` : `<div class="rl-h2sub" style="margin:0;">Chaque location payée a une seule ligne en compta, au bon montant.</div>`}
-    </div>
-    <div class="panel">
-      <h2>Détail des réservations</h2>
-      <div class="rl-toolbar">
-        <input type="text" id="fin-rl-search" placeholder="Chercher un client ou un matériel…" value="${esc(state.finRentalSearch || '')}" oninput="finRentalSearch(this.value)">
-        <label class="rl-pct">Part propriétaire <input type="number" id="fin-owner-pct" min="0" max="100" step="1" value="${finOwnerPct()}" onchange="finSetOwnerPct(this.value)"> %</label>
-      </div>
-      <div class="ul-chips" style="margin-top:10px;">${chips}</div>
-      <div class="rl">
-        <div class="rl-head"><span>Client · matériel</span><span>Dates</span><span>État</span><span class="rl-num">Montant TTC</span><span class="rl-num">Net OwlsVision</span><span></span></div>
-        <div id="fin-rl-list">${list.length ? list.map(finRentalRowHtml).join('') : `<div class="empty" style="margin:18px;">Aucune réservation ne correspond.</div>`}</div>
-      </div>
-    </div>
-    <div class="panel"><h2>Six derniers mois</h2><div class="rl-h2sub">Encaissé (date du clic « Payé ») et reste à encaisser (date de début de location)</div>${finRentalsMonthBars(rows)}</div>
-    ${finRentalsBreakdownHtml(t)}
-    <div id="fin-tooltip" class="fin-tooltip" role="tooltip"></div>`;
 }
 
 /* ---------- Lot 41 : handlers « Argent des locations » ---------- */
@@ -8597,53 +8548,11 @@ function stockFiltered(){
     return true;
   });
 }
-function stockCardHtml(item){
-  const s = stockItemStats(item);
-  const id = esc(item.id);
-  const owner = item.owner_username ? state.profiles.find(p => p.username === item.owner_username) : null;
-  const price = [item.price_per_day != null ? `${Number(item.price_per_day)} €/jour` : '', item.price_per_week != null ? `${Number(item.price_per_week)} €/sem.` : ''].filter(Boolean).join(' · ') || 'Aucun tarif';
-  const level = s.dispo === 0 ? 'out' : s.dispo < item.qty ? 'part' : 'ok';
-  return `
-    <div class="sk-card">
-      <div class="sk-top">
-        ${item.image_url ? `<img class="sk-img" src="${esc(item.image_url)}" alt="">` : `<div class="sk-img sk-img-ph">${tacticalIconSvg('package', { size: 24 })}</div>`}
-        <div class="sk-head">
-          <div class="sk-name">${esc(item.name)}</div>
-          <div class="sk-tags">
-            <span class="ul-tag ${level === 'out' ? 'danger' : level === 'part' ? 'warn' : 'okk'}">${s.dispo} / ${item.qty} dispo</span>
-            ${stockOwnerTagsHtml(item)}
-          </div>
-          <div class="sk-price">${esc(price)}</div>
-        </div>
-      </div>
-      <div class="sk-stats">
-        <div><b>${s.enCours}</b><span>en cours</span></div>
-        <div><b>${s.aVenir}</b><span>à venir</span></div>
-        <div><b>${s.demandes}</b><span>demandes</span></div>
-        <div><b>${finFmtEUR(s.encaisse)}</b><span>encaissé</span></div>
-      </div>
-      ${s.aEncaisser > 0 ? `<div class="sk-due">${finFmtEUR(s.aEncaisser)} restent à encaisser sur ce matériel</div>` : ''}
-      <div class="sk-act">
-        ${stockQtyHtml(item)}
-        <button type="button" class="btn btn-ghost btn-sm" style="width:auto;" onclick="stockOpenBookings('${id}')">${s.total} réservation${s.total > 1 ? 's' : ''}</button>
-        <button type="button" class="btn btn-ghost btn-sm" style="width:auto;" onclick="openEditItemModal('${id}')">Modifier</button>
-        <button type="button" class="icon-btn danger" title="Supprimer ce matériel" onclick="deleteItem('${id}')">✕</button>
-      </div>
-    </div>`;
-}
 function stockChipsHtml(){
   return `<div class="ul-chips">${STOCK_FILTERS.map(([f, label]) => {
     const prev = state.stockFilter; state.stockFilter = f; const n = stockFiltered().length; state.stockFilter = prev;
     return `<button type="button" class="ul-chip ${(state.stockFilter || 'all') === f ? 'on' : ''}" onclick="onStockFilter('${f}')">${label} <b>${n}</b></button>`;
   }).join('')}</div>`;
-}
-function stockSummaryHtml(){
-  const stats = state.items.map(i => ({ i, s: stockItemStats(i) }));
-  const units = state.items.reduce((a, i) => a + (Number(i.qty) || 0), 0);
-  const dispo = stats.reduce((a, x) => a + x.s.dispo, 0);
-  const out = stats.reduce((a, x) => a + x.s.enCours, 0);
-  const cell = (v, l) => `<div class="sk-sum-c"><b>${v}</b><span>${l}</span></div>`;
-  return `<div class="sk-sum">${cell(state.items.length, 'références')}${cell(units, 'unités en stock')}${cell(dispo, 'disponibles aujourd\'hui')}${cell(out, 'en cours de location')}${cell(stats.reduce((a, x) => a + x.s.demandes, 0), 'demandes à traiter')}</div>`;
 }
 function stockGridHtml(){
   const list = stockFiltered();
@@ -8752,80 +8661,8 @@ function gbTileHtml(kind, label, value, js, extra){
   const tag = js ? 'button' : 'div';
   return `<${tag}${js ? ` type="button" onclick="${js}"` : ''} class="gb-tile ${kind}${js ? '' : ' off'}"><span class="gb-tile-l">${label}</span><span class="gb-tile-v">${value}</span>${extra ? `<span class="gb-tile-x">${extra}</span>` : ''}</${tag}>`;
 }
-function gestionCardHtml(b){
-  const item = state.items.find(i => i.id === b.item_id);
-  const p = state.profiles.find(x => x.username === b.username);
-  const name = p ? clientDisplayName(p) : b.username;
-  const u = esc(b.username);
-  const { amount, source } = finBookingAmount(b);
-  const days = bookingDurationDays(b);
-  const confirmed = ['accepte', 'loue', 'retourne'].includes(b.status);
-  const { c, redo, signed, waived } = gbContractState(b);
-  const cOk = signed || waived;
-  const inv = state.invoices.find(x => x.booking_id === b.id);
-
-  let tiles = '';
-  if(confirmed){
-    const ct = waived ? gbTileHtml('ok', 'Contrat', 'Sans contrat', `toggleContractWaived('${b.id}')`, 'dispensé · toucher pour exiger') : !c ? gbTileHtml('todo', 'Contrat', 'À envoyer', `openGenerateContractModal('${u}')`)
-      : redo ? gbTileHtml('todo', 'Contrat', 'À refaire', `openGenerateContractModal('${u}')`, 'nouvelle location')
-      : signed ? gbTileHtml('ok', 'Contrat', 'Signé', `openGenerateContractModal('${u}')`, fmtDate(c.signed_at))
-      : gbTileHtml('wait', 'Contrat', 'Envoyé', `openGenerateContractModal('${u}')`, 'signature attendue');
-    const iv = !cOk ? gbTileHtml('off', 'Facture', '—', '', 'après signature ou dispense')
-      : inv ? gbTileHtml(inv.read_at ? 'ok' : 'wait', 'Facture', esc(inv.invoice_number || 'Envoyée'), `openInvoiceFile('${esc(inv.pdf_path)}','${esc(inv.id)}')`, inv.read_at ? 'lue le ' + fmtDate(inv.read_at) : 'pas encore lue')
-      : gbTileHtml('todo', 'Facture', 'À envoyer', `openSendInvoiceModal('${esc(b.id)}')`);
-    const pay = b.paid ? gbTileHtml('ok', 'Paiement', 'Payée', `toggleBookingPaid('${b.id}')`, b.paid_at ? 'le ' + fmtDate(b.paid_at) : '')
-      : gbTileHtml('bad', 'Paiement', 'Non payée', `toggleBookingPaid('${b.id}')`, 'toucher pour encaisser');
-    tiles = `<div class="gb-tiles">${ct}${iv}${pay}</div>`;
-  } else if(b.status === 'demande'){
-    tiles = `<div class="gb-hint">Demande reçue ${b.created_at ? 'le ' + esc(fmtDate(b.created_at)) : ''} : à accepter ou refuser.</div>`;
-  }
-
-  const main = [];
-  if(b.status === 'demande'){
-    main.push(`<button type="button" class="btn btn-primary gb-main" onclick="setBookingStatus('${b.id}','accepte')">Accepter</button>`);
-    main.push(`<button type="button" class="btn btn-ghost gb-main" onclick="setBookingStatus('${b.id}','refuse')">Refuser</button>`);
-  } else if(b.status === 'accepte'){
-    main.push(`<button type="button" class="btn btn-primary gb-main" onclick="setBookingStatus('${b.id}','loue')">Marquer loué</button>`);
-  } else if(b.status === 'loue'){
-    main.push(`<button type="button" class="btn btn-primary gb-main" onclick="setBookingStatus('${b.id}','retourne')">Marquer retourné</button>`);
-  } else if(b.status === 'retourne'){
-    main.push(`<span class="gb-done">Matériel rendu</span>`);
-  }
-  const tel = p && p.telephone ? `<a class="icon-btn" href="tel:${esc(String(p.telephone).replace(/[^\d+]/g, ''))}" title="Appeler ${esc(p.telephone)}">${tacticalIconSvg('phone', { size: 16 })}</a>` : '';
-  const menu = `<details class="gb-more"><summary class="icon-btn" title="Plus d'actions">⋯</summary><div class="gb-menu">
-      ${inv && cOk ? `<button type="button" onclick="this.closest('details').removeAttribute('open');reissueInvoice('${esc(b.id)}')">Réémettre la facture</button>` : ''}
-      ${confirmed && !signed ? `<button type="button" onclick="this.closest('details').removeAttribute('open');toggleContractWaived('${esc(b.id)}')">${waived ? 'Exiger un contrat' : 'Gérer sans contrat'}</button>` : ''}
-      <button type="button" onclick="this.closest('details').removeAttribute('open');waiveAllForClient('${u}')">Sans contrat : toutes ses locations</button>
-      <button type="button" onclick="this.closest('details').removeAttribute('open');openViewProfile('${u}')">Fiche client</button>
-      <button type="button" class="danger" onclick="this.closest('details').removeAttribute('open');cancelBooking('${b.id}')">Supprimer la réservation</button>
-    </div></details>`;
-  return `
-    <div class="gb-card st-${esc(b.status)}">
-      <div class="gb-top">
-        <button type="button" class="gb-who" onclick="openViewProfile('${u}')" title="Ouvrir la fiche">
-          <span class="gb-av">${esc(userInitials(p || { username: b.username }))}</span>
-          <span class="gb-who-t"><b>${esc(name)}</b><small>${esc(b.username)}</small></span>
-        </button>
-        ${statusPillHtml(b.status)}
-      </div>
-      <div class="gb-item">
-        ${item && item.image_url ? `<img class="gb-thumb" src="${esc(item.image_url)}" alt="">` : `<span class="gb-thumb gb-thumb-ph">${tacticalIconSvg('package', { size: 20 })}</span>`}
-        <div class="gb-item-t"><b>${esc(item ? item.name : 'Matériel supprimé')}</b><small>${esc(finShortRange(b.start_date, b.end_date))} · ${days} jour${days > 1 ? 's' : ''}</small></div>
-        <div class="gb-price"><b>${amount ? finFmtEUR2(amount) : '—'}</b><small>${source === 'facture' ? 'facturé' : source === 'estime' ? 'estimé' : 'sans tarif'}</small></div>
-      </div>
-      ${gbUnitChipHtml(b, item)}
-      ${tiles}
-      <div class="gb-act">${main.join('')}<span class="gb-icons"><button type="button" class="icon-btn" title="Écrire au client" onclick="openConversationFromList('${u}')">${tacticalIconSvg('mail', { size: 16 })}</button>${tel}${menu}</span></div>
-    </div>`;
-}
 document.addEventListener('click', (e) => { document.querySelectorAll('details.gb-more[open]').forEach(d => { if(!d.contains(e.target)) d.removeAttribute('open'); }); });
 const GESTION_SORTS = [['start_date', 'Date'], ['client', 'Client'], ['item', 'Matériel'], ['status', 'Statut']];
-function gestionSortChipsHtml(){
-  return `<div class="ul-chips"><span class="ul-chips-label">Trier par</span>${GESTION_SORTS.map(([f, l]) => {
-    const on = state.gestionSort.field === f;
-    return `<button type="button" class="ul-chip ${on ? 'on' : ''}" onclick="onGestionSort('${f}')">${l}${on ? ` ${state.gestionSort.dir === 'asc' ? '▲' : '▼'}` : ''}</button>`;
-  }).join('')}</div>`;
-}
 
 function gbNeedsAction(b){
   if(b.status === 'demande') return true;
@@ -8835,7 +8672,6 @@ function gbNeedsAction(b){
   const unitMissing = bookingNeedsUnit(b) && itemUniformOwner(state.items.find(i => i.id === b.item_id)) === undefined;
   return !(signed || b.contract_waived) || !inv || !b.paid || unitMissing;
 }
-function gestionAllChipsHtml(){ return gestionChipsHtml() + gestionSortChipsHtml(); }
 
 /* ===== Lot 44 : exemplaires (n° de série + propriétaire), reversements, attribution automatique =====
    Avant : un matériel avait UN propriétaire (items.owner_username) pour toute sa quantité. Trois
@@ -8964,9 +8800,6 @@ async function autoAssignUnitFor(b){
   if(!u) return { ok: false, none: true };
   const ok = await assignUnit(b.id, u.id, { silent: true, noRender: true });
   return { ok, unit: u };
-}
-function unassignedBookings(){
-  return state.bookings.filter(b => bookingNeedsUnit(b)).sort((a, c) => String(a.start_date).localeCompare(String(c.start_date)));
 }
 window.unitsAssignAll = async () => {
   if(!state.session.isMaster) return;
@@ -9129,27 +8962,6 @@ function ownerUnitsText(username){
   const m = new Map();
   us.forEach(u => { const it = state.items.find(i => i.id === u.item_id); const k = it ? it.name : 'Matériel supprimé'; (m.get(k) || m.set(k, []).get(k)).push(u); });
   return [...m.entries()].map(([name, l]) => name + (l.length > 1 ? ' ×' + l.length : '') + (l.some(u => u.serial) ? ' (' + l.map(u => u.serial).filter(Boolean).join(', ') + ')' : '')).join(' · ');
-}
-function ownersBalancesPanelHtml(owners){
-  const list = owners.map(p => ({ p, s: ownerStatement(p.username) }));
-  const totalBal = round2(list.reduce((a, x) => a + x.s.balance, 0));
-  const row = ({ p, s }) => `<div class="ob-row">
-    <div class="ob-who"><b>${esc(clientDisplayName(p))}</b><small>${esc(ownerUnitsText(p.username) || 'aucun exemplaire')}</small></div>
-    <div class="ob-n"><span>Gagné</span><b>${finFmtEUR2(s.owed)}</b></div>
-    <div class="ob-n"><span>Versé</span><b>${finFmtEUR2(s.reversed)}</b></div>
-    <div class="ob-n ${s.balance > 0.005 ? 'due' : ''}"><span>Reste à verser</span><b>${finFmtEUR2(s.balance)}</b></div>
-    <div class="ob-act"><button type="button" class="btn btn-ghost btn-sm" style="width:auto;" onclick="openOwnerStatement('${esc(p.username)}')">Relevé</button><button type="button" class="btn btn-primary btn-sm" style="width:auto;" onclick="openOwnerStatement('${esc(p.username)}',true)">Verser</button></div>
-  </div>`;
-  return `<div class="panel ob-panel">
-    <div class="ob-head"><div><h2>À reverser aux propriétaires</h2><div class="rl-h2sub" style="margin:0;">Calculé sur les locations <b>encaissées</b>, exemplaire par exemplaire. Base : ${finOwnerBase() === 'ht' ? 'HT' : 'TTC'} · taux par défaut ${finOwnerPct()} %.</div></div><div class="ob-total ${totalBal > 0.005 ? 'due' : ''}"><span>Total restant dû</span><b>${finFmtEUR2(totalBal)}</b></div></div>
-    ${list.length ? list.map(row).join('') : ''}
-    <div class="ob-opts">
-      <label>Calcul sur
-        <select onchange="unitsSetShareBase(this.value)"><option value="ttc" ${finOwnerBase() === 'ttc' ? 'selected' : ''}>le montant TTC facturé</option><option value="ht" ${finOwnerBase() === 'ht' ? 'selected' : ''}>le montant HT</option></select></label>
-      <label>Attribution automatique
-        <select onchange="unitsSetAssignMode(this.value)"><option value="equitable" ${finAssignMode() === 'equitable' ? 'selected' : ''}>équitable (l'exemplaire le moins loué)</option><option value="societe" ${finAssignMode() === 'societe' ? 'selected' : ''}>OwlsVision d'abord</option></select></label>
-    </div>
-  </div>`;
 }
 window.openOwnerStatement = (username, pay) => { state.modal = { type: 'ownerStatement', username, pay: !!pay }; render(); };
 window.addOwnerPayoutFromModal = async (username) => {
@@ -9421,28 +9233,6 @@ function unitsRenderModal(m){
 
 /* ---------- Pastilles / bandeaux ---------- */
 // Carte réservation : quel exemplaire (donc quel propriétaire) porte cette location.
-function gbUnitChipHtml(b, item){
-  if(!unitsEnabled() || !item || !itemHasUnits(item.id) || !unitsOf(item.id).length) return '';
-  const id = esc(b.id);
-  if(b.status === 'demande'){
-    const total = unitsOf(item.id).length;
-    const free = freeUnitsFor(item.id, b.start_date, b.end_date, b.id).length;
-    return `<div class="gb-unit info"><span>${free} / ${total} exemplaire${total > 1 ? 's' : ''} libre${free > 1 ? 's' : ''} sur ces dates</span>${free === 0 ? '<b class="warn">Aucun libre</b>' : ''}</div>`;
-  }
-  if(!['accepte', 'loue', 'retourne'].includes(b.status)) return '';
-  const u = bookingUnit(b);
-  if(!u) return `<button type="button" class="gb-unit todo" onclick="openUnitPicker('${id}')"><span>Exemplaire à attribuer</span><b>Choisir</b></button>`;
-  const { amount } = finBookingAmount(b);
-  const share = u.owner_username && amount ? bookingOwnerShare(b, amount) : 0;
-  return `<button type="button" class="gb-unit ${u.owner_username ? 'own' : ''}" onclick="openUnitPicker('${id}')" title="Changer d'exemplaire"><span><b>${esc(unitLabel(u))}</b> · ${esc(ownerLabel(u.owner_username))}</span>${share ? `<i>proprio ${finFmtEUR2(share)}</i>` : '<i>stock OwlsVision</i>'}</button>`;
-}
-function unitsBannerHtml(){
-  if(!state.session.isMaster) return '';
-  if(!unitsEnabled()) return `<div class="un-banner warn"><div><b>Exemplaires non activés.</b> Exécutez <code>migration_lot43_exemplaires.sql</code> dans Supabase pour rattacher un n° de série et un propriétaire à chaque exemplaire.</div></div>`;
-  const n = unassignedBookings().length;
-  if(!n) return '';
-  return `<div class="un-banner"><div><b>${n} réservation${n > 1 ? 's' : ''} sans exemplaire.</b> L'exemplaire désigne le propriétaire à payer et le n° de série du contrat.</div><button type="button" class="btn btn-primary btn-sm" style="width:auto;" onclick="unitsAssignAll()">Attribuer automatiquement</button></div>`;
-}
 function stockOwnerTagsHtml(item){
   const sum = itemOwnerSummary(item);
   if(!sum.length) return '';
@@ -9476,6 +9266,295 @@ window.finFixAlignShare = async (saleId, bookingId) => {
   await syncSaleShare(b);
   finRefreshInner();
 };
+
+/* ===== Lot 45 : interface allégée ===== */
+function gbStepHtml(kind, label, js, title){
+  return `<button type="button" class="gb-step ${kind}"${js ? ` onclick="${js}"` : ' disabled'}${title ? ` title="${esc(title)}"` : ''}>${label}</button>`;
+}
+function gestionCardHtml(b){
+  const item = state.items.find(i => i.id === b.item_id);
+  const p = state.profiles.find(x => x.username === b.username);
+  const name = p ? clientDisplayName(p) : b.username;
+  const u = esc(b.username);
+  const { amount, source } = finBookingAmount(b);
+  const days = bookingDurationDays(b);
+  const confirmed = ['accepte', 'loue', 'retourne'].includes(b.status);
+  const { c, redo, signed, waived } = gbContractState(b);
+  const cOk = signed || waived;
+  const inv = state.invoices.find(x => x.booking_id === b.id);
+
+  let steps = '';
+  if(confirmed){
+    const s1 = waived ? gbStepHtml('ok', 'Sans contrat', `toggleContractWaived('${b.id}')`, 'Dispensé de contrat · toucher pour exiger un contrat')
+      : !c ? gbStepHtml('todo', 'Contrat à envoyer', `openGenerateContractModal('${u}')`)
+      : redo ? gbStepHtml('todo', 'Contrat à refaire', `openGenerateContractModal('${u}')`, 'Nouvelle location : nouveau contrat à établir')
+      : signed ? gbStepHtml('ok', 'Contrat signé', `openGenerateContractModal('${u}')`, 'Signé le ' + fmtDate(c.signed_at))
+      : gbStepHtml('wait', 'Contrat envoyé', `openGenerateContractModal('${u}')`, 'Signature attendue');
+    const s2 = !cOk ? gbStepHtml('off', 'Facture', '', 'Disponible après la signature (ou en gérant sans contrat)')
+      : inv ? gbStepHtml(inv.read_at ? 'ok' : 'wait', inv.read_at ? 'Facture lue' : 'Facture envoyée', `openInvoiceFile('${esc(inv.pdf_path)}','${esc(inv.id)}')`, (inv.invoice_number || '') + (inv.read_at ? ' · lue le ' + fmtDate(inv.read_at) : ' · pas encore lue'))
+      : gbStepHtml('todo', 'Facture à envoyer', `openSendInvoiceModal('${esc(b.id)}')`);
+    const s3 = b.paid ? gbStepHtml('ok', 'Payée', `toggleBookingPaid('${b.id}')`, b.paid_at ? 'Payée le ' + fmtDate(b.paid_at) + ' · toucher pour annuler' : 'Toucher pour annuler')
+      : gbStepHtml('bad', 'Non payée', `toggleBookingPaid('${b.id}')`, 'Toucher pour marquer comme payée');
+    steps = `<div class="gb-steps">${s1}${s2}${s3}</div>`;
+  }
+
+  const main = [];
+  if(b.status === 'demande'){
+    main.push(`<button type="button" class="btn btn-primary gb-main" onclick="setBookingStatus('${b.id}','accepte')">Accepter</button>`);
+    main.push(`<button type="button" class="btn btn-ghost gb-main" onclick="setBookingStatus('${b.id}','refuse')">Refuser</button>`);
+  } else if(b.status === 'accepte'){
+    main.push(`<button type="button" class="btn btn-primary gb-main" onclick="setBookingStatus('${b.id}','loue')">Marquer loué</button>`);
+  } else if(b.status === 'loue'){
+    main.push(`<button type="button" class="btn btn-primary gb-main" onclick="setBookingStatus('${b.id}','retourne')">Marquer retourné</button>`);
+  } else if(b.status === 'retourne'){
+    main.push(`<span class="gb-done">Matériel rendu</span>`);
+  }
+  const close = "this.closest('details').removeAttribute('open');";
+  const tel = p && p.telephone ? `<a href="tel:${esc(String(p.telephone).replace(/[^\d+]/g, ''))}">Appeler ${esc(p.telephone)}</a>` : '';
+  const hasUnits = unitsEnabled() && item && itemHasUnits(item.id) && unitsOf(item.id).length > 1;
+  const menu = `<details class="gb-more"><summary class="icon-btn" title="Plus d'actions">⋯</summary><div class="gb-menu">
+      <button type="button" onclick="${close}openConversationFromList('${u}')">Écrire au client</button>
+      ${tel}
+      <button type="button" onclick="${close}openViewProfile('${u}')">Fiche client</button>
+      ${hasUnits && confirmed ? `<button type="button" onclick="${close}openUnitPicker('${esc(b.id)}')">Changer d'exemplaire</button>` : ''}
+      ${inv && cOk ? `<button type="button" onclick="${close}reissueInvoice('${esc(b.id)}')">Réémettre la facture</button>` : ''}
+      ${confirmed && !signed ? `<button type="button" onclick="${close}toggleContractWaived('${esc(b.id)}')">${waived ? 'Exiger un contrat' : 'Gérer sans contrat'}</button>` : ''}
+      ${confirmed && !signed && !waived ? `<button type="button" onclick="${close}waiveAllForClient('${u}')">Sans contrat : tout ce client</button>` : ''}
+      <button type="button" class="danger" onclick="${close}cancelBooking('${b.id}')">Supprimer la réservation</button>
+    </div></details>`;
+  const price = amount ? (source === 'estime' ? '≈ ' : '') + finFmtEUR2(amount) : '—';
+  return `
+    <div class="gb-card st-${esc(b.status)}">
+      <div class="gb-top">
+        <button type="button" class="gb-who" onclick="openViewProfile('${u}')" title="Ouvrir la fiche"><b>${esc(name)}</b></button>
+        ${statusPillHtml(b.status)}
+      </div>
+      <div class="gb-line">
+        <span class="gb-what"><b>${esc(item ? item.name : 'Matériel supprimé')}</b><small>${esc(finShortRange(b.start_date, b.end_date))} · ${days} j</small></span>
+        <span class="gb-price" ${source === 'estime' ? 'title="Estimé d\'après le tarif catalogue : pas encore de facture"' : ''}>${price}</span>
+      </div>
+      ${gbUnitChipHtml(b, item)}
+      ${steps}
+      <div class="gb-act">${main.join('')}${menu}</div>
+    </div>`;
+}
+
+function gbUnitChipHtml(b, item){
+  if(!unitsEnabled() || !item || !itemHasUnits(item.id) || !unitsOf(item.id).length) return '';
+  const id = esc(b.id);
+  if(b.status === 'demande'){
+    return freeUnitsFor(item.id, b.start_date, b.end_date, b.id).length === 0 ? `<div class="gb-own warn">Aucun exemplaire libre sur ces dates</div>` : '';
+  }
+  if(!['accepte', 'loue', 'retourne'].includes(b.status)) return '';
+  const u = bookingUnit(b);
+  if(!u){
+    return itemUniformOwner(item) === undefined ? `<button type="button" class="gb-own todo" onclick="openUnitPicker('${id}')"><span>Exemplaire à choisir</span><i>Choisir</i></button>` : '';
+  }
+  if(!u.owner_username) return '';
+  const { amount } = finBookingAmount(b);
+  const share = amount ? bookingOwnerShare(b, amount) : 0;
+  return `<button type="button" class="gb-own" onclick="openUnitPicker('${id}')" title="Changer d'exemplaire"><span>${esc(unitLabel(u))} · ${esc(ownerLabel(u.owner_username))}</span>${share ? `<i>part ${finFmtEUR2(share)}</i>` : ''}</button>`;
+}
+
+function gestionSortChipsHtml(){
+  return `<label class="gb-sort">Trier<select onchange="onGestionSortSelect(this.value)">${GESTION_SORTS.map(([f, l]) => `<option value="${f}" ${state.gestionSort.field === f ? 'selected' : ''}>${l}</option>`).join('')}</select></label>`;
+}
+window.onGestionSortSelect = (f) => { if(state.gestionSort.field !== f) onGestionSort(f); };
+
+function gestionAllChipsHtml(){ return `<div class="gb-bar">${gestionChipsHtml()}${gestionSortChipsHtml()}</div>`; }
+
+function gestionDateGroupHtml(group){
+  const { date, bookings } = group;
+  const collapsed = !!state.gestionCollapsedDates[date];
+  const label = bookingDateLabel(date);
+  return `
+    <div class="gestion-date-group">
+      <div class="gestion-date-head" onclick="toggleGestionDateGroup('${date}')">
+        <span class="gestion-date-chevron">${collapsed ? '▸' : '▾'}</span>
+        <span class="gestion-date-label">${esc(label)}</span>
+        <button type="button" class="gestion-date-rename" onclick="event.stopPropagation(); openRenameBookingDateGroup('${date}')" title="Renommer ce groupe">✎</button>
+        ${bookings.length > 1 || collapsed ? `<span class="gestion-date-count">${bookings.length}</span>` : ''}
+      </div>
+      ${!collapsed ? `<div class="gestion-date-body"><div class="gb-grid">${bookings.map(gestionCardHtml).join('')}</div></div>` : ''}
+    </div>`;
+}
+
+function unassignedBookings(){
+  return state.bookings.filter(b => bookingNeedsUnit(b) && itemUniformOwner(state.items.find(i => i.id === b.item_id)) === undefined)
+    .sort((a, c) => String(a.start_date).localeCompare(String(c.start_date)));
+}
+function unitsBannerHtml(){
+  if(!state.session.isMaster) return '';
+  if(!unitsEnabled()) return `<div class="un-banner mute"><span>Exemplaires non activés : exécutez <code>migration_lot43_exemplaires.sql</code> dans Supabase.</span></div>`;
+  const n = unassignedBookings().length;
+  if(!n) return '';
+  return `<div class="un-banner"><span><b>${n}</b> location${n > 1 ? 's' : ''} sans exemplaire : propriétaire à payer inconnu.</span><button type="button" class="btn btn-ghost btn-sm" style="width:auto;" onclick="unitsAssignAll()">Attribuer automatiquement</button></div>`;
+}
+
+function stockCardHtml(item){
+  const s = stockItemStats(item);
+  const id = esc(item.id);
+  const price = [item.price_per_day != null ? `${Number(item.price_per_day)} €/jour` : '', item.price_per_week != null ? `${Number(item.price_per_week)} €/sem.` : ''].filter(Boolean).join(' · ') || 'Aucun tarif';
+  const level = s.dispo === 0 ? 'out' : s.dispo < item.qty ? 'part' : 'ok';
+  const facts = [s.enCours ? `${s.enCours} en cours` : '', s.aVenir ? `${s.aVenir} à venir` : '', s.demandes ? `${s.demandes} demande${s.demandes > 1 ? 's' : ''}` : '',
+    s.encaisse > 0 ? `${finFmtEUR(s.encaisse)} encaissé` : '', s.aEncaisser > 0 ? `${finFmtEUR(s.aEncaisser)} à encaisser` : ''].filter(Boolean).join(' · ') || 'Aucune location pour le moment';
+  const sum = itemOwnerSummary(item);
+  const ownerLine = sum.some(x => x.owner) ? (itemHasUnits(item.id) ? sum.map(x => `${x.n} ${ownerLabel(x.owner)}`).join(' · ') : ownerLabel(sum.find(x => x.owner).owner)) : '';
+  return `
+    <div class="sk-card">
+      <div class="sk-top">
+        ${item.image_url ? `<img class="sk-img" src="${esc(item.image_url)}" alt="">` : `<div class="sk-img sk-img-ph">${tacticalIconSvg('package', { size: 22 })}</div>`}
+        <div class="sk-head">
+          <div class="sk-name">${esc(item.name)}</div>
+          <div class="sk-price">${esc(price)}</div>
+        </div>
+        <span class="ul-tag ${level === 'out' ? 'danger' : level === 'part' ? 'warn' : 'okk'}">${s.dispo} / ${item.qty} dispo</span>
+      </div>
+      ${ownerLine ? `<div class="sk-owners">${tacticalIconSvg('house', { size: 12 })} ${esc(ownerLine)}</div>` : ''}
+      <div class="sk-facts">${esc(facts)}</div>
+      <div class="sk-act">
+        ${stockQtyHtml(item)}
+        <button type="button" class="btn btn-ghost btn-sm" style="width:auto;" onclick="stockOpenBookings('${id}')">${s.total} réservation${s.total > 1 ? 's' : ''}</button>
+        <button type="button" class="btn btn-ghost btn-sm" style="width:auto;" onclick="openEditItemModal('${id}')">Modifier</button>
+      </div>
+    </div>`;
+}
+
+function stockSummaryHtml(){
+  const stats = state.items.map(i => ({ i, s: stockItemStats(i) }));
+  const units = state.items.reduce((a, i) => a + (Number(i.qty) || 0), 0);
+  const dispo = stats.reduce((a, x) => a + x.s.dispo, 0);
+  const out = stats.reduce((a, x) => a + x.s.enCours, 0);
+  const dem = stats.reduce((a, x) => a + x.s.demandes, 0);
+  return `<div class="sk-sum-line"><span><b>${units}</b> en stock</span><span><b>${dispo}</b> disponibles aujourd'hui</span><span><b>${out}</b> en location</span>${dem ? `<span class="warn"><b>${dem}</b> demande${dem > 1 ? 's' : ''} à traiter</span>` : ''}</div>`;
+}
+
+function finRentalRowHtml(r){
+  const { b } = r;
+  const name = r.profile ? clientDisplayName(r.profile) : b.username;
+  const dateTxt = b.start_date ? finShortRange(b.start_date, b.end_date) : '—';
+  const sub = r.st === 'paid' ? `<small>payé le ${fmtDate(r.refDate)}</small>` : '';
+  const amountTxt = r.amount ? (r.source === 'estime' ? '≈ ' : '') + finFmtEUR2(r.amount) : '—';
+  const part = r.isOwner && r.share > 0 ? `<small>dont ${finFmtEUR2(r.share)} à ${esc(ownerLabel(r.ownerU))}</small>` : '';
+  const payBtn = b.status === 'demande' ? '' : r.st === 'paid'
+    ? `<button type="button" class="btn btn-ghost btn-sm" style="width:auto;" onclick="toggleBookingPaid('${b.id}')" title="Annuler le paiement">Annuler</button>`
+    : `<button type="button" class="btn btn-primary btn-sm" style="width:auto;" onclick="toggleBookingPaid('${b.id}')">Marquer payé</button>`;
+  return `
+    <div class="rl-row">
+      <div class="rl-who"><div class="rl-name">${esc(name)}</div><div class="rl-sub">${esc(r.item ? r.item.name : 'Matériel supprimé')}</div></div>
+      <div class="rl-cell" data-label="Dates"><b>${esc(dateTxt)}</b>${sub}</div>
+      <div class="rl-cell" data-label="État">${finRentalPill(r)}</div>
+      <div class="rl-cell rl-num" data-label="Montant TTC"><b>${amountTxt}</b>${part}</div>
+      <div class="rl-act">
+        ${payBtn}
+        <button type="button" class="icon-btn" title="Voir dans Réservations" onclick="finGoBooking('${b.id}')">${tacticalIconSvg('doc',{size:15})}</button>
+      </div>
+    </div>`;
+}
+
+function finRentalsBreakdownHtml(t){
+  const m = new Map();
+  t.paidRows.forEach(r => { const k = r.item ? r.item.id : 'x'; const e = m.get(k) || { label: r.item ? r.item.name : 'Matériel supprimé', n: 0, amount: 0 }; e.n++; e.amount += r.amount; m.set(k, e); });
+  const arr = [...m.values()].sort((a, b) => b.amount - a.amount);
+  return `<div class="rl-h2sub" style="margin-top:18px;">Encaissé par matériel sur la période</div>${arr.length ? arr.map(e => `<div class="rl-bd-row"><span>${esc(e.label)}<small>${e.n} location${e.n > 1 ? 's' : ''}</small></span><b>${finFmtEUR(e.amount)}</b></div>`).join('') : `<div class="empty" style="padding:14px;">Rien d'encaissé sur la période.</div>`}`;
+}
+
+function finRentalsHtml(){
+  const rows = finRentalsLedger();
+  const t = finRentalsTotals(rows);
+  const issues = finRentalsIssues(rows);
+  const list = finRentalsFiltered(rows);
+  const owners = state.profiles.filter(p => p.is_owner);
+  const toPay = round2(owners.reduce((a, p) => a + ownerStatement(p.username).balance, 0));
+  const nOwed = owners.filter(p => ownerStatement(p.username).balance > 0.005).length;
+  const chips = FIN_RL_FILTERS.map(([f, label]) => {
+    const n = f === 'all' ? rows.filter(r => r.st !== 'paid' || finInRange(r.refDate)).length : f === 'due' ? t.dueN : f === 'overdue' ? t.overdueN : f === 'paid' ? t.paidRows.length : t.pipeN;
+    const on = (state.finRentalFilter || 'all') === f;
+    return `<button type="button" class="ul-chip ${on ? 'on' : ''}" onclick="finSetRentalFilter('${f}')">${label} <b>${n}</b></button>`;
+  }).join('');
+  const kpi = (cls, label, value, sub) => `<div class="rl-kpi ${cls}"><div class="rl-kpi-l">${label}</div><div class="rl-kpi-v">${value}</div><div class="rl-kpi-s">${sub}</div></div>`;
+  return `
+    ${finPeriodBarHtml(true)}
+    <div class="rl-kpis">
+      ${kpi('good', 'Encaissé', finFmtEUR(t.paid), `${t.paidRows.length} location${t.paidRows.length > 1 ? 's' : ''} sur la période`)}
+      ${kpi('', 'Net OwlsVision', finFmtEUR(t.paidNet), t.paidShare > 0 ? `après ${finFmtEUR(t.paidShare)} pour les propriétaires` : 'sur la période')}
+      ${kpi(t.overdueN ? 'warn' : '', 'À encaisser', finFmtEUR(t.due), `${t.dueN} réservation${t.dueN > 1 ? 's' : ''}${t.overdueN ? ` · ${finFmtEUR(t.overdue)} en retard` : ''}`)}
+      ${kpi(toPay > 0.005 ? 'warn' : '', 'À reverser', finFmtEUR2(toPay), owners.length ? (toPay > 0.005 ? `${nOwed} propriétaire${nOwed > 1 ? 's' : ''} · toutes périodes` : 'rien à verser') : 'aucun propriétaire')}
+    </div>
+    ${issues.length ? `<div class="panel rl-issues-panel has"><h2>À corriger <span class="rl-count warn">${issues.length}</span></h2>${issues.map(finIssueHtml).join('')}</div>` : `<div class="rl-ok">✓ La compta correspond aux réservations</div>`}
+    ${owners.length ? ownersBalancesPanelHtml(owners) : ''}
+    <div class="panel">
+      <h2>Locations</h2>
+      <div class="rl-toolbar" style="margin-top:8px;"><input type="text" id="fin-rl-search" placeholder="Chercher un client ou un matériel…" value="${esc(state.finRentalSearch || '')}" oninput="finRentalSearch(this.value)"></div>
+      <div class="ul-chips" style="margin-top:10px;">${chips}</div>
+      <div class="rl">
+        <div class="rl-head"><span>Client · matériel</span><span>Dates</span><span>État</span><span class="rl-num">Montant TTC</span><span></span></div>
+        <div id="fin-rl-list">${list.length ? list.map(finRentalRowHtml).join('') : `<div class="empty" style="margin:18px;">Aucune réservation ne correspond.</div>`}</div>
+      </div>
+    </div>
+    <details class="rl-more"><summary>Statistiques</summary><div class="panel">${finRentalsMonthBars(rows)}${finRentalsBreakdownHtml(t)}</div></details>
+    <div id="fin-tooltip" class="fin-tooltip" role="tooltip"></div>`;
+}
+
+function ownersBalancesPanelHtml(owners, opts){
+  const o = opts || {};
+  const list = owners.map(p => ({ p, s: ownerStatement(p.username) }))
+    .filter(x => o.settings || x.s.owed > 0 || x.s.reversed > 0 || x.s.pending > 0 || ownerUnitsText(x.p.username));
+  if(!list.length && !o.settings) return '';
+  const total = round2(list.reduce((a, x) => a + x.s.balance, 0));
+  const row = ({ p, s }) => `<div class="ob-row">
+    <div class="ob-who"><b>${esc(clientDisplayName(p))}</b><small>${esc(ownerUnitsText(p.username) || 'aucun exemplaire')}</small></div>
+    <div class="ob-due ${s.balance > 0.005 ? 'due' : ''}"><b>${finFmtEUR2(s.balance)}</b><small>gagné ${finFmtEUR2(s.owed)} · versé ${finFmtEUR2(s.reversed)}${s.pending > 0.005 ? ` · à venir ${finFmtEUR2(s.pending)}` : ''}</small></div>
+    <div class="ob-act"><button type="button" class="btn btn-ghost btn-sm" style="width:auto;" onclick="openOwnerStatement('${esc(p.username)}')">Relevé</button><button type="button" class="btn btn-primary btn-sm" style="width:auto;" onclick="openOwnerStatement('${esc(p.username)}',true)">Verser</button></div>
+  </div>`;
+  const settings = o.settings ? `<details class="ob-set"><summary>Réglages du calcul</summary><div class="ob-opts">
+      <label>Part du propriétaire <span class="ob-pct"><input type="number" min="0" max="100" step="1" value="${finOwnerPct()}" onchange="unitsSetPct(this.value)"> %</span></label>
+      <label>Calculée sur <select onchange="unitsSetShareBase(this.value)"><option value="ttc" ${finOwnerBase() === 'ttc' ? 'selected' : ''}>le TTC facturé</option><option value="ht" ${finOwnerBase() === 'ht' ? 'selected' : ''}>le HT</option></select></label>
+      <label>Choix de l'exemplaire <select onchange="unitsSetAssignMode(this.value)"><option value="equitable" ${finAssignMode() === 'equitable' ? 'selected' : ''}>le moins loué d'abord</option><option value="societe" ${finAssignMode() === 'societe' ? 'selected' : ''}>OwlsVision d'abord</option></select></label>
+    </div><div class="ob-hint">Chaque exemplaire peut avoir son propre taux (Stock > exemplaires). Le reversement ne compte que les locations payées.</div></details>` : '';
+  return `<div class="panel ob-panel">
+    <div class="ob-head"><h2>À reverser aux propriétaires</h2>${list.length ? `<div class="ob-total ${total > 0.005 ? 'due' : ''}"><span>Total</span><b>${finFmtEUR2(total)}</b></div>` : ''}</div>
+    ${list.length ? list.map(row).join('') : '<div class="empty" style="padding:12px;">Aucun exemplaire de propriétaire pour le moment.</div>'}
+    ${settings}
+  </div>`;
+}
+window.unitsSetPct = async (v) => { await finSetOwnerPct(v); render(); };
+
+function renderGestionProprietaires(){
+  const owners = state.profiles.filter(p => p.is_owner);
+  const close = "this.closest('details').removeAttribute('open');";
+  const rows = owners.map(p => {
+    const oc = state.owner_contracts.find(x => x.username === p.username);
+    const myItems = ownerContractMateriel(p.username);
+    let pill = `<span class="status-pill none">Aucun contrat</span>`;
+    if(oc && oc.signed_at) pill = `<span class="status-pill ok">Signé le ${fmtDate(oc.signed_at)}</span>`;
+    else if(oc) pill = `<span class="status-pill pending">Signature attendue</span>`;
+    const isNew = oc && oc.signed_at && oc.signed_seen_by_master === false;
+    const u = esc(p.username);
+    return `
+      <div class="list-row">
+        <div>
+          <div class="t-title">${esc(clientDisplayName(p))} ${isNew ? `<span class="badge-dot" style="position:static;display:inline-flex;">Nouveau</span>` : ''}</div>
+          <div class="t-desc">${pill} <span style="margin-left:6px;">${esc(ownerUnitsText(p.username) || (myItems.length ? myItems.map(i => i.name).join(', ') : 'aucun matériel'))}</span></div>
+        </div>
+        <div class="btn-row" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+          ${oc && oc.signed_pdf_path ? `<button type="button" class="btn btn-ghost btn-sm" onclick="openOwnerContractFile('${u}','signed')">Contrat signé</button>` : ''}
+          <button class="btn btn-primary btn-sm" onclick="openGenerateOwnerContractModal('${u}')">${oc ? 'Régénérer' : 'Envoyer'} le contrat</button>
+          <details class="gb-more"><summary class="icon-btn" title="Plus d'actions">⋯</summary><div class="gb-menu">
+            <button type="button" onclick="${close}openConversationFromList('${u}')">Écrire</button>
+            <button type="button" onclick="${close}openViewProfile('${u}')">Fiche</button>
+            ${oc ? `<button type="button" class="danger" onclick="${close}deleteOwnerContract('${u}')">Supprimer le contrat</button>` : ''}
+            <button type="button" class="danger" onclick="${close}confirmUnmarkOwner('${u}')">Retirer le statut propriétaire</button>
+          </div></details>
+        </div>
+      </div>`;
+  }).join("");
+  return `
+    <div class="topbar"><div><h1>Propriétaires</h1><div class="desc">Ce que vous devez reverser à chacun et son contrat de mandat.</div></div></div>
+    ${owners.length ? ownersBalancesPanelHtml(owners, { settings: true }) : ''}
+    ${!owners.length ? `<div class="empty">Aucun compte Propriétaire pour le moment — ouvrez la fiche d'un utilisateur (onglet Utilisateurs) et utilisez le bouton "Marquer Propriétaire" pour en désigner un.</div>` : `<div class="section-title" style="margin:18px 0 8px;">Contrats</div><div style="display:flex;flex-direction:column;gap:10px;">${rows}</div>`}
+  `;
+}
 
 /* ---------- Assemblage + rafraîchissements ciblés ---------- */
 function finRootHtml(){
@@ -10901,6 +10980,7 @@ function renderModal(){
       <div id="it-error"></div>
       <div class="modal-actions">
         <button class="btn btn-ghost" onclick="closeModal()">Annuler</button>
+        ${editing ? `<button class="btn btn-danger" style="margin-right:auto;" onclick="closeModal();deleteItem('${it.id}')">Supprimer</button>` : ''}
         <button class="btn btn-primary" onclick="confirmNewItem(event,${editing?`'${it.id}'`:'null'})">${editing?'Enregistrer':'Ajouter'}</button>
       </div>
     </div></div>`;
@@ -11174,17 +11254,11 @@ function renderModal(){
     </div></div>`;
   }
   if(m.type === "newConversation"){
-    const clientsNoMsg = state.profiles.filter(p => !p.is_master && !state.messages.some(msg => msg.username === p.username))
-      .sort((a,b) => clientDisplayName(a).localeCompare(clientDisplayName(b)));
     return `
-    <div class="modal-bg" onclick="closeModalBg(event)"><div class="modal" style="max-width:420px;">
+    <div class="modal-bg" onclick="closeModalBg(event)"><div class="modal" style="max-width:440px;">
       <h3>Nouveau message</h3>
-      ${clientsNoMsg.length ? `
-        <div style="font-size:12.5px;color:var(--text-faint);margin-bottom:12px;">Choisissez un client pour démarrer la conversation.</div>
-        <div style="display:flex;flex-direction:column;gap:6px;max-height:320px;overflow-y:auto;">
-          ${clientsNoMsg.map(p => `<button type="button" class="btn btn-ghost btn-sm" style="width:100%;justify-content:flex-start;text-align:left;" onclick="startConversationWith('${esc(p.username)}')">${esc(clientDisplayName(p))}</button>`).join('')}
-        </div>
-      ` : `<div class="empty">Tous vos clients ont déjà une conversation en cours.</div>`}
+      <input type="text" id="nc-search" class="nc-search" placeholder="Rechercher un client…" value="${esc(state.newConvSearch || '')}" oninput="onNewConvSearch(this.value)" autocomplete="off">
+      <div class="nc-list" id="nc-list">${newConvListHtml()}</div>
       <div class="modal-actions"><button class="btn btn-ghost" onclick="closeModal()">Fermer</button></div>
     </div></div>`;
   }
@@ -11582,7 +11656,22 @@ window.closeConversation = () => { state.messagesMobileOpen = false; render(); }
 // La liste des conversations ne montre plus les clients sans aucun échange (voir
 // messagesConversations) — ce bouton reste le seul moyen de démarrer une conversation avec l'un
 // d'eux : ouvre un fil vide, sans rien écrire en base tant qu'aucun message n'est envoyé.
-window.openNewConversationModal = () => { state.modal = { type: "newConversation" }; render(); };
+function newConvListHtml(){
+  const q = (state.newConvSearch || '').trim().toLowerCase();
+  const norm = s => String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+  const nq = norm(q);
+  const list = state.profiles.filter(p => !p.is_master)
+    .filter(p => !nq || norm([clientDisplayName(p), p.prenom, p.nom, p.username, p.telephone].filter(Boolean).join(' ')).includes(nq))
+    .sort((a, b) => clientDisplayName(a).localeCompare(clientDisplayName(b)));
+  if(!list.length) return `<div class="empty" style="padding:16px;">Aucun client ne correspond.</div>`;
+  return list.slice(0, 80).map(p => {
+    const has = state.messages.some(msg => msg.username === p.username);
+    return `<button type="button" class="nc-row" onclick="startConversationWith('${esc(p.username)}')"><span class="nc-n"><b>${esc(clientDisplayName(p))}</b><small>${esc(p.username)}</small></span>${has ? '<span class="nc-tag">conversation</span>' : ''}</button>`;
+  }).join('') + (list.length > 80 ? `<div class="nc-more">${list.length - 80} autres : précisez la recherche.</div>` : '');
+}
+window.onNewConvSearch = (v) => { state.newConvSearch = v; const el = document.getElementById('nc-list'); if(el) el.innerHTML = newConvListHtml(); };
+window.openNewConversationModal = () => { state.newConvSearch = ''; state.modal = { type: "newConversation" }; render(); setTimeout(() => { const el = document.getElementById('nc-search'); if(el) el.focus(); }, 60); };
+
 window.startConversationWith = (username) => {
   state.modal = null;
   state.messagesSelectedUser = username;
