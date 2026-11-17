@@ -3378,18 +3378,23 @@ async function confirmRedemptionAddress(id, address){
 }
 
 /* ---------- Profiles (équipe) ---------- */
-async function deleteProfile(username){
+async function deleteProfile(username, ban){
   const p = state.profiles.find(x => x.username === username);
   const label = p ? clientDisplayName(p) : username;
+  let banReason = '';
+  if(ban){
+    if(!confirm(`BANNISSEMENT DÉFINITIF de « ${label} » (${username}) ?\n\nSon compte est supprimé (réservations, missions, messages, contrats et documents effacés ; factures conservées) ET cette adresse e-mail ne pourra plus jamais s'inscrire, ni ses variantes Gmail (points, +alias).\n\nTu pourras débannir depuis « Bannis » dans Utilisateurs.`)) return;
+    banReason = prompt('Motif (facultatif, visible seulement par l\'équipe) :', '') || '';
+  } else
   if(!confirm(`Supprimer définitivement le compte « ${label} » (${username}) ?\n\nIl ne pourra plus se connecter. Ses réservations, missions, messages, contrats et documents sont effacés. Les factures déjà émises sont conservées.\n\nAction irréversible.`)) return;
   // Lot 40 : suppression côté serveur (profil + données + compte de connexion). Avant, seule la fiche
   // était supprimée : le compte de connexion restait valide et l'appli recréait une fiche vide
   // à la prochaine ouverture, avec accès à tout.
-  const { error } = await sb.rpc('admin_delete_account', { p_username: username });
+  const { error } = ban ? await sb.rpc('admin_ban_account', { p_username: username, p_reason: banReason }) : await sb.rpc('admin_delete_account', { p_username: username });
   if(error){
-    const notInstalled = /admin_delete_account|schema cache|could not find the function|does not exist/i.test(error.message || '');
+    const notInstalled = /admin_delete_account|admin_ban_account|schema cache|could not find the function|does not exist/i.test(error.message || '');
     alert(notInstalled
-      ? "La mise à jour de la base (migration lot 40) n'est pas encore installée : le compte n'a PAS été supprimé. Exécute migration_lot40_comptes.sql dans Supabase (SQL Editor), puis réessaie."
+      ? (ban ? "Le bannissement n'est pas installé dans la base : le compte n'a PAS été banni ni supprimé. Exécute migration_lot49_bannissement.sql dans Supabase (SQL Editor), puis réessaie." : "La mise à jour de la base (migration lot 40) n'est pas encore installée : le compte n'a PAS été supprimé. Exécute migration_lot40_comptes.sql dans Supabase (SQL Editor), puis réessaie.")
       : "Erreur : " + error.message);
     return;
   }
@@ -6890,7 +6895,7 @@ function usersChipsHtml(){
     return `<button type="button" class="ul-chip ${on ? 'on' : ''}" onclick="onUsersFilter('${f}')">${label} <b>${n}</b></button>`;
   }).join('');
   return `<div class="ul-chips ul-sortchips"><span class="ul-chips-label">Trier par</span>${sortChips}</div>
-          <div class="ul-chips"><span class="ul-chips-label">Afficher</span>${filterChips}</div>`;
+          <div class="ul-chips"><span class="ul-chips-label">Afficher</span>${filterChips}<button type="button" class="ul-chip" onclick="openBannedModal()" title="Adresses bannies définitivement">Bannis</button></div>`;
 }
 function usersRowHtml(p){
   const u = esc(p.username);
@@ -6909,7 +6914,8 @@ function usersRowHtml(p){
     <button type="button" class="icon-btn" title="Ajouter de l'XP" onclick="openAddXpModal('${u}')">${tacticalIconSvg('coins',{size:16})}</button>
     <button type="button" class="icon-btn" title="Réinitialiser l'XP au niveau 1" onclick="resetUserToLevel1('${u}')">↺</button>
     <button type="button" class="icon-btn${p.is_owner ? ' active' : ''}" title="${p.is_owner ? 'Compte marqué Propriétaire' : 'Marquer comme Propriétaire'}" onclick="openMarkAsOwnerModal('${u}')">${tacticalIconSvg('house',{size:16})}</button>
-    <button type="button" class="icon-btn danger" title="Supprimer ce compte" onclick="deleteProfile('${u}')">✕</button>`;
+    <button type="button" class="icon-btn danger" title="Supprimer ce compte" onclick="deleteProfile('${u}')">✕</button>
+    <button type="button" class="icon-btn danger" title="Bannissement définitif : supprime le compte et interdit toute réinscription avec cette adresse" aria-label="Bannissement définitif" onclick="deleteProfile('${u}', true)"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M5.6 5.6l12.8 12.8"/></svg></button>`;
   return `
     <div class="ul-row">
       <div class="ul-who">
@@ -9748,6 +9754,23 @@ function renderDashboard(){
   </div>`;
 }
 
+
+/* ===== Lot 49 : bannissement définitif ===== */
+window.openBannedModal = async () => {
+  state.bannedList = null; state.bannedError = ''; state.modal = { type: "banned" }; render();
+  const { data, error } = await sb.from('banned_emails').select('*').order('banned_at', { ascending: false });
+  if(error){ state.bannedError = /banned_emails|schema cache|does not exist/i.test(error.message || '') ? "Le bannissement n'est pas installé : exécute migration_lot49_bannissement.sql dans Supabase." : error.message; state.bannedList = []; }
+  else state.bannedList = data || [];
+  if(state.modal && state.modal.type === "banned") render();
+};
+window.unbanEmail = async (email) => {
+  if(!confirm(`Débannir ${email} ?\n\nCette adresse pourra de nouveau créer un compte.`)) return;
+  const { error } = await sb.rpc('admin_unban', { p_email: email });
+  if(error){ alert('Erreur : ' + error.message); return; }
+  state.bannedList = (state.bannedList || []).filter(b => (b.raw_email || b.email) !== email);
+  render();
+};
+
 /* ---------- Assemblage + rafraîchissements ciblés ---------- */
 function finRootHtml(){
   finEnsurePeriod();
@@ -11274,6 +11297,19 @@ function renderModal(){
       ${task.requires_answer ? `<div class="field"><label>${esc(task.answer_label || 'Réponse')}</label><textarea id="edit-answer-input" rows="3">${esc(c.answer||'')}</textarea></div>` : ''}
       ${task.requires_date ? `<div class="field"><label>Date de la location</label><input id="edit-answer-date-input" type="date" min="${MISSION_LAUNCH_DATE}" value="${esc(c.answer_date||'')}"></div>` : ''}
       <div class="modal-actions"><button class="btn btn-ghost" onclick="closeModal()">Annuler</button><button class="btn btn-primary" onclick="confirmEditValidationAnswer('${c.id}')">Enregistrer</button></div>
+    </div></div>`;
+  }
+  if(m.type === "banned"){
+    const list = state.bannedList;
+    return `
+    <div class="modal-bg" onclick="closeModalBg(event)"><div class="modal" style="max-width:520px;">
+      <h3>Adresses bannies</h3>
+      <div class="desc" style="margin:-8px 0 14px;">Ces adresses (et leurs variantes Gmail) ne peuvent plus s'inscrire.</div>
+      ${list == null ? '<div class="empty" style="padding:16px;">Chargement…</div>'
+        : state.bannedError ? `<div class="empty" style="padding:16px;">${esc(state.bannedError)}</div>`
+        : !list.length ? '<div class="empty" style="padding:16px;">Aucune adresse bannie.</div>'
+        : `<div class="nc-list">${list.map(b => `<div class="nc-row" style="cursor:default;"><span class="nc-n"><b>${esc(b.raw_email || b.email)}</b><small>${esc(fmtDate(b.banned_at))}${b.reason ? ' · ' + esc(b.reason) : ''}</small></span><button type="button" class="btn btn-ghost btn-sm" style="width:auto;" onclick="unbanEmail('${esc(b.raw_email || b.email)}')">Débannir</button></div>`).join('')}</div>`}
+      <div class="modal-actions"><button class="btn btn-ghost" onclick="closeModal()">Fermer</button></div>
     </div></div>`;
   }
   if(m.type === "viewProfile"){
