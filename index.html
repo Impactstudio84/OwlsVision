@@ -1512,6 +1512,65 @@ button.gb-own:focus-visible{outline:2px solid var(--accent);outline-offset:2px;b
 }
 </style>
 
+<style id="lot48-css">
+/* ===== Lot 48 : tableau de bord ===== */
+.db{max-width:1240px;margin:0 auto;}
+.db-top{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap;margin:0 0 22px;}
+.db-top h1{margin:0;}
+.db-date{color:var(--text-faint);font-size:14px;margin-top:2px;}.db-date::first-letter{text-transform:uppercase;}
+.db-short{display:flex;gap:8px;flex-wrap:wrap;}
+.db-short kbd{margin-left:6px;font-size:10.5px;padding:2px 6px;border-radius:5px;border:1px solid rgba(0,0,0,.25);background:rgba(0,0,0,.12);font-family:inherit;}
+.db-card{background:linear-gradient(160deg,rgba(255,255,255,.055),rgba(255,255,255,.02));border:1px solid var(--border);border-radius:20px;padding:20px 22px;min-width:0;}
+.db-card h3{margin:0 0 14px;font-size:15px;font-weight:700;display:flex;align-items:baseline;gap:10px;}
+.db-card h3 small{font-size:12px;font-weight:500;color:var(--text-faint);}
+.db-heroes{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,8fr);gap:16px;margin:0 0 16px;}
+.db-hero{display:flex;flex-direction:column;gap:10px;padding:22px 24px 16px;}
+.db-acc{cursor:pointer;background:radial-gradient(120% 90% at 0% 0%,rgba(158,240,53,.16),transparent 60%),linear-gradient(160deg,rgba(255,255,255,.05),rgba(255,255,255,.02));border-color:var(--accent-soft-2);transition:border-color .18s;}
+.db-acc:hover{border-color:var(--accent);}
+.db-eyebrow{font-size:12px;font-weight:700;letter-spacing:1.4px;text-transform:uppercase;color:var(--text-dim);}
+.db-big{font-family:var(--font-disp);font-size:76px;line-height:1;font-weight:700;color:var(--accent);font-variant-numeric:tabular-nums;letter-spacing:-1px;}
+.db-big-s{font-size:52px;color:var(--text);display:flex;align-items:baseline;gap:12px;}
+.db-big-s small{font-size:14px;font-weight:500;color:var(--text-faint);letter-spacing:0;font-family:inherit;}
+.db-pills{display:flex;gap:7px;flex-wrap:wrap;}
+.db-pill{font-size:12px;font-weight:600;padding:4px 11px;border-radius:99px;background:rgba(255,255,255,.06);color:var(--text-dim);white-space:nowrap;}
+.db-pill.up{background:var(--accent-soft);color:var(--accent);}
+.db-pill.down{background:var(--danger-soft);color:#ffb3a6;}
+.db-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap;}
+.db-head-r{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+.db-seg{display:inline-flex;background:rgba(255,255,255,.06);border-radius:99px;padding:3px;}
+.db-seg button{all:unset;cursor:pointer;padding:6px 14px;border-radius:99px;font-size:12.5px;font-weight:600;color:var(--text-dim);}
+.db-seg button.on{background:var(--accent);color:#0a0f06;}
+.db-seg button:focus-visible{outline:2px solid var(--accent);outline-offset:2px;}
+.db-foot{font-size:12px;color:var(--text-faint);}
+.db-spark{margin-top:auto;}
+.db-chart{position:relative;}
+.db-svg{width:100%;height:auto;display:block;overflow:visible;touch-action:pan-y;}
+.db-grid{stroke:rgba(255,255,255,.07);stroke-width:1;}
+.db-ax{fill:rgba(244,247,241,.5);font-size:11.5px;font-family:inherit;}
+.db-cross{stroke:rgba(255,255,255,.28);stroke-width:1;stroke-dasharray:3 3;}
+.db-dot{fill:var(--accent);stroke:#0b0f08;stroke-width:3;}
+.db-tip{position:absolute;transform:translate(-50%,-135%);background:#161a12;border:1px solid var(--border);border-radius:10px;padding:7px 11px;font-size:13px;pointer-events:none;white-space:nowrap;box-shadow:0 8px 24px rgba(0,0,0,.45);z-index:3;}
+.db-tip b{font-size:15px;color:var(--accent);margin-right:3px;}
+.db-tip small{display:block;color:var(--text-faint);font-size:11.5px;text-transform:capitalize;}
+.db-kpis{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px;margin:0 0 16px;}
+.db-kpi{all:unset;box-sizing:border-box;cursor:pointer;display:flex;flex-direction:column;gap:2px;background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:14px 16px;transition:background .15s,border-color .15s;}
+.db-kpi:hover{background:rgba(255,255,255,.07);border-color:var(--accent-soft-2);}
+.db-kpi:focus-visible{outline:2px solid var(--accent);outline-offset:2px;}
+.db-kpi .dm-l{font-size:11.5px;font-weight:700;letter-spacing:.9px;text-transform:uppercase;color:var(--text-faint);}
+.db-kpi .dm-v{font-family:var(--font-disp);font-size:28px;font-weight:700;line-height:1.15;}
+.db-kpi .dm-s{font-size:12px;color:var(--text-faint);}
+.db-kpi.good .dm-v{color:var(--accent);} .db-kpi.warn .dm-v{color:var(--amber);} .db-kpi.dim .dm-v{color:var(--text-dim);}
+.db-grid3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;}
+.db-stack{display:flex;gap:3px;height:12px;border-radius:99px;overflow:hidden;background:rgba(255,255,255,.06);margin:4px 0 16px;}
+.db-stack span{border-radius:3px;min-width:6px;}
+.db-leg{display:flex;flex-direction:column;gap:9px;margin-bottom:14px;}
+.db-leg div{display:flex;align-items:center;gap:9px;font-size:13.5px;color:var(--text-dim);}
+.db-leg i{width:9px;height:9px;border-radius:50%;flex-shrink:0;}
+.db-leg b{margin-left:auto;color:var(--text);font-variant-numeric:tabular-nums;}
+@media (max-width:1100px){.db-heroes{grid-template-columns:1fr;}.db-kpis{grid-template-columns:repeat(3,minmax(0,1fr));}.db-grid3{grid-template-columns:1fr;}}
+@media (max-width:640px){.db-kpis{grid-template-columns:repeat(2,minmax(0,1fr));}.db-kpis .db-kpi:last-child{grid-column:1/-1;}.db-big{font-size:60px;}.db-big-s{font-size:42px;}.db-card{padding:16px;}.db-hero{padding:18px 16px 12px;}.db-top{margin-bottom:16px;}}
+</style>
+
 </head>
 <body>
 <div id="app"></div>
@@ -6368,91 +6427,6 @@ function dashboardAlertsHtml(){
     </div>`).join('')}</div>`;
 }
 
-function renderDashboard(){
-  const counts = { demande:0, accepte:0, loue:0, retourne:0, refuse:0 };
-  state.bookings.forEach(b => { if(counts[b.status] !== undefined) counts[b.status]++; });
-  const total = state.bookings.length;
-  const series = monthlyBookingSeries(6);
-  const bookingsDeltaPct = seriesDeltaPct(series, 'count');
-  const clients = state.profiles.filter(p => !p.is_master);
-  const totalXp = clients.reduce((s, c) => s + (c.xp || 0), 0);
-  const activeBookings = counts.accepte + counts.loue;
-
-  return `
-    <div class="topbar"><div><h1>Tableau de bord</h1><div class="desc">Vue d'ensemble en temps réel de la gestion des locations Owls Vision (les chiffres financiers sont dans l'onglet Finances).</div></div></div>
-
-    ${dashboardShortcutsHtml()}
-    ${dashboardMoneyHtml()}
-    <div class="stat-grid">
-      <div class="stat-card clickable" onclick="dashGo('gestion','demande')" role="button" tabindex="0" title="Voir les demandes">
-        <div class="stat-card-top">
-          <div class="stat-icon" style="background:var(--amber-soft);color:var(--amber);">${tacticalIconSvg('clock',{size:19})}</div>
-          ${counts.demande>0 ? `<span class="stat-delta up" style="background:var(--amber-soft);color:var(--amber);">à traiter</span>` : ''}
-        </div>
-        <div class="stat-value">${counts.demande}</div>
-        <div class="stat-label">Demandes en attente</div>
-      </div>
-      <div class="stat-card clickable" onclick="dashGo('gestion','loue')" role="button" tabindex="0" title="Voir les locations en cours">
-        <div class="stat-card-top">
-          <div class="stat-icon" style="background:var(--blue-soft);color:var(--blue);">${tacticalIconSvg('package',{size:19})}</div>
-        </div>
-        <div class="stat-value">${activeBookings}</div>
-        <div class="stat-label">Locations en cours / acceptées</div>
-      </div>
-      <div class="stat-card clickable" onclick="dashGo('utilisateurs')" role="button" tabindex="0" title="Voir les comptes">
-        <div class="stat-card-top">
-          <div class="stat-icon" style="background:var(--violet-soft);color:var(--violet);">${tacticalIconSvg('id-badge',{size:19})}</div>
-        </div>
-        <div class="stat-value">${clients.length}</div>
-        <div class="stat-label">Comptes clients</div>
-      </div>
-    </div>
-
-    <div class="dash-grid" style="margin-top:18px;">
-      <div style="display:flex;flex-direction:column;gap:18px;min-width:0;">
-        <div class="chart-card">
-          <div class="chart-card-head">
-            <div><h3>Réservations — 6 derniers mois</h3><div class="chart-sub">Nombre de locations débutées par mois</div></div>
-            ${statDeltaHtml(bookingsDeltaPct)}
-          </div>
-          ${areaChartHtml(series, 'count', { color:'var(--accent)', gradId:'bk' })}
-        </div>
-        <div class="chart-card">
-          <div class="chart-card-head"><div><h3>Matériel le plus réservé</h3><div class="chart-sub">Toutes périodes confondues</div></div></div>
-          ${topItemsBarHtml(5)}
-        </div>
-      </div>
-      <div style="display:flex;flex-direction:column;gap:18px;min-width:0;">
-        <div class="chart-card">
-          <div class="chart-card-head"><div><h3>À traiter</h3><div class="chart-sub">Actions en attente de votre part</div></div></div>
-          ${dashboardAlertsHtml()}
-        </div>
-        <div class="chart-card">
-          <div class="chart-card-head"><div><h3>Statut des locations</h3></div></div>
-          ${donutChartHtml([
-            { label:'Demandes', value: counts.demande, color:'var(--amber)' },
-            { label:'Acceptées', value: counts.accepte, color:'var(--blue)' },
-            { label:'En cours', value: counts.loue, color:'var(--violet)' },
-            { label:'Retournées', value: counts.retourne, color:'var(--accent)' },
-            { label:'Refusées', value: counts.refuse, color:'var(--danger)' },
-          ], { centerLabel:'locations' })}
-        </div>
-        <div class="chart-card">
-          <div class="chart-card-head"><div><h3>Top clients</h3><div class="chart-sub">${totalXp} XP distribués au total</div></div></div>
-          ${xpLeaderboardHtml(5)}
-        </div>
-      </div>
-    </div>
-
-    <div class="panel" style="margin-top:18px;">
-      <div class="section-title">Autres indicateurs</div>
-      <div class="row">
-        <div><div style="font-size:12px;color:var(--text-faint);">Total locations (historique)</div><div style="font-size:22px;font-weight:700;">${total}</div></div>
-        <div><div style="font-size:12px;color:var(--text-faint);">Demandes refusées</div><div style="font-size:22px;font-weight:700;">${counts.refuse}</div></div>
-      </div>
-    </div>
-  `;
-}
 
 /* ---------- Missions ---------- */
 function latestCompletionFor(taskId, username){
@@ -9619,6 +9593,160 @@ window.markInvoicesSentAll = async () => {
   const { error } = await sb.from('bookings').update({ invoice_manual: true }).in('id', list.map(b => b.id));
   if(error){ list.forEach(b => { b.invoice_manual = false; }); render(); alert("Non enregistré : " + error.message + INV_MANUAL_ERR); }
 };
+
+/* ===== Lot 48 : tableau de bord redessiné ===== */
+function dbNiceMax(v){
+  const m = Math.max(v, 3);
+  const step = m <= 4 ? 1 : m <= 10 ? 2 : m <= 20 ? 5 : m <= 50 ? 10 : m <= 100 ? 20 : Math.pow(10, Math.floor(Math.log10(m))) / 2;
+  return { max: Math.ceil(m / step) * step, step };
+}
+function dbChartHtml(id, pts, o){
+  o = o || {};
+  const W = o.w || 640, H = o.h || 250, padL = o.mini ? 8 : 34, padR = 14, padT = 18, padB = o.mini ? 22 : 28;
+  const n = pts.length, iw = W - padL - padR, ih = H - padT - padB;
+  const { max, step } = dbNiceMax(Math.max(...pts.map(p => p.value), 0));
+  const X = i => padL + (n === 1 ? iw / 2 : (i / (n - 1)) * iw);
+  const Y = v => padT + ih - (v / max) * ih;
+  const line = pts.map((p, i) => `${i ? 'L' : 'M'}${X(i).toFixed(1)},${Y(p.value).toFixed(1)}`).join('');
+  const area = `${line}L${X(n - 1).toFixed(1)},${(padT + ih).toFixed(1)}L${X(0).toFixed(1)},${(padT + ih).toFixed(1)}Z`;
+  let grid = '';
+  if(!o.mini) for(let v = 0; v <= max + 0.001; v += step){
+    grid += `<line x1="${padL}" x2="${W - padR}" y1="${Y(v).toFixed(1)}" y2="${Y(v).toFixed(1)}" class="db-grid"/><text x="${padL - 8}" y="${(Y(v) + 4).toFixed(1)}" text-anchor="end" class="db-ax">${v}</text>`;
+  } else grid = `<line x1="${padL}" x2="${W - padR}" y1="${(padT + ih).toFixed(1)}" y2="${(padT + ih).toFixed(1)}" class="db-grid"/>`;
+  const every = n > 8 ? 2 : 1;
+  const xl = pts.map((p, i) => (o.mini ? (i === 0 || i === n - 1) : (i % every === (n - 1) % every)) ? `<text x="${X(i).toFixed(1)}" y="${H - 7}" text-anchor="${o.mini ? (i === 0 ? 'start' : 'end') : 'middle'}" class="db-ax">${esc(p.label)}</text>` : '').join('');
+  const last = pts[n - 1];
+  window.__dbc = window.__dbc || {};
+  window.__dbc[id] = { W, H, padL, padR, padT, ih, max, pts, X: null };
+  const gid = 'dbg-' + id;
+  return `<div class="db-chart" id="${id}-wrap">
+    <svg viewBox="0 0 ${W} ${H}" class="db-svg" role="img" aria-label="${esc(o.label || '')}">
+      <defs><linearGradient id="${gid}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${o.color || 'var(--accent)'}" stop-opacity=".32"/><stop offset="1" stop-color="${o.color || 'var(--accent)'}" stop-opacity="0"/></linearGradient></defs>
+      ${grid}${xl}
+      <path d="${area}" fill="url(#${gid})"/>
+      <path d="${line}" fill="none" stroke="${o.color || 'var(--accent)'}" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>
+      <line id="${id}-v" class="db-cross" x1="0" x2="0" y1="${padT}" y2="${padT + ih}" style="display:none"/>
+      <circle id="${id}-d" r="5" class="db-dot" cx="${X(n - 1).toFixed(1)}" cy="${Y(last.value).toFixed(1)}"/>
+      <rect x="${padL}" y="0" width="${iw}" height="${H}" fill="transparent" onpointermove="dbHover(event,'${id}')" onpointerdown="dbHover(event,'${id}')" onpointerleave="dbLeave('${id}')"/>
+    </svg>
+    <div class="db-tip" id="${id}-t" style="display:none"></div>
+  </div>`;
+}
+window.dbHover = (e, id) => {
+  const d = window.__dbc && window.__dbc[id]; if(!d) return;
+  const svg = e.currentTarget.ownerSVGElement, r = svg.getBoundingClientRect();
+  const n = d.pts.length, iw = d.W - d.padL - d.padR;
+  const x = (e.clientX - r.left) / r.width * d.W;
+  const i = Math.max(0, Math.min(n - 1, Math.round(((x - d.padL) / iw) * (n - 1))));
+  const px = d.padL + (n === 1 ? iw / 2 : (i / (n - 1)) * iw), py = d.padT + d.ih - (d.pts[i].value / d.max) * d.ih;
+  const v = document.getElementById(id + '-v'), dot = document.getElementById(id + '-d'), tip = document.getElementById(id + '-t');
+  if(!v || !dot || !tip) return;
+  v.setAttribute('x1', px); v.setAttribute('x2', px); v.style.display = '';
+  dot.setAttribute('cx', px); dot.setAttribute('cy', py);
+  tip.innerHTML = `<b>${esc(String(d.pts[i].value))}</b> ${esc(d.pts[i].unit || '')}<small>${esc(d.pts[i].full || d.pts[i].label)}</small>`;
+  tip.style.display = '';
+  const left = px / d.W * 100;
+  tip.style.left = Math.min(Math.max(left, 12), 88) + '%'; tip.style.top = (py / d.H * 100) + '%';
+};
+window.dbLeave = (id) => { const v = document.getElementById(id + '-v'), t = document.getElementById(id + '-t'); if(v) v.style.display = 'none'; if(t) t.style.display = 'none'; };
+
+function dbMonthKey(d){ return d.getFullYear() * 12 + d.getMonth(); }
+function dbAccountSeries(months){
+  const clients = state.profiles.filter(p => !p.is_master && p.created_at);
+  const now = new Date(), cur = dbMonthKey(now);
+  const out = [];
+  for(let i = months - 1; i >= 0; i--){
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1), k = cur - i;
+    const total = clients.filter(p => dbMonthKey(new Date(p.created_at)) <= k).length;
+    const added = clients.filter(p => dbMonthKey(new Date(p.created_at)) === k).length;
+    out.push({ label: d.toLocaleDateString('fr-FR', { month: 'short' }).replace('.', ''), full: d.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' }) + (added ? ` · +${added}` : ''), value: total, unit: 'comptes', added });
+  }
+  return out;
+}
+function dbBookingSeries(months){
+  return monthlyBookingSeries(months).map((m, i, a) => {
+    const d = new Date(new Date().getFullYear(), new Date().getMonth() - (a.length - 1 - i), 1);
+    return { label: m.label, full: d.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' }), value: m.count, unit: m.count > 1 ? 'locations' : 'location' };
+  });
+}
+window.dbSetRange = (n) => { state.dashRange = n; render(); };
+
+function dbHeroAccountsHtml(){
+  const clients = state.profiles.filter(p => !p.is_master);
+  const series = dbAccountSeries(12);
+  const addedMonth = series[series.length - 1].added;
+  const weekAgo = Date.now() - 7 * 86400e3, monthAgo = Date.now() - 30 * 86400e3;
+  const addedWeek = clients.filter(p => p.created_at && new Date(p.created_at).getTime() >= weekAgo).length;
+  const active = clients.filter(p => p.last_login && new Date(p.last_login).getTime() >= monthAgo).length;
+  return `<div class="db-card db-hero db-acc" onclick="dashGo('utilisateurs')" role="button" tabindex="0" title="Voir les comptes">
+    <div class="db-eyebrow">Comptes clients</div>
+    <div class="db-big">${clients.length}</div>
+    <div class="db-pills">
+      <span class="db-pill ${addedMonth ? 'up' : ''}">${addedMonth ? '+' : ''}${addedMonth} ce mois-ci</span>
+      <span class="db-pill">${addedWeek ? '+' : ''}${addedWeek} sur 7 jours</span>
+      <span class="db-pill">${active} actif${active > 1 ? 's' : ''} sur 30 jours</span>
+    </div>
+    <div class="db-spark" onclick="event.stopPropagation()">${dbChartHtml('dbacc', series, { mini: true, w: 380, h: 170, label: 'Comptes clients sur 12 mois' })}</div>
+    <div class="db-foot">Évolution sur 12 mois</div>
+  </div>`;
+}
+function dbHeroBookingsHtml(){
+  const range = state.dashRange === 12 ? 12 : 6;
+  const series = dbBookingSeries(range);
+  const total = series.reduce((a, p) => a + p.value, 0);
+  const pct = seriesDeltaPct(series.map(p => ({ count: p.value })), 'count');
+  const delta = pct == null ? '' : `<span class="db-pill ${pct >= 0 ? 'up' : 'down'}">${pct >= 0 ? '▲' : '▼'} ${Math.abs(pct)} % vs mois dernier</span>`;
+  return `<div class="db-card db-hero db-bk">
+    <div class="db-head"><div><div class="db-eyebrow">Réservations</div><div class="db-big db-big-s">${total}<small>locations sur ${range} mois</small></div></div>
+      <div class="db-head-r">${delta}<div class="db-seg"><button type="button" class="${range === 6 ? 'on' : ''}" onclick="dbSetRange(6)">6 mois</button><button type="button" class="${range === 12 ? 'on' : ''}" onclick="dbSetRange(12)">12 mois</button></div></div></div>
+    ${dbChartHtml('dbbk', series, { h: 250, label: 'Locations débutées par mois' })}
+  </div>`;
+}
+function dbKpiStripHtml(){
+  const rows = finRentalsLedger();
+  const prev = state.financePeriod; state.financePeriod = null; finEnsurePeriod();
+  const t = finRentalsTotals(rows);
+  state.financePeriod = prev;
+  const nDem = state.bookings.filter(b => b.status === 'demande').length;
+  const nActive = state.bookings.filter(b => ['accepte', 'loue'].includes(b.status)).length;
+  const money = (cls, l, v, s) => `<button type="button" class="dash-money db-kpi ${cls}" onclick="finSetView('locations');goto('finances')"><span class="dm-l">${l}</span><span class="dm-v">${v}</span><span class="dm-s">${s}</span></button>`;
+  const tile = (cls, l, v, s, go, f) => `<button type="button" class="db-kpi db-tile ${cls}" onclick="dashGo('${go}'${f ? `,'${f}'` : ''})"><span class="dm-l">${l}</span><span class="dm-v">${v}</span><span class="dm-s">${s}</span></button>`;
+  return `<div class="db-kpis">
+    ${money('good', 'Encaissé ce mois-ci', finFmtEUR(t.paid), `${t.paidRows.length} location${t.paidRows.length > 1 ? 's' : ''} payée${t.paidRows.length > 1 ? 's' : ''}`)}
+    ${money('', 'À encaisser', finFmtEUR(t.due), `${t.dueN} réservation${t.dueN > 1 ? 's' : ''}`)}
+    ${money(t.overdueN ? 'warn' : 'dim', 'En retard', finFmtEUR(t.overdue), t.overdueN ? `${t.overdueN} à relancer` : 'rien en retard')}
+    ${tile(nDem ? 'warn' : 'dim', 'Demandes', nDem, nDem ? 'à traiter' : 'aucune en attente', 'gestion', 'demande')}
+    ${tile('', 'En cours', nActive, 'louées ou acceptées', 'gestion', 'loue')}
+  </div>`;
+}
+function dbStatusHtml(){
+  const counts = { demande: 0, accepte: 0, loue: 0, retourne: 0, refuse: 0 };
+  state.bookings.forEach(b => { if(counts[b.status] !== undefined) counts[b.status]++; });
+  const total = state.bookings.length;
+  const segs = [['Demandes', 'demande', 'var(--amber)'], ['Acceptées', 'accepte', 'var(--blue)'], ['En cours', 'loue', 'var(--violet)'], ['Retournées', 'retourne', 'var(--accent)'], ['Refusées', 'refuse', 'var(--danger)']];
+  return `<div class="db-stack">${total ? segs.filter(s => counts[s[1]]).map(s => `<span style="flex:${counts[s[1]]};background:${s[2]}" title="${s[0]} : ${counts[s[1]]}"></span>`).join('') : ''}</div>
+    <div class="db-leg">${segs.map(s => `<div><i style="background:${s[2]}"></i>${s[0]}<b>${counts[s[1]]}</b></div>`).join('')}</div>
+    <div class="db-foot">${total} location${total > 1 ? 's' : ''} au total</div>`;
+}
+function dbShortcutsHtml(){
+  const b = (label, js, primary) => `<button type="button" class="btn ${primary ? 'btn-primary' : 'btn-ghost'} btn-sm" style="width:auto;" onclick="${js}">${label}</button>`;
+  return `<div class="db-short">${b('Rechercher <kbd>Ctrl K</kbd>', 'ovPaletteOpen()', true)}${b('+ Matériel', 'openNewItemModal()')}${b('+ Utilisateur', 'openNewManualUserModal()')}${b('Calendrier', 'openBookingCalendarModal()')}</div>`;
+}
+function renderDashboard(){
+  const totalXp = state.profiles.filter(p => !p.is_master).reduce((s, c) => s + (c.xp || 0), 0);
+  const day = new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
+  return `<div class="db">
+    <div class="db-top"><div><h1>Tableau de bord</h1><div class="db-date">${esc(day)}</div></div>${dbShortcutsHtml()}</div>
+    <div class="db-heroes">${dbHeroAccountsHtml()}${dbHeroBookingsHtml()}</div>
+    ${dbKpiStripHtml()}
+    <div class="db-grid3">
+      <div class="db-card"><h3>À traiter</h3>${dashboardAlertsHtml()}</div>
+      <div class="db-card"><h3>Statut des locations</h3>${dbStatusHtml()}</div>
+      <div class="db-card"><h3>Top clients <small>${totalXp} XP distribués</small></h3>${xpLeaderboardHtml(5)}</div>
+    </div>
+    <div class="db-card" style="margin-top:16px;"><h3>Matériel le plus réservé <small>toutes périodes</small></h3>${topItemsBarHtml(5)}</div>
+  </div>`;
+}
 
 /* ---------- Assemblage + rafraîchissements ciblés ---------- */
 function finRootHtml(){
