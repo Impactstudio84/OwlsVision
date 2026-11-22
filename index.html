@@ -3027,6 +3027,7 @@ async function submitBooking(itemId, start, end, extra){
     if(error){ state.bookingError = t('common.error_prefix', { msg: error.message }); render(); return; }
     state.bookings.push(data.booking);
     state.bookingDraft = null;
+    if(data.booking && data.booking.operation_name) setTimeout(ovRefreshChannels, 700);
     // Lot 37 : étape 3 (finale) du suivi funnel — la demande a réellement été envoyée. À partir
     // d'ici ce client n'apparaît plus dans les "paniers abandonnés" (voir funnelAbandonedList).
     logFunnelEvent('booking_submitted', itemId, start, end);
@@ -12446,6 +12447,15 @@ window.toggleAutoCorrect = () => {
   if(!on) Object.keys(ovDeep.timers).forEach(k => clearTimeout(ovDeep.timers[k]));
 };
 
+// ----- Lot 55 : canaux d'opération (créés côté base) — rafraîchit la liste des canaux juste après une demande -----
+async function ovRefreshChannels(){
+  try {
+    const [c, m] = await Promise.all([sb.from('channels').select('*').order('created_at', { ascending: true }), sb.from('channel_members').select('*')]);
+    const nc = (c && c.data) || null, nm = (m && m.data) || null;
+    if(nc && nm && (nc.length !== state.channels.length || nm.length !== state.channelMembers.length)){ state.channels = nc; state.channelMembers = nm; render(); }
+  } catch(e){}
+}
+
 // ----- Messages types (pré-enregistrés) -----
 const TPL_DEFAULTS = [
   { title: 'Réservation confirmée', body: "Bonjour {prénom}, votre réservation est confirmée. Je vous envoie la facture et les infos de retrait dans la foulée. N'hésitez pas si vous avez une question." },
@@ -12792,7 +12802,6 @@ function bookingOpBlockHtml(item, draft){
       <div id="bk-op-hint" class="bk-hint">${ops.length ? '' : esc(t('booking.op.none'))}</div>
       <div id="bk-op-err" class="bk-err" role="alert"></div>
     </div>
-    <label class="bk-ship"><input type="checkbox" id="bk-ship" ${draft.ship ? 'checked' : ''} onchange="updateBookingTotal('${item.id}')"><span class="bk-ship-txt">${esc(t('booking.ship.label'))}</span><b class="bk-ship-price">+ ${esc(fmtEurFr(SHIP24_FEE))}</b></label>
     <div id="bk-total" class="bk-total" aria-live="polite"></div>`;
 }
 
