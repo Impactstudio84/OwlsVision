@@ -1746,6 +1746,16 @@ button.gb-own:focus-visible{outline:2px solid var(--accent);outline-offset:2px;b
 .att-pick select:focus-visible,.att-pick input:focus-visible{outline:2px solid var(--accent);outline-offset:1px;}
 .att-pick option,.att-pick optgroup{background:#0d110b;color:var(--text);}
 </style>
+<style>.ac-enter i{width:24px;height:14px;border-radius:99px;background:rgba(255,255,255,.18);position:relative;transition:background .15s}
+.ac-enter i::after{content:"";position:absolute;top:2px;left:2px;width:10px;height:10px;border-radius:50%;background:#fff;transition:transform .15s var(--ease)}
+.ac-enter.on{color:var(--accent);border-color:var(--accent-soft-2)}
+.ac-enter.on i{background:var(--accent)}
+.ac-enter.on i::after{transform:translateX(10px);background:var(--accent-ink)}
+.ac-spin{display:inline-block;width:10px;height:10px;border:2px solid var(--text-faint);border-top-color:var(--accent);border-radius:50%;vertical-align:-1px;animation:ac-rot .8s linear infinite}
+@keyframes ac-rot{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){.ac-spin{animation:none}}
+.ac-status b{color:var(--text-dim);font-weight:600}
+</style>
 </head>
 <body>
 <div id="app"></div>
@@ -7809,12 +7819,12 @@ window.deleteChannel = async (channelId) => {
   render();
 };
 window.onChannelKeydown = (e, channelId) => {
-  if(e.key === 'Enter' && !e.shiftKey){ e.preventDefault(); sendChannelMessage(channelId); }
+  if(e.key === 'Enter' && !e.shiftKey && !e.isComposing && (e.ctrlKey || e.metaKey || ovEnterSends())){ e.preventDefault(); sendChannelMessage(channelId); }
 };
 window.sendChannelMessage = async (channelId) => {
   const ta = document.getElementById('channel-input');
   if(!ta || ta.readOnly) return;
-  await acAuto(ta);
+  ovDeepCancel(ta);
   const body = ta.value.trim();
   if(!body) return;
   const u = currentProfile();
@@ -11846,6 +11856,338 @@ function ovSpellAttrs(){
   });
 }
 
+/* Moteur de correction local OVCorr */
+/* OVCorr : correcteur français local (accents, traits d'union, apostrophes, fautes de frappe, majuscules).
+   Aucun appel réseau. Ne propose que des corrections sûres ; ne touche pas au style ni à la ponctuation. */
+(function(root){
+  const LET = 'A-Za-zÀ-ÖØ-öø-ÿŒœÆæ';
+  const base = s => s.replace(/[àâä]/g, 'a').replace(/[ÀÂÄ]/g, 'A').replace(/[ç]/g, 'c').replace(/Ç/g, 'C').replace(/[éèêë]/g, 'e').replace(/[ÉÈÊË]/g, 'E').replace(/[îï]/g, 'i').replace(/[ÎÏ]/g, 'I').replace(/[ôö]/g, 'o').replace(/[ÔÖ]/g, 'O').replace(/œ/g, 'o').replace(/Œ/g, 'O').replace(/[ùûü]/g, 'u').replace(/[ÙÛÜ]/g, 'U').replace(/ÿ/g, 'y').replace(/æ/g, 'a').replace(/Æ/g, 'A');
+  let ACC = new Map(), DICT = new Map(), RARE = new Set(), READY = false, VERBS = [], FORMS = new Map(), PPSET = new Set(), INFS = new Map();
+  const FIXED = new Set('owlsvision owls vision pvs nvg mnvd bnvd argus gen3 milsim airsoft monoculaire monoculaires binoculaire binoculaires whatsapp instagram paypal iban rib sasu tva ttc siret siren ok lol mdr stp svp tkt bjr bsr mdp pdf sms email mail emails brownsquadron opex tubes tube housing housings flir thermique thermiques'.split(' '));
+  let USER = new Set();
+  function setVocab(words){ USER = new Set((words || []).map(w => String(w).toLowerCase())); }
+  function load(obj){
+    ACC = new Map(); DICT = new Map(); RARE = new Set(String(obj.rare || '').split(' '));
+    String(obj.acc || '').split(';').forEach(p => { const i = p.indexOf('='); if(i > 0) ACC.set(p.slice(0, i), p.slice(i + 1)); });
+    String(obj.dict || '').split(' ').forEach((w, i) => { if(w) DICT.set(w, i + 1); });
+    VERBS = String(obj.verbs || '').split('|').filter(Boolean).map(r => r.split(' ')); FORMS = new Map();
+    VERBS.forEach((row, vi) => { for(let t = 0; t < 5; t++) for(let p = 0; p < 6; p++){ const f = row[1 + t * 6 + p]; if(!f || f === '-') continue; let a = FORMS.get(f); if(!a) FORMS.set(f, a = []); a.push([vi, t, p]); } });
+    PPSET = new Set(); INFS = new Map(); VERBS.forEach((r, i) => { if(r[31] && r[31] !== '-') PPSET.add(r[31]); INFS.set(r[0], i); });
+    READY = true;
+  }
+  async function init(b64){
+    if(READY) return true;
+    try {
+      const bin = Uint8Array.from(atob(b64), c => c.charCodeAt(0));
+      const ds = new DecompressionStream('gzip');
+      const text = await new Response(new Blob([bin]).stream().pipeThrough(ds)).text();
+      load(JSON.parse(text)); return true;
+    } catch(e){ return false; }
+  }
+  const cap = (orig, rep) => /^[A-ZÀ-Ý]{2,}$/.test(orig) ? rep.toUpperCase() : (/^[A-ZÀ-Ý]/.test(orig) ? rep.charAt(0).toUpperCase() + rep.slice(1) : rep);
+  // ---- règles de locutions (appliquées sur le texte sans accents, en minuscules, même longueur) ----
+  const IMP = 'dis|dites|donne|donnez|envoie|envoyez|appelle|appelez|rappelle|rappelez|previens|prevenez|tiens|tenez|laisse|laissez|aide|aidez|excuse|excusez|ecris|ecrivez|fais|faites|montre|montrez|passe|passez|renvoie|renvoyez|reponds|repondez';
+  const RULES = [
+    // [regex, remplacement, option]
+    [/\bqu[' ]est ce(?= (?:que|qui|qu)\b)/g, "qu'est-ce"],
+    [/\bn[' ]est ce pas\b/g, "n'est-ce pas"],
+    [/\best ce(?= (?:que|qui|qu)\b)/g, 'est-ce'],
+    [/\ba tout a l[' ]?heure\b/g, "à tout à l'heure"], [/\btout a l[' ]?heure\b/g, "tout à l'heure"],
+    [/\bc[' ]est a dire\b/g, "c'est-à-dire"], [/\bcest a dire\b/g, "c'est-à-dire"],
+    [/\bs[' ]il (vous|te) plait\b/g, "s'il $1 plaît"],
+    [/\bpeut ?etre\b/g, 'peut-être', 'noAccent:peut ?être'],
+    [/\b(a|va|y a|peut|doit|veut|fait|dit) t (il|elle|on|ils|elles)\b/g, '$1-t-$2'],
+    [/\b(peut|veut|doit) (on|il|elle|ils|elles)\b/g, '$1-$2'],
+    [new RegExp('\\b(' + IMP + ') (moi|toi)\\b', 'g'), '$1-$2'],
+    [/\btout a fait\b/g, 'tout à fait'], [/\bvis a vis\b/g, 'vis-à-vis'], [/\bweek ?end\b/g, 'week-end'], [/\be mail(s?)\b/g, 'e-mail$1'],
+    [/\brendez vous\b/g, 'rendez-vous'], [/\bquelques uns\b/g, 'quelques-uns'], [/\bquelques unes\b/g, 'quelques-unes'],
+    [/\b(ci) (joint|jointe|jointes|jointes|dessous|dessus|apres)\b/g, '$1-$2'], [/\b(au) (dessus|dessous)\b/g, '$1-$2'],
+    [/\b(celui|celle|ceux|celles) (ci|la)\b/g, '$1-$2'],
+    [/\bgrand (mere|pere|parents|mere)\b/g, 'grand-$1'],
+    [/\b(apres) midi\b/g, 'après-midi'],
+    [/\ba (bientot|demain|plus tard|tout a l heure|tout de suite|partir de|cause de|propos|savoir|peu pres|present|l avenir|premiere vue|mon avis|ton avis|votre avis|notre avis)\b/g, 'à $1'],
+    [/\ba (\d{1,2} ?h\b)/g, 'à $1'],
+    [/\bc[' ]est a (moi|toi|lui|elle|vous|nous|eux|elles)\b/g, "c'est à $1"],
+    [/\b(la) (bas|haut)\b/g, 'là-$2'],
+    [/\bd[' ]ou\b/g, "d'où"], [/\bpar ou\b/g, 'par où'], [/\bn[' ]importe ou\b/g, "n'importe où"],
+    [/\bou (est|sont|etait|etaient|se trouve|se trouvent|habites|habitez|habite)\b/g, 'où $1'],
+    [/\bbien sur(?=\s*[,.!?;:]|\s*$)/g, 'bien sûr'],
+    [/\b(sa) (va|vas|marche|fait|fera|ferait|peut|veut|depend|me|te|vous|nous|change|sera|etait|serait|m a|n a|convient|suffit|coute|devient|arrange|pourrait|devrait|parait|semble|risque)\b/g, 'ça $2'],
+    [/(?<=^\s*|[.!?,;]\s*|\b(?:et|alors|mais|donc|ou) )es que\b/g, 'est-ce que'],
+    [/\bdes (demain|maintenant|que|lors|aujourd'hui|lundi|mardi|mercredi|jeudi|vendredi|samedi|dimanche|ce soir|ce matin|reception|ce week)\b/g, 'dès $1'],
+    [/\b(sa) (m|ma) (beaucoup|bien|vraiment|tellement|deja|enormement)\b/g, "ça m'a $3"],
+    [/\b(demain|hier|ce soir|ce matin|lundi|mardi|mercredi|jeudi|vendredi|samedi|dimanche|ici|dispo|disponible) a (la|le|les|l|mon|ma|mes|notre|votre|nos|vos)\b/g, '$1 à $2'],
+    [/\b(ils|elles) on\b/g, '$1 ont'], [/\b(ils|elles) son\b/g, '$1 sont'], [/\b(ils|elles) et\b(?! (?:il|elle|moi|lui|toi|vous|nous|les|eux|elles|ils)\b)/g, '$1 sont'],
+    [/\b(il|elle|ca|cela|ce) et\b(?! (?:il|elle|moi|lui|toi|vous|nous|les|eux|elles|ils|ca|cela)\b)/g, '$1 est'],
+    [/\bc ?est (a|ou) dire\b/g, null, 'skip'],
+    [/\baujourd[' ]?hui\b/g, "aujourd'hui"],
+    [/\b(cest|cetait|jai|jetais|javais|sest|quil|quils|quon|dun)\b/g, null, 'glued'],
+    [/\b(j|l|d|m|t|s|n|c|qu) (?=[aeiouy]|h)/g, null, 'elide'],
+  ];
+  const GLUED = { cest: "c'est", cetait: "c'était", jai: "j'ai", jetais: "j'étais", javais: "j'avais", sest: "s'est", quil: "qu'il", quils: "qu'ils", quon: "qu'on", dun: "d'un" };
+  const SPECIAL_IL = { peu: 'peut', veu: 'veut' };
+  const AUX = new Set('ai as a avons avez ont avais avait avions aviez avaient aurai auras aura aurons aurez auront aurais aurait'.split(' '));
+  function fixAcc(str){
+    return str.replace(new RegExp('[' + LET + ']+', 'g'), w => { const l = w.toLowerCase(); return (base(l) === l && ACC.has(l)) ? ACC.get(l) : w; });
+  }
+  function phraseFixes(text, norm){
+    const out = [];
+    const taken = (s, e) => out.some(f => s < f.e && e > f.s);
+    RULES.forEach(([re, rep, opt]) => {
+      re.lastIndex = 0; let m;
+      while((m = re.exec(norm))){
+        const s = m.index, e = s + m[0].length;
+        if(e === s){ re.lastIndex++; continue; }
+        if(taken(s, e)) continue;
+        const orig = text.slice(s, e); let to, kind;
+        if(opt === 'skip') continue;
+        if(opt === 'glued'){
+          to = GLUED[m[0]]; if(!to) continue; kind = 'apostrophe';
+        } else if(opt === 'elide'){
+          const nxt = (norm.slice(e).match(/^[a-z]+/) || [''])[0];
+          if(nxt.length < 2) continue;
+          out.push({ s, e, from: orig, to: cap(orig, m[1] + "'"), kind: 'apostrophe' }); continue;
+        } else {
+          if(opt && opt.startsWith('noAccent:') && /ê/.test(orig)) continue;
+          to = rep.replace(/\$(\d)/g, (_, n) => m[Number(n)] || '');
+          to = fixAcc(to);
+          kind = /-/.test(to) && !/'/.test(to) ? "trait d'union" : (/'/.test(to) && !/[à-ÿ]/.test(to) ? 'apostrophe' : 'accent');
+        }
+        out.push({ s, e, from: orig, to: cap(orig, to), kind });
+      }
+    });
+    return out;
+  }
+  function edits1(w){
+    const L = 'abcdefghijklmnopqrstuvwxyzàâçéèêëîïôùûü', r = [];
+    for(let i = 0; i <= w.length; i++){
+      if(i < w.length) r.push(w.slice(0, i) + w.slice(i + 1));
+      if(i < w.length - 1) r.push(w.slice(0, i) + w[i + 1] + w[i] + w.slice(i + 2));
+      for(const c of L){ if(i < w.length) r.push(w.slice(0, i) + c + w.slice(i + 1)); r.push(w.slice(0, i) + c + w.slice(i)); }
+    }
+    return r;
+  }
+  const TYPO_MAP = { toujour: 'toujours', alor: 'alors', depui: 'depuis', parfoi: 'parfois', jamai: 'jamais', pourtan: 'pourtant', beaucou: 'beaucoup' };
+  function typoFix(w){
+    if(TYPO_MAP[w]) return TYPO_MAP[w];
+    if(w.length < 5 || DICT.has(w) || RARE.has(w) || FIXED.has(w) || USER.has(w) || ACC.has(w)) return null;
+    for(const k of DICT.keys()){ if(k.length >= w.length + 2 && k.startsWith(w)) return null; } // abréviation (dispo, resto…)
+    let best = null, br = 1e9, second = 1e9;
+    const transp = new Set(); for(let i = 0; i < w.length - 1; i++) transp.add(w.slice(0, i) + w[i + 1] + w[i] + w.slice(i + 2));
+    for(const c of new Set(edits1(w))){
+      if(w.length < 6 && !transp.has(c)) continue;
+      const r = DICT.get(c); if(!r) continue;
+      if(r < br){ second = br; br = r; best = c; } else if(r < second) second = r;
+    }
+    if(!best || br > 15000 || second < br * 4) return null;
+    const lo = w.length >= best.length ? w : best, sh = w.length >= best.length ? best : w;
+    if(lo.startsWith(sh) && ['s', 'x', 'e', 'es'].includes(lo.slice(sh.length))) return null;
+    return best;
+  }
+  const EN = new Set('the you your and with for are this that have from will not but can our please thank thanks hello'.split(' '));
+  function looksEnglish(text){ let n = 0; (text.toLowerCase().match(/[a-z']+/g) || []).forEach(w => { if(EN.has(w)) n++; }); return n >= 2; }
+  function analyze(text){
+    if(!text || looksEnglish(text)) return [];
+    const norm = base(text).toLowerCase().replace(/[’‘]/g, "'");
+    const skip = [], digits = []; // URL, e-mails ; mots contenant un chiffre
+    for(const m of text.matchAll(/\S*(?:@|:\/\/|www\.)\S*/g)) skip.push([m.index, m.index + m[0].length]);
+    for(const m of text.matchAll(/\S*\d\S*/g)) digits.push([m.index, m.index + m[0].length]);
+    const inUrl = (s, e) => skip.some(([a, b]) => s < b && e > a);
+    const inSkip = (s, e) => inUrl(s, e) || digits.some(([a, b]) => s < b && e > a);
+    let fixes = phraseFixes(text, norm).filter(f => !inUrl(f.s, f.e));
+    const taken = (s, e) => fixes.some(f => s < f.e && e > f.s);
+    const toks = [...text.matchAll(new RegExp('[' + LET + ']+', 'g'))];
+    const prev0 = i => i > 0;
+    toks.forEach((m, idx) => {
+      const tok = m[0], s = m.index, e = s + tok.length, low = tok.toLowerCase();
+      if(taken(s, e) || inSkip(s, e) || !READY) return;
+      if(USER.has(low) || FIXED.has(low)) return;
+      if(/[A-ZÀ-Ý]/.test(tok.slice(1)) && !/^[A-ZÀ-Ý]+$/.test(tok)) return;
+      if(/^[A-ZÀ-Ý]{2,}$/.test(tok) && tok.length < 6 && !ACC.has(low)) return; // sigles
+      // « récupérer a la gare » -> « à la gare » (après un infinitif en -er)
+      if(low === 'a' && prev0(idx)){
+        const p = toks[idx - 1], n = toks[idx + 1], pl = base(p[0]).toLowerCase();
+        if(n && /^[ \t]$/.test(text.slice(p.index + p[0].length, s)) && /^[ \t']$/.test(text.slice(e, n.index)) !== false && ((/er$/.test(pl) && pl.length > 4 && DICT.has(pl.slice(0, -2) + 'ons')) || /^(passe|passes|passent|passer|passons|passez|vais|vas|va|vont|allons|allez|aller|viens|vient|viennent|venir|arrive|arrives|arrivent|reste|restes|restez|restons|retourne|retournes|retournons|retournez|monte|monter|descend|descends|descendre|rentre|rentrer|rentres|suis|sommes|serai|serons|livré|livrée|livrés|livrées|présent|présente|disponible)$/.test(pl)) && (/^(la|le|l|les|mon|ma|mes|votre|vos|notre|nos|son|sa|ses|ton|ta|tes|ce|cette|moi|toi|vous|nous)$/.test(base(n[0]).toLowerCase()) || (/^l[aeiouyh]/.test(base(n[0]).toLowerCase()) && !DICT.has(n[0].toLowerCase()) && !RARE.has(n[0].toLowerCase()) && DICT.has(n[0].toLowerCase().slice(1))))){
+          fixes.push({ s, e, from: tok, to: cap(tok, 'à'), kind: 'accent' }); return;
+        }
+      }
+      // accents
+      if(base(low) === low && ACC.has(low)){
+        const prevCh = text[s - 1]; if(prevCh === '-' && !/[a-z]/i.test(text[s - 2] || '')) { /* début ok */ }
+        fixes.push({ s, e, from: tok, to: cap(tok, ACC.get(low)), kind: 'accent' }); return;
+      }
+      // participe passé après avoir : « j'ai mange » -> « mangé »
+      const prev = toks[idx - 1];
+      if(prev && AUX.has(base(prev[0]).toLowerCase()) && text.slice(prev.index + prev[0].length, s).trim() === '' && /^[ \t]+$/.test(text.slice(prev.index + prev[0].length, s)) && low.endsWith('e') && !low.endsWith('ee')){
+        const part = low.slice(0, -1) + 'é';
+        const rp = DICT.get(part), rl = DICT.get(low);
+        if(rp && (!rl || rp < rl * 3) && /er$|[^e]e$/.test(low) && low.length > 3){ fixes.push({ s, e, from: tok, to: cap(tok, part), kind: 'accent' }); return; }
+      }
+      // « j'ai envoie » / « il a prend » -> participe passé (après avoir)
+      if(FORMS.size && FORMS.has(low) && prev && AUX.has(base(prev[0]).toLowerCase()) && /^[ \t]+$/.test(text.slice(prev.index + prev[0].length, s))){
+        const ax = base(prev[0]).toLowerCase(), sj = toks[idx - 2] && toks[idx - 2][0].toLowerCase();
+        if(ax !== 'a' || (sj && /^(il|elle|on|qui)$/.test(sj))){
+          const an = FORMS.get(low).slice().sort((x, y) => (DICT.get(VERBS[x[0]][0]) || 1e9) - (DICT.get(VERBS[y[0]][0]) || 1e9));
+          const row = VERBS[an[0][0]], pp = row[31];
+          if(pp && pp !== '-' && pp !== low && !FORMS.get(low).some(a => VERBS[a[0]][31] === low) && (DICT.get(pp) || 1e9) <= (DICT.get(low) || 1e9) * 2 && !/^(avoir|être)$/.test(row[0]) && !/^(a|as|ai|ont|avons|avez)$/.test(low)){
+            fixes.push({ s, e, from: tok, to: cap(tok, pp), kind: 'conjugaison' }); return;
+          }
+        }
+      }
+      // ---- conjugaison / accords avec le sujet ----
+      const SUBJ = { je: 0, j: 0, tu: 1, il: 2, elle: 2, on: 2, nous: 3, vous: 4, ils: 5, elles: 5 };
+      const CLT = /^(ne|n|me|m|te|t|se|s|le|la|l|les|lui|leur|y|en|vous|nous)$/;
+      const subjOf = (ix) => {
+        let k = ix - 1, cur = toks[ix], found = null, weak = null, weakIdx = -1, foundIdx = -1;
+        while(k >= 0 && /^[ \t'’]+$/.test(text.slice(toks[k].index + toks[k][0].length, cur.index))){
+          const w = toks[k][0].toLowerCase();
+          if(w in SUBJ){ if(w === 'nous' || w === 'vous'){ weak = SUBJ[w]; weakIdx = k; } else { found = SUBJ[w]; foundIdx = k; break; } }
+          else if(!CLT.test(w)) break;
+          cur = toks[k]; k--;
+        }
+        if(found === null && weak !== null){
+          const bf = toks[weakIdx - 1], gp = text.slice(bf ? bf.index + bf[0].length : 0, toks[weakIdx].index);
+          if(!bf || /[.,;:!?…\n—–(«"]/.test(gp) || /^(et|mais|donc|car|que|qu|si|quand|lorsque|comme|puis|alors|où|ou|parce|pourquoi|comment|dont|ce|dès|sinon|ensuite|aussi|déjà|bien|merci)$/.test(bf[0].toLowerCase())) found = weak;
+        }
+        if(found !== null && foundIdx > 0){
+          let q = foundIdx - 1; if(toks[q][0].toLowerCase() === 't' && q > 0) q--;
+          const an0 = FORMS.get(toks[q][0].toLowerCase());
+          if(an0 && an0.some(a => a[2] === found) && /^[ \t'’-]+(?:t[ \t'’-]+)?$/.test(text.slice(toks[q].index + toks[q][0].length, toks[foundIdx].index))) return null; // inversion : « a-t-il fini »
+        }
+        return found;
+      };
+      const subj = subjOf(idx);
+      const VERB_RANK = (a) => DICT.get(VERBS[a[0]][0]) || 1e9;
+      if(subj !== null && ((low === 'voudrai' && (subj === 0 || subj === 1)) || (low === 'faudrai' && subj === 2))){
+        fixes.push({ s, e, from: tok, to: cap(tok, low === 'faudrai' ? 'faudrait' : 'voudrais'), kind: 'conjugaison' }); return; }
+      if(subj !== null && FORMS.size){
+        // « tu peut » -> « tu peux », « ils mange » -> « ils mangent »
+        if(FORMS.has(low)){
+          const an = FORMS.get(low);
+          if(!an.some(a => a[2] === subj)){
+            const srt = an.slice().sort((x, y) => VERB_RANK(x) - VERB_RANK(y) || x[1] - y[1]);
+            const [vi, ti] = srt[0]; const to = VERBS[vi][1 + ti * 6 + subj];
+            if(to && to !== '-' && to !== low){ fixes.push({ s, e, from: tok, to: cap(tok, to), kind: 'conjugaison' }); return; }
+          }
+        } else if(low.length >= 3 && !FIXED.has(low) && !USER.has(low)){
+          // verbe incomplet : « je vous envoi » -> « envoie », « tu peu » -> « peux », « je rappel » -> « rappelle »
+          const SPECIAL = { peu: 'peux', veu: 'veux', voudrai: 'voudrais', faudrai: 'faudrait' };
+          const cands = (SPECIAL[low] && (subj === 0 || subj === 1 || low === 'faudrai')) ? [SPECIAL[low]] : [low + 'e', low + 's', low + 't', low + 'x', low + 'le', low + 'te', low + 'ne'];
+          if(!(low === 'peu' && subj === 2) || true){
+            let pick = null;
+            for(const c of cands){ const an = FORMS.get(c); if(an && an.some(a => a[2] === subj)){ const r = Math.min(...an.filter(a => a[2] === subj).map(VERB_RANK)); if(r < 8000 && (!pick || r < pick[1])) pick = [c, r]; } }
+            const rawRank = DICT.get(low);
+            if(pick && !(rawRank && rawRank < pick[1] / 4 && !SPECIAL[low])){ fixes.push({ s, e, from: tok, to: cap(tok, pick[0]), kind: 'conjugaison' }); return; }
+          }
+        }
+        // « il peu » -> « il peut »
+        if(subj === 2 && SPECIAL_IL[low]){ fixes.push({ s, e, from: tok, to: cap(tok, SPECIAL_IL[low]), kind: 'conjugaison' }); return; }
+      }
+      // « il à mangé » -> « il a mangé »
+      if(tok === 'à' || tok === 'À'){
+        const nx = toks[idx + 1], pv = toks[idx - 1];
+        if(pv && nx && /^[ \t]+$/.test(text.slice(pv.index + pv[0].length, s)) && /^[ \t]+$/.test(text.slice(e, nx.index)) && PPSET.has(nx[0].toLowerCase())){
+          const w = pv[0].toLowerCase();
+          if(/^(il|elle|on|qui|ça|ca|cela)$/.test(w)){ fixes.push({ s, e, from: tok, to: cap(tok, 'a'), kind: 'conjugaison' }); return; }
+          if(w === 'tu'){ fixes.push({ s, e, from: tok, to: cap(tok, 'as'), kind: 'conjugaison' }); return; }
+        }
+      }
+      // « elle a prit » -> « pris » ; « nous avons recevoir » -> « reçu » ; « je suis aller » -> « allé »
+      if(prev && /^[ \t]+$/.test(text.slice(prev.index + prev[0].length, s))){
+        const pw = base(prev[0]).toLowerCase(), pwa = prev[0].toLowerCase();
+        const isAux = (AUX.has(pwa) && (pwa !== 'a' || (toks[idx - 2] && /^(il|elle|on|qui)$/.test(toks[idx - 2][0].toLowerCase())))) || (pwa === 'on' && toks[idx - 2] && /^(ils|elles)$/.test(toks[idx - 2][0].toLowerCase()));
+        if(isAux){
+          const SIMPLE = { prit: 'pris', mit: 'mis', fit: 'fait', vit: 'vu', eut: 'eu', fut: 'été', put: 'pu', dut: 'dû', vint: 'venu', tint: 'tenu' };
+          if(SIMPLE[low]){ fixes.push({ s, e, from: tok, to: cap(tok, SIMPLE[low]), kind: 'conjugaison' }); return; }
+          const vi = INFS.get(low);
+          if(vi !== undefined && !/^(pouvoir|devoir|savoir|avoir|être|vouloir|souvenir|plaisir|loisir|sourire|rire|dîner|déjeuner|lever|coucher|repas)$/.test(low) && !/er$/.test(low)){
+            const pp = VERBS[vi][31]; if(pp && pp !== '-'){ fixes.push({ s, e, from: tok, to: cap(tok, pp), kind: 'conjugaison' }); return; }
+          }
+        }
+        if(/^(suis|es|est|sommes|etes|sont|etais|etait|etions|etiez|etaient|serai|sera|seras|serons|serez|seront|serait|serais|ai ete)$/.test(pw)){
+          const MOT = /^(aller|venir|partir|arriver|rester|tomber|sortir|entrer|rentrer|monter|descendre|devenir|retourner|naître|mourir)$/;
+          const sj2 = toks[idx - 2] && toks[idx - 2][0].toLowerCase();
+          const gn = sj2 === 'elle' ? 'e' : sj2 === 'ils' ? 's' : sj2 === 'elles' ? 'es' : '';
+          let ppw = null;
+          if(MOT.test(low) && INFS.has(low)) ppw = VERBS[INFS.get(low)][31];
+          else if(gn && PPSET.has(low) && /^(allé|venu|parti|arrivé|resté|tombé|sorti|entré|rentré|monté|descendu|devenu|retourné|né|mort)$/.test(low)) ppw = low;
+          if(ppw){ const to = ppw + gn; if(to !== low){ fixes.push({ s, e, from: tok, to: cap(tok, to), kind: 'conjugaison' }); return; } }
+        }
+      }
+      // après être : « je suis bloque » -> « bloqué »
+      if(prev && /^(suis|es|est|sommes|etes|êtes|sont|etais|était|etait|étais|etaient|étaient|serai|sera|seras|serons|seront|serait|ai ete|ete|été)$/.test(prev[0].toLowerCase()) && /^[ \t]+$/.test(text.slice(prev.index + prev[0].length, s)) && low.endsWith('e') && !low.endsWith('ee') && low.length > 4){
+        const part = low.slice(0, -1) + 'é', rp = DICT.get(part), rl = DICT.get(low);
+        if(rp && (!rl || rp < rl) && /(?:qu|[^aeiouy]{1}[^aeiou]?)e$/.test(low) && /(?:er)$/.test(low.slice(0, -1) + 'er') ){ fixes.push({ s, e, from: tok, to: cap(tok, part), kind: 'accent' }); return; }
+      }
+      // après avoir : « je vous ai envoyer » -> « envoyé »
+      if(low.length > 4 && low.endsWith('er') && DICT.has(low.slice(0, -2) + 'é') && DICT.has(low.slice(0, -2) + 'ons') && DICT.has(low) && DICT.get(low.slice(0, -2) + 'é') < 12000){
+        let k = idx - 1; const gap1 = (a, b) => /^[ \t]+$/.test(text.slice(a.index + a[0].length, b.index));
+        let cur = m;
+        if(k >= 0 && gap1(toks[k], cur) && /^(bien|deja|déjà|pas|jamais|encore|vraiment|mal|enfin|toujours)$/.test(toks[k][0].toLowerCase())){ cur = toks[k]; k--; }
+        if(k >= 0 && gap1(toks[k], cur) && AUX.has(toks[k][0].toLowerCase())){
+          const ax = toks[k][0].toLowerCase(); const sj = toks[k - 1] && toks[k - 1][0].toLowerCase();
+          if(ax !== 'a' || (sj && /^(il|elle|on|qui|ca|ça|cela|y)$/.test(sj))){ fixes.push({ s, e, from: tok, to: cap(tok, low.slice(0, -2) + 'é'), kind: 'accent' }); return; }
+        }
+      }
+      // pluriel après des / mes / ses / ces… : « des question » -> « des questions »
+      if(prev && /^(des|mes|tes|ses|ces|nos|vos|leurs|plusieurs|quelques)$/.test(prev[0].toLowerCase()) && /^[ \t]+$/.test(text.slice(prev.index + prev[0].length, s)) && low.length > 3 && !/[sxz]$/.test(low) && DICT.has(low) && DICT.has(low + 's') && DICT.get(low + 's') <= DICT.get(low) * 15 + 1000){
+        fixes.push({ s, e, from: tok, to: cap(tok, low + 's'), kind: 'faute' }); return;
+      }
+      // infinitif après aller / pouvoir / vouloir / devoir / pour… : « je vais vous envoyé » -> « envoyer »
+      if(low.length > 3 && low.endsWith('é') && DICT.has(low.slice(0, -1) + 'er') && DICT.get(low.slice(0, -1) + 'er') >= 3){
+        let k = idx - 1, hops = 0;
+        const gapOk = (a, b) => /^[ \t'’]+$/.test(text.slice(a.index + a[0].length, b.index));
+        let cur = m;
+        while(k >= 0 && gapOk(toks[k], cur) && /^(vous|te|t|lui|leur|me|m|nous|le|la|l|les|y|en|se|s)$/.test(toks[k][0].toLowerCase()) && hops < 2){ cur = toks[k]; k--; hops++; }
+        if(k >= 0 && gapOk(toks[k], cur) && /^(vais|vai|vas|va|allons|allez|vont|aller|peux|peut|pouvons|pouvez|peuvent|pouvoir|veux|veut|voulons|voulez|veulent|vouloir|dois|doit|devons|devez|doivent|devoir|faut|pour|sans|faire|laisser|viens|vient|venir)$/.test(toks[k][0].toLowerCase())){
+          fixes.push({ s, e, from: tok, to: cap(tok, low.slice(0, -1) + 'er'), kind: 'accent' }); return;
+        }
+      }
+      // « je vai » -> « je vais » (pronom sujet + verbe incomplet)
+      if(prev && /^(je|tu|j)$/.test(prev[0].toLowerCase()) && /^[ \t'’]+$/.test(text.slice(prev.index + prev[0].length, s)) && low.length >= 2 && !DICT.has(low) && !RARE.has(low) && !ACC.has(low) && DICT.has(low + 's')){
+        fixes.push({ s, e, from: tok, to: cap(tok, low + 's'), kind: 'faute' }); return;
+      }
+      // « lagence » -> « l'agence »
+      if(low.length >= 5 && 'ldjmnstc'.includes(low[0]) && /^[aeiouyéèêàâîïôûhœ]/.test(low.slice(1)) && !DICT.has(low) && !RARE.has(low) && DICT.has(low.slice(1)) && DICT.get(low.slice(1)) < 20000){
+        fixes.push({ s, e, from: tok, to: cap(tok, low[0] + "'" + low.slice(1)), kind: 'apostrophe' }); return;
+      }
+      // faute de frappe
+      if(/^[A-ZÀ-Ý]/.test(tok) && s > 0 && !/[.!?…\n]\s*$/.test(text.slice(0, s))) return; // nom propre probable
+      const t = typoFix(low);
+      if(t) fixes.push({ s, e, from: tok, to: cap(tok, t), kind: 'faute' });
+    });
+    // majuscules en début de phrase
+    const ABBR = new Set(['etc', 'ex', 'cf', 'env', 'approx', 'tel', 'm', 'mme', 'mr', 'dr', 'ndlr', 'ps', 'vs']);
+    const capAt = (i) => {
+      const m = text.slice(i).match(new RegExp('^[' + LET + ']'));
+      if(!m || m[0] !== m[0].toLowerCase()) return;
+      const wm = text.slice(i).match(new RegExp('^[' + LET + "'’-]*")); const e = i + 1;
+      if(inSkip(i, e)) return;
+      const existing = fixes.find(f => f.s <= i && f.e > i);
+      if(existing){ if(existing.s === i) existing.to = existing.to.charAt(0).toUpperCase() + existing.to.slice(1); return; }
+      fixes.push({ s: i, e, from: text[i], to: text[i].toUpperCase(), kind: 'majuscule' });
+    };
+    const first = text.search(new RegExp('[' + LET + ']'));
+    if(first >= 0 && /^\s*$/.test(text.slice(0, first))) capAt(first);
+    for(const m of text.matchAll(/([.!?])(\s+)(?=[A-Za-zÀ-ÿ])/g)){
+      const before = text.slice(0, m.index); const lastWord = (before.match(/([A-Za-zÀ-ÿ]+)$/) || [])[1] || '';
+      if(m[1] === '.' && (ABBR.has(lastWord.toLowerCase()) || /\.\.$/.test(before + '.') )) continue;
+      if(m[1] === '.' && /[A-Za-z]\.[A-Za-z]$/.test(before.slice(-3) + '')) continue;
+      capAt(m.index + m[0].length);
+    }
+    for(const m of text.matchAll(/\n+(?=[a-zà-ÿ])/g)) capAt(m.index + m[0].length);
+    fixes = fixes.filter(f => f.from !== f.to).sort((a, b) => a.s - b.s);
+    const res = []; fixes.forEach(f => { const l = res[res.length - 1]; if(!l || f.s >= l.e) res.push(f); });
+    return res;
+  }
+  function apply(text, fixes, accepted){
+    let out = text;
+    fixes.slice().reverse().forEach((f, k) => { const i = fixes.length - 1 - k; if(accepted && accepted[i] === false) return; out = out.slice(0, f.s) + f.to + out.slice(f.e); });
+    return out;
+  }
+  root.OVCorr = { init, load, analyze, apply, setVocab, isReady: () => READY };
+})(typeof window !== 'undefined' ? window : globalThis);
+
 // ----- Correction automatique (LanguageTool) -----
 // Ne touche qu'à l'orthographe et à la grammaire : jamais le style, la ponctuation, les espaces, les noms
 // propres, les mots du métier ni les noms de clients/matériel. Entre plusieurs suggestions, on garde la
@@ -11926,42 +12268,182 @@ function acToast(msg){
   requestAnimationFrame(() => el.classList.add('show'));
   setTimeout(() => { el.classList.remove('show'); setTimeout(() => el.remove(), 400); }, 2600);
 }
-async function acAuto(ta){
-  if(!acEnabled() || !ta.value.trim()) return;
-  const orig = ta.value;
-  ta.readOnly = true;
-  try {
-    const r = await acRun(orig, 3500);
-    if(r && r.n > 0 && r.text !== orig){ ta.value = r.text; acToast(r.n + ' faute' + (r.n > 1 ? 's' : '') + ' corrigée' + (r.n > 1 ? 's' : '')); }
-  } finally { ta.readOnly = false; }
+// ----- Lot 54 : correcteur en deux temps -----
+// 1) Correction locale instantanée (dictionnaire français intégré, sans réseau) : accents, tirets, apostrophes,
+//    majuscules, fautes de frappe, conjugaison/accords courants. Elle agit quand on tape un espace ou une ponctuation ;
+//    Retour arrière juste après annule la correction.
+// 2) Relecture complète (orthographe + grammaire + conjugaison) après une pause de frappe : LanguageTool
+//    (service gratuit, sans clé). Rien n'est jamais modifié à l'envoi.
+let ovDataState = 'idle';
+function ovCorrLoad(){
+  if(ovDataState !== 'idle') return;
+  ovDataState = 'loading';
+  fetch('correcteur-data.json', { cache: 'force-cache' }).then(r => { if(!r.ok) throw new Error('http ' + r.status); return r.json(); })
+    .then(o => { window.OVCorr.load(o); ovDataState = 'ready'; ovSyncVocab(); }).catch(() => { ovDataState = 'failed'; });
 }
-window.correctInput = async (id) => {
-  const ta = document.getElementById(id);
-  if(!ta || ta.readOnly || !ta.value.trim()) return;
-  const st = document.getElementById('ac-status');
-  const orig = ta.value;
-  ta.readOnly = true;
+function ovSyncVocab(){ try { window.OVCorr.setVocab(Array.from(acVocab())); } catch(e){} }
+function ovEnterSends(){ try { return localStorage.getItem('ov_enter_sends') === 'on'; } catch(e){ return false; } }
+window.toggleEnterSends = () => {
+  const on = !ovEnterSends();
+  try { localStorage.setItem('ov_enter_sends', on ? 'on' : 'off'); } catch(e){}
+  document.querySelectorAll('.ac-enter').forEach(b => { b.classList.toggle('on', on); b.setAttribute('aria-checked', String(on)); });
+};
+function ovStatus(html, ms){
+  const st = document.getElementById('ac-status'); if(!st) return;
+  st.innerHTML = html;
   clearTimeout(window.__acTimer);
-  if(st) st.textContent = 'Correction…';
-  const r = await acRun(orig, 6000);
-  ta.readOnly = false;
-  if(!r){ if(st) st.textContent = 'Correction indisponible pour le moment.'; return; }
-  if(r.n === 0 || r.text === orig){ if(st) st.textContent = 'Aucune faute détectée.'; }
-  else {
-    ta.value = r.text; autoGrowChatInput(ta);
-    window.__acUndo = { id, orig };
-    if(st) st.innerHTML = `${r.n} correction${r.n > 1 ? 's' : ''} · <button type="button" class="ac-undo" onclick="undoCorrection()">Annuler</button>`;
+  if(ms) window.__acTimer = setTimeout(() => { const s = document.getElementById('ac-status'); if(s && !s.querySelector('.ac-undo')) s.textContent = ''; }, ms);
+}
+function ovApplyText(ta, newText){
+  const old = ta.value; let p = 0;
+  while(p < old.length && p < newText.length && old[p] === newText[p]) p++;
+  let s = 0;
+  while(s < old.length - p && s < newText.length - p && old[old.length - 1 - s] === newText[newText.length - 1 - s]) s++;
+  const c = ta.selectionStart;
+  ta.value = newText;
+  const nc = c <= p ? c : (c >= old.length - s ? c + (newText.length - old.length) : newText.length - s);
+  try { ta.setSelectionRange(nc, nc); } catch(e){}
+  if(typeof autoGrowChatInput === 'function') autoGrowChatInput(ta);
+}
+function ovWordDiff(a, b){
+  const wa = a.match(/\S+/g) || [], wb = b.match(/\S+/g) || [];
+  if(wa.length > 500 || wb.length > 500) return Math.max(Math.abs(wa.length - wb.length), 1);
+  const dp = Array.from({ length: wa.length + 1 }, () => new Array(wb.length + 1).fill(0));
+  for(let i = 1; i <= wa.length; i++) for(let j = 1; j <= wb.length; j++) dp[i][j] = wa[i - 1] === wb[j - 1] ? dp[i - 1][j - 1] + 1 : Math.max(dp[i - 1][j], dp[i][j - 1]);
+  const l = dp[wa.length][wb.length];
+  return Math.max(wa.length - l, wb.length - l);
+}
+// Garde-fous : on n'accepte qu'une correction proche du texte écrit (même nombre de lignes, mêmes nombres/liens/e-mails,
+// mêmes émojis, longueur comparable). Sinon la relecture est ignorée plutôt que de réécrire le message.
+function ovSane(orig, out){
+  if(typeof out !== 'string') return null;
+  out = out.replace(/^\s*```[a-z]*\n?/i, '').replace(/\n?```\s*$/, '').trim();
+  const a = orig.trim(); if(!out || !a) return null;
+  if(a.split('\n').length !== out.split('\n').length) return null;
+  if(a.length >= 12 && (out.length / a.length < 0.7 || out.length / a.length > 1.4)) return null;
+  const prot = a.match(/\S*(?:@|:\/\/|www\.|\d)\S*/g) || [];
+  for(const p of prot){ const core = p.replace(/^[^\p{L}\p{N}]+|[^\p{L}\p{N}]+$/gu, ''); if(core && !out.includes(core)) return null; }
+  const emo = s => (s.match(/\p{Extended_Pictographic}/gu) || []).length;
+  if(emo(a) !== emo(out)) return null;
+  const na = (a.match(/\S+/g) || []).length, nb = (out.match(/\S+/g) || []).length;
+  if(Math.abs(na - nb) > Math.max(3, Math.ceil(na * 0.2))) return null;
+  return orig.match(/^\s*/)[0] + out + orig.match(/\s*$/)[0];
+}
+const ovDeep = { fn: 'unknown', fnWhy: '', busy: {}, checked: {}, timers: {}, token: {} };
+function ovKeepWords(text){
+  const low = text.toLowerCase(); const out = [];
+  acVocab().forEach(w => { if(w.length > 2 && low.includes(w) && out.length < 60) out.push(w); });
+  return out;
+}
+async function ovDeepCorrect(text){
+  // Relecture gratuite : LanguageTool (service public, sans clé). Le correcteur local a déjà corrigé l'essentiel.
+  const lt = await acRun(text, 6000);
+  if(lt){ const ok = ovSane(text, lt.text); return ok == null ? { rejected: true } : { text: ok, via: 'LanguageTool' }; }
+  return null;
+}
+async function ovDeepRun(ta, force, undoOrig){
+  const id = ta.id, text = ta.value;
+  if(!text.trim() || text.trim().length < (force ? 2 : 8)) return;
+  if(!force && ovDeep.checked[id] === text) return;
+  if(ovDeep.busy[id]) return;
+  ovDeep.busy[id] = true; const tok = (ovDeep.token[id] = (ovDeep.token[id] || 0) + 1);
+  ovStatus('<span class="ac-spin" aria-hidden="true"></span> Relecture…');
+  let res = null;
+  try { res = await ovDeepCorrect(text); } finally { ovDeep.busy[id] = false; }
+  if(ovDeep.token[id] !== tok) return;                        // annulée (message envoyé)
+  const cur = document.getElementById(id);
+  if(!cur || cur !== ta || !document.body.contains(ta)) return;
+  if(ta.value !== text){ ovStatus(''); ovSchedule(ta, 500); return; }   // tu as continué à écrire : on recommence après la pause
+  if(!res){ ovStatus('Relecture indisponible pour le moment.', 3500); return; }
+  if(res.quota){ ovStatus("Limite de relectures atteinte aujourd'hui : la correction locale reste active.", 5000); return; }
+  if(res.rejected){ ovStatus('Relecture ignorée : le texte proposé s\'éloignait trop du tien.', 4000); ovDeep.checked[id] = text; return; }
+  ovDeep.checked[id] = text;
+  if(res.text === text){ ovStatus('Aucune faute détectée.', 2500); return; }
+  const n = Math.max(1, ovWordDiff(text, res.text));
+  window.__acUndo = { id, orig: undoOrig != null ? undoOrig : text };
+  ovApplyText(ta, res.text); ovDeep.checked[id] = res.text;
+  ovStatus(`${n} correction${n > 1 ? 's' : ''} (${res.via}) · <button type="button" class="ac-undo" onclick="undoCorrection()">Annuler</button>`);
+}
+function ovSchedule(ta, ms){
+  clearTimeout(ovDeep.timers[ta.id]);
+  if(!acEnabled()) return;
+  ovDeep.timers[ta.id] = setTimeout(() => { if(document.activeElement === ta || ta.value) ovDeepRun(ta, false); }, ms || 1400);
+}
+function ovDeepCancel(ta){
+  if(!ta) return;
+  clearTimeout(ovDeep.timers[ta.id]); ovDeep.token[ta.id] = (ovDeep.token[ta.id] || 0) + 1; ovDeep.busy[ta.id] = false; ovDeep.checked[ta.id] = '';
+  window.__acUndo = null; const st = document.getElementById('ac-status'); if(st) st.textContent = '';
+}
+// ----- correction locale en direct -----
+const ovLive = { last: null, ignored: new Set() };
+function ovIsComposer(el){ return el && el.tagName === 'TEXTAREA' && (el.id === 'chat-input' || el.id === 'channel-input'); }
+function ovLocalFixes(text, caret){
+  const O = window.OVCorr; if(!O || !O.isReady()) return [];
+  ovSyncVocab();
+  return O.analyze(text).filter(f => f.e <= caret && !ovLive.ignored.has(f.from + '|' + f.to));
+}
+document.addEventListener('focusin', (ev) => { if(ovIsComposer(ev.target)) ovCorrLoad(); });
+document.addEventListener('input', (ev) => {
+  const ta = ev.target; if(!ovIsComposer(ta)) return;
+  ovCorrLoad();
+  if(!acEnabled()){ return; }
+  ovSchedule(ta, 1400);
+  if(ev.isComposing) return;
+  const trig = ev.inputType === 'insertLineBreak' || (ev.inputType === 'insertText' && /^[ .,;:!?)\n]$/.test(ev.data || ''));
+  if(!trig){ if(ovLive.last && ovLive.last.id === ta.id){ ovLive.last = null; } return; }
+  const caret = ta.selectionStart, text = ta.value;
+  const fx = ovLocalFixes(text, caret - 1);
+  if(!fx.length) return;
+  const out = window.OVCorr.apply(text, fx);
+  const shift = fx.reduce((a, f) => a + f.to.length - f.from.length, 0);
+  ta.value = out; try { ta.setSelectionRange(caret + shift, caret + shift); } catch(e){}
+  const lf = fx[fx.length - 1];
+  ovLive.last = { id: ta.id, start: lf.s + fx.slice(0, -1).reduce((a, f) => a + f.to.length - f.from.length, 0), from: lf.from, to: lf.to, caret: caret + shift, orig: text };
+  window.__acUndo = { id: ta.id, orig: text };
+  ovStatus(`<b>${esc(lf.from.trim())}</b> → <b>${esc(lf.to.trim())}</b> · <button type="button" class="ac-undo" onclick="undoCorrection()">Annuler</button>`, 6000);
+  if(typeof autoGrowChatInput === 'function') autoGrowChatInput(ta);
+});
+document.addEventListener('keydown', (ev) => {
+  const ta = ev.target; if(!ovIsComposer(ta)) return;
+  const l = ovLive.last;
+  if(ev.key === 'Backspace' && l && l.id === ta.id && ta.selectionStart === l.caret && ta.selectionEnd === l.caret){
+    ev.preventDefault(); const t = ta.value;
+    ta.value = t.slice(0, l.start) + l.from + t.slice(l.start + l.to.length);
+    const c2 = l.caret - (l.to.length - l.from.length); try { ta.setSelectionRange(c2, c2); } catch(e){}
+    ovLive.ignored.add(l.from + '|' + l.to); ovLive.last = null; window.__acUndo = null; ovStatus(''); ovDeep.checked[ta.id] = '';
+    if(typeof autoGrowChatInput === 'function') autoGrowChatInput(ta);
   }
-  clearTimeout(window.__acTimer);
-  window.__acTimer = setTimeout(() => { const s = document.getElementById('ac-status'); if(s && !s.querySelector('.ac-undo')) s.textContent = ''; }, 3500);
+});
+window.correctInput = async (id) => {
+  const ta = document.getElementById(id); if(!ta || !ta.value.trim()) return;
+  const orig = ta.value; ovCorrLoad();
+  clearTimeout(ovDeep.timers[id]);
+  const O = window.OVCorr;
+  if(O && O.isReady()){
+    ovSyncVocab();
+    const fx = O.analyze(ta.value);
+    if(fx.length){ ovApplyText(ta, O.apply(ta.value, fx)); ovLive.last = null; }
+  }
+  ovDeep.checked[id] = '';
+  window.__acUndo = { id, orig };
+  await ovDeepRun(ta, true, orig);
+  if(ta.value !== orig && !document.querySelector('#ac-status .ac-undo')){
+    const st = document.getElementById('ac-status'), prev = st ? st.innerHTML.trim() : '';
+    ovStatus((prev ? prev + ' · ' : 'Corrigé · ') + `<button type="button" class="ac-undo" onclick="undoCorrection()">Annuler</button>`);
+  }
   ta.focus();
 };
 window.undoCorrection = () => {
   const u = window.__acUndo; if(!u) return;
   const ta = document.getElementById(u.id); if(!ta) return;
-  ta.value = u.orig; autoGrowChatInput(ta); ta.focus();
-  const st = document.getElementById('ac-status'); if(st) st.textContent = '';
-  window.__acUndo = null;
+  ta.value = u.orig; if(typeof autoGrowChatInput === 'function') autoGrowChatInput(ta); ta.focus();
+  ovDeep.checked[u.id] = u.orig; ovLive.last = null; window.__acUndo = null; ovStatus('');
+};
+window.toggleAutoCorrect = () => {
+  const on = !acEnabled();
+  try { localStorage.setItem('ov_autocorrect', on ? 'on' : 'off'); } catch(e){}
+  document.querySelectorAll('.ac-auto').forEach(b => { b.classList.toggle('on', on); b.setAttribute('aria-checked', String(on)); });
+  if(!on) Object.keys(ovDeep.timers).forEach(k => clearTimeout(ovDeep.timers[k]));
 };
 
 // ----- Messages types (pré-enregistrés) -----
@@ -12006,7 +12488,7 @@ function composerToolsHtml(inputId, master, ctx){
   const on = acEnabled();
   const bolt = '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L4 14h7l-1 8 9-12h-7z"/></svg>';
   const check = '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>';
-  return `<div class="chat-tools">${master ? `<button type="button" class="chat-tool" onclick="toggleTemplatePicker(this,'${inputId}','${esc(ctx || '')}')">${bolt} Messages types</button>` : ''}<button type="button" class="chat-tool" onclick="correctInput('${inputId}')" title="Corrige l'orthographe et la grammaire, sans toucher au reste">${check} Corriger</button><button type="button" class="chat-tool ac-auto ${on ? 'on' : ''}" role="switch" aria-checked="${on}" onclick="toggleAutoCorrect()" title="Corrige automatiquement à l'envoi">Correction auto<i></i></button><span class="ac-status" id="ac-status" aria-live="polite"></span></div>`;
+  return `<div class="chat-tools">${master ? `<button type="button" class="chat-tool" onclick="toggleTemplatePicker(this,'${inputId}','${esc(ctx || '')}')">${bolt} Messages types</button>` : ''}<button type="button" class="chat-tool" onclick="correctInput('${inputId}')" title="Corrige l'orthographe et la grammaire, sans toucher au reste">${check} Corriger</button><button type="button" class="chat-tool ac-auto ${on ? 'on' : ''}" role="switch" aria-checked="${on}" onclick="toggleAutoCorrect()" title="Corrige pendant que vous écrivez (jamais à l'envoi)">Correction auto<i></i></button><button type="button" class="chat-tool ac-enter ${ovEnterSends() ? 'on' : ''}" role="switch" aria-checked="${ovEnterSends()}" onclick="toggleEnterSends()" title="Activé : la touche Entrée envoie le message. Désactivé : Entrée fait un retour à la ligne (envoi avec le bouton ou Ctrl+Entrée).">Entrée envoie<i></i></button><span class="ac-status" id="ac-status" aria-live="polite"></span></div>`;
 }
 function tplCloseOutside(e){
   if(e.target.closest && (e.target.closest('.tpl-pop') || e.target.closest('.chat-tool'))) return;
@@ -12185,12 +12667,12 @@ function gbOpChipHtml(b){
   const id = esc(b.id), op = bookingOpLabel(b);
   const ship = Number(b.ship_fee) > 0 ? `<div class="gb-own ship"><span>Envoi de la JVN 24 h avant l'opération</span><i>+ ${fmtEurFr(b.ship_fee)}</i></div>` : '';
   const chip = op
-    ? `<button type="button" class="gb-own" onclick="openAttachOps('${id}')" title="Changer d'opération"><span>Opé : ${esc(op)}${b.operation_other ? ' <em class="gb-oth">(autre)</em>' : ''}</span><i>Changer</i></button>`
-    : `<button type="button" class="gb-own todo" onclick="openAttachOps('${id}')"><span>Sans opération</span><i>Rattacher</i></button>`;
+    ? `<div class="gb-own"><span>Opé : ${esc(op)}${b.operation_other ? ' <em class="gb-oth">(autre)</em>' : ''}</span></div>`
+    : '';
   return chip + ship;
 }
 function opsBannerHtml(){
-  if(!state.session.isMaster) return '';
+  return '';
   const n = bookingsWithoutOp(false).length;
   if(!n) return '';
   return `<div class="un-banner ops-banner"><span><b>${n}</b> location${n > 1 ? 's' : ''} sans opération rattachée.</span><button type="button" class="btn btn-ghost btn-sm" style="width:auto;" onclick="openAttachOps()">Rattacher</button></div>`;
@@ -12868,7 +13350,7 @@ window.startConversationWith = (username) => {
 window.onChatKeydown = (e, conversationUsername) => {
   // Entrée envoie, Maj+Entrée insère un retour à la ligne — convention chat standard, cohérente
   // sur mobile (clavier virtuel) et desktop.
-  if(e.key === 'Enter' && !e.shiftKey){
+  if(e.key === 'Enter' && !e.shiftKey && !e.isComposing && (e.ctrlKey || e.metaKey || ovEnterSends())){
     e.preventDefault();
     sendMessage(conversationUsername);
   }
@@ -12880,7 +13362,7 @@ window.autoGrowChatInput = (ta) => {
 window.sendMessage = async (conversationUsername) => {
   const ta = document.getElementById('chat-input');
   if(!ta || ta.readOnly) return;
-  await acAuto(ta);
+  ovDeepCancel(ta);
   const body = ta.value.trim();
   if(!body) return;
   const u = currentProfile();
