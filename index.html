@@ -1707,6 +1707,45 @@ button.gb-own:focus-visible{outline:2px solid var(--accent);outline-offset:2px;b
 .tpl-row-a .btn{width:auto}
 @media (max-width:700px){.tpl-row{flex-direction:column;align-items:stretch}.tpl-row-t span{white-space:normal}.tpl-row-a{justify-content:flex-end}.chat-tool{padding:5px 9px}}
 </style>
+<style>.gb-own.ship{color:var(--accent);}
+.gb-own .gb-oth{font-style:normal;opacity:.7;font-size:11.5px;}
+.bop-help{font-size:13px;color:var(--text-dim);line-height:1.5;margin:-4px 0 12px;}
+.bop-add{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-start;}
+.bop-add .field{margin-bottom:14px;min-width:150px;}
+.bop-list{list-style:none;margin:6px 0 10px;padding:0;display:flex;flex-direction:column;gap:6px;}
+.bop-item{display:flex;align-items:center;justify-content:space-between;gap:10px;background:var(--surface-2,rgba(255,255,255,.05));border:1px solid var(--border-soft,rgba(255,255,255,.08));border-radius:10px;padding:9px 12px;font-size:14px;}
+.bop-del{all:unset;cursor:pointer;color:var(--text-faint);padding:4px 8px;border-radius:6px;font-size:13px;line-height:1;}
+.bop-del:hover{color:var(--danger);background:var(--danger-soft);}
+.bop-del:focus-visible{outline:2px solid var(--accent);}
+.bop-date{margin-top:12px;}.bop-date>b{font-size:12.5px;color:var(--text-dim);letter-spacing:.02em;}
+.bop-empty{font-size:13px;color:var(--text-faint);padding:10px 2px;}
+.bop-past{margin-top:14px;font-size:13px;color:var(--text-dim);}.bop-past summary{cursor:pointer;}
+.att-list{display:flex;flex-direction:column;gap:8px;max-height:52vh;overflow:auto;margin-bottom:6px;}
+.att-row{display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap;border:1px solid var(--border-soft,rgba(255,255,255,.08));border-radius:12px;padding:10px 12px;}
+.att-row.focus{border-color:var(--accent);}
+.att-row.done{opacity:.85;}
+.att-info{display:flex;flex-direction:column;gap:2px;min-width:0;flex:1 1 200px;}.att-info small{color:var(--text-dim);font-size:12px;}
+.att-pick{display:flex;gap:8px;align-items:center;flex:1 1 220px;flex-wrap:wrap;}
+.att-pick select,.att-pick input{flex:1 1 180px;min-width:0;}
+.att-ok{color:var(--accent);font-weight:700;}
+.bk-op-wrap select,.bk-op-wrap input{width:100%;}
+.bk-op-wrap input{margin-top:8px;}
+.bk-hint{font-size:12px;color:var(--text-dim);margin-top:6px;}
+.bk-err{font-size:12.5px;color:var(--danger);margin-top:6px;min-height:0;}
+.bk-ship{display:flex;align-items:center;gap:10px;border:1px solid var(--border);border-radius:12px;padding:12px 14px;margin:2px 0 10px;cursor:pointer;font-size:14px;line-height:1.35;}
+.bk-ship input{width:20px;height:20px;accent-color:var(--accent);flex:none;margin:0;}
+.bk-ship-txt{flex:1;min-width:0;}
+.bk-ship-price{color:var(--accent);white-space:nowrap;}
+.bk-ship:has(input:checked){border-color:var(--accent);background:var(--accent-soft);}
+.bk-total{display:flex;flex-direction:column;gap:4px;margin:4px 0 10px;font-size:13.5px;}
+.bk-total:empty{display:none;}
+.bk-line{display:flex;justify-content:space-between;gap:12px;color:var(--text-dim);}
+.bk-line.bk-sum{color:var(--text);font-weight:700;font-size:15px;border-top:1px solid var(--border-soft,rgba(255,255,255,.1));padding-top:6px;margin-top:2px;}
+.res-op{font-size:12px;color:var(--text-dim);margin-top:3px;}.res-op.ship{color:var(--accent);}
+.att-pick select,.att-pick input{background:var(--surface,rgba(255,255,255,.045));color:var(--text);border:1px solid var(--border);border-radius:10px;padding:9px 10px;font:inherit;font-size:14px;}
+.att-pick select:focus-visible,.att-pick input:focus-visible{outline:2px solid var(--accent);outline-offset:1px;}
+.att-pick option,.att-pick optgroup{background:#0d110b;color:var(--text);}
+</style>
 </head>
 <body>
 <div id="app"></div>
@@ -2028,6 +2067,8 @@ let state = {
   // plus bas) pour que l'état replié/déplié survive à la fermeture de l'appli.
   gestionCollapsedDates: loadGestionCollapsedDates(),
   bookingDateLabels: [],
+  bookingOperations: [],
+  bookingDraft: null,
   invoices: [],
   contratsSort: "client_asc",
   contratsSearch: "",
@@ -2342,7 +2383,7 @@ function logFunnelEventDebounced(eventType, itemId, start, end){
 
 /* ---------- Boot & data ---------- */
 async function fetchAll(){
-  const [profiles, items, bookings, tasks, completions, contracts, groups, rewards, redemptions, ownerContracts, platformDocs, rankConfig, messages, financeSales, financeCharges, financeSettings, crmCompanies, crmActivities, crmTasks, bookingDateLabels, invoices, crmTaskNotes, funnelEvents, channels, channelMembers, channelMessages, itemUnitsRes, ownerPayoutsRes] = await Promise.all([
+  const [profiles, items, bookings, tasks, completions, contracts, groups, rewards, redemptions, ownerContracts, platformDocs, rankConfig, messages, financeSales, financeCharges, financeSettings, crmCompanies, crmActivities, crmTasks, bookingDateLabels, invoices, crmTaskNotes, funnelEvents, channels, channelMembers, channelMessages, itemUnitsRes, ownerPayoutsRes, bookingOpsRes] = await Promise.all([
     sb.from('profiles').select('*'),
     sb.from('items').select('*').order('sort_order', { ascending: true, nullsFirst: false }).order('created_at', { ascending: true }),
     sb.from('bookings').select('*'),
@@ -2371,7 +2412,9 @@ async function fetchAll(){
     sb.from('channel_messages').select('*').order('created_at', { ascending: true }),
     sb.from('item_units').select('*').order('created_at', { ascending: true }),
     sb.from('owner_payouts').select('*').order('paid_on', { ascending: false }),
+    sb.from('booking_operations').select('*').order('date', { ascending: true }),
   ]);
+  state.bookingOperations = (bookingOpsRes && bookingOpsRes.data) || [];
   state.profiles = profiles.data || [];
   state.items = items.data || [];
   state.bookings = bookings.data || [];
@@ -2561,7 +2604,7 @@ function renderUnlessTyping(){
 // rouges de la nav, ex. "Contrats propriétaire" et "Commercial", sont recalculées à chaque render()
 // depuis state, donc elles se remettent à jour toutes seules dès que la bonne table est synchronisée
 // ici — inutile d'y toucher séparément).
-const OV_REALTIME_TABLES = ['items','bookings','tasks','task_completions','contracts','owner_contracts','profiles','mission_groups','rewards','reward_redemptions','messages','finance_sales','finance_charges','finance_settings','invoices','crm_task_notes','crm_companies','crm_activities','crm_tasks','booking_date_labels','platform_docs','rank_config','funnel_events','channels','channel_members','channel_messages'];
+const OV_REALTIME_TABLES = ['items','bookings','tasks','task_completions','contracts','owner_contracts','profiles','mission_groups','rewards','reward_redemptions','messages','finance_sales','finance_charges','finance_settings','invoices','crm_task_notes','crm_companies','crm_activities','crm_tasks','booking_date_labels','booking_operations','platform_docs','rank_config','funnel_events','channels','channel_members','channel_messages'];
 function subscribeRealtime(){
   const channel = sb.channel('ov-sync');
   (state.unitsReady ? OV_REALTIME_TABLES.concat(['item_units', 'owner_payouts']) : OV_REALTIME_TABLES).forEach(table => {
@@ -2943,7 +2986,8 @@ function missionDateTooEarlyMsg(){ return t('missions.dateTooEarly'); }
 // fini d'être enregistrée localement, donc il ne bloque rien dans cette fenêtre. Un simple booléen
 // suffit : un client ne peut avoir qu'une seule demande de réservation "en vol" à la fois.
 let bookingSubmitInFlight = false;
-async function submitBooking(itemId, start, end){
+async function submitBooking(itemId, start, end, extra){
+  extra = extra || {};
   if(bookingSubmitInFlight) return;
   const item = state.items.find(i => i.id === itemId);
   if(!item) return;
@@ -2969,9 +3013,10 @@ async function submitBooking(itemId, start, end){
     // une fois que l'équipe confirme la réservation (voir setBookingStatus / migration_lot17), via
     // un déclencheur côté base. Rien à faire ici : state.profiles sera mis à jour par la
     // synchronisation temps réel (subscribeRealtime) quand ce crédit aura lieu.
-    const { data, error } = await sb.rpc('book_item', { p_item_id: itemId, p_start: start, p_end: end });
+    const { data, error } = await sb.rpc('book_item', { p_item_id: itemId, p_start: start, p_end: end, p_operation: extra.operation || null, p_operation_other: !!extra.other, p_ship24: !!extra.ship24 });
     if(error){ state.bookingError = t('common.error_prefix', { msg: error.message }); render(); return; }
     state.bookings.push(data.booking);
+    state.bookingDraft = null;
     // Lot 37 : étape 3 (finale) du suivi funnel — la demande a réellement été envoyée. À partir
     // d'ici ce client n'apparaît plus dans les "paniers abandonnés" (voir funnelAbandonedList).
     logFunnelEvent('booking_submitted', itemId, start, end);
@@ -4527,7 +4572,7 @@ async function confirmSendInvoice(event, bookingId){
     const issuedAt = new Date();
     const dueAt = new Date(issuedAt.getTime() + 4 * 86400000);
     const days = bookingDurationDays(b);
-    const periodLabel = `Location du ${fmtDate(b.start_date)} au ${fmtDate(b.end_date)} (${days} jour${days > 1 ? 's' : ''})`;
+    const periodLabel = `Location du ${fmtDate(b.start_date)} au ${fmtDate(b.end_date)} (${days} jour${days > 1 ? 's' : ''})` + (Number(b.ship_fee) > 0 ? ` + envoi du matériel 24 h avant l'opération (${fmtDecimalFr(b.ship_fee)} € TTC)` : '');
     const baseHt = round2(baseTtc / 1.2);
     const baseTva = round2(baseTtc - baseHt);
     const discHt = discountTtc > 0 ? round2(discountTtc / 1.2) : 0;
@@ -5886,7 +5931,7 @@ function renderMesReservations(){
     const item = state.items.find(i => i.id === b.item_id);
     return `
       <tr>
-        <td>${esc(item?.name || t('reservations.item.deleted'))}</td>
+        <td>${esc(item?.name || t('reservations.item.deleted'))}${b.operation_name ? `<div class="res-op">${esc(t('reservations.op', { name: b.operation_name }))}</div>` : ''}${Number(b.ship_fee) > 0 ? `<div class="res-op ship">${esc(t('reservations.ship', { price: fmtDecimalFr(b.ship_fee) }))}</div>` : ''}</td>
         <td>${fmtDate(b.start_date)}</td>
         <td>${fmtDate(b.end_date)}</td>
         <td>${statusPillHtml(b.status)}</td>
@@ -5912,7 +5957,7 @@ function gestionFilteredSorted(){
     if(!q) return true;
     const p = state.profiles.find(x => x.username === b.username);
     const item = state.items.find(i => i.id === b.item_id);
-    const hay = [b.username, p?.nom, p?.prenom, item?.name].filter(Boolean).join(' ').toLowerCase();
+    const hay = [b.username, p?.nom, p?.prenom, item?.name, b.operation_name].filter(Boolean).join(' ').toLowerCase();
     return hay.includes(q);
   });
   const { field, dir } = state.gestionSort;
@@ -5934,6 +5979,10 @@ function bookingDurationDays(b){
   return Math.max(1, Math.round((end - start) / 86400000) + 1);
 }
 function estimatedBookingPrice(b){
+  const r = estimatedRentalPrice(b);
+  return r == null ? null : round2(r + (Number(b.ship_fee) || 0));
+}
+function estimatedRentalPrice(b){
   const item = state.items.find(i => i.id === b.item_id);
   if(!item) return null;
   const days = bookingDurationDays(b);
@@ -6057,6 +6106,8 @@ function gestionGroupedByDate(){
 // Nom affiché pour un groupe de date : le libellé personnalisé s'il existe (voir
 // saveBookingDateLabel), sinon la date formatée par défaut.
 function bookingDateLabel(date){
+  const ops = (state.bookingOperations || []).filter(o => o.date === date).map(o => o.name).sort((a, b) => a.localeCompare(b, 'fr'));
+  if(ops.length) return ops.join(' · ');
   const row = state.bookingDateLabels.find(x => x.date === date);
   return (row && row.label && row.label.trim()) ? row.label : fmtDate(date);
 }
@@ -6064,10 +6115,6 @@ window.toggleGestionDateGroup = (date) => {
   state.gestionCollapsedDates[date] = !state.gestionCollapsedDates[date];
   saveGestionCollapsedDates(state.gestionCollapsedDates);
   refreshGestionView();
-};
-window.openRenameBookingDateGroup = (date) => {
-  state.modal = { type: 'renameBookingDateGroup', date };
-  render();
 };
 window.confirmRenameBookingDateGroup = () => {
   const date = state.modal.date;
@@ -6286,12 +6333,12 @@ function renderGestionLocation(){
   return `
     <div class="topbar">
       <div><h1>Gestion location</h1><div class="desc">Recherchez, filtrez et faites avancer chaque location : demande → acceptée → louée → retournée.</div></div>
-      <button type="button" class="btn btn-ghost" style="width:auto;" onclick="openBookingCalendarModal()" title="Calendrier des locations">${tacticalIconSvg('calendar',{size:16})} Calendrier</button>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;"><button type="button" class="btn btn-ghost" style="width:auto;" onclick="openBookingOpsModal()" title="Noms des opérations par date">Opérations</button><button type="button" class="btn btn-ghost" style="width:auto;" onclick="openBookingCalendarModal()" title="Calendrier des locations">${tacticalIconSvg('calendar',{size:16})} Calendrier</button></div>
     </div>
     <div class="filter-bar">
-      <input type="text" placeholder="Rechercher un client, un matériel..." value="${esc(state.gestionSearch)}" oninput="onGestionSearch(this.value)">
+      <input type="text" placeholder="Rechercher un client, un matériel, une opération..." value="${esc(state.gestionSearch)}" oninput="onGestionSearch(this.value)">
     </div>
-    ${unitsBannerHtml()}${invoiceBannerHtml()}<div id="gestion-chips">${gestionAllChipsHtml()}</div>
+    ${unitsBannerHtml()}${opsBannerHtml()}${invoiceBannerHtml()}<div id="gestion-chips">${gestionAllChipsHtml()}</div>
     <div class="result-count" id="gestion-count">${totalCount} location${totalCount>1?'s':''}</div>
     <div id="gestion-groups">${groups.length ? groups.map(gestionDateGroupHtml).join('') : `<div class="panel"><div class="empty">Aucune location ne correspond à cette recherche.</div></div>`}</div>
   `;
@@ -8893,11 +8940,14 @@ function bookingRate(b){ return unitRatePct(bookingUnit(b)); }
 function finOwnerBase(){ return (finSettings().owner_share_base === 'ht') ? 'ht' : 'ttc'; }
 // Base du calcul : TTC (montant de la facture) ou HT (facture, sinon TTC / (1 + TVA)).
 function ownerShareBaseAmount(b, amountTtc){
-  if(finOwnerBase() !== 'ht') return amountTtc;
-  const inv = state.invoices.find(x => x.booking_id === b.id);
-  if(inv && inv.amount_ht != null && isFinite(Number(inv.amount_ht))) return round2(Number(inv.amount_ht));
+  // Lot 53 : les frais d'envoi (option « JVN chez vous 24 h avant ») reviennent à OwlsVision, pas au propriétaire.
+  const fee = Number(b.ship_fee) || 0;
+  const ttc = fee ? Math.max(0, round2(amountTtc - fee)) : amountTtc;
+  if(finOwnerBase() !== 'ht') return ttc;
   const tva = Number(finSettings().tva); const rate = isFinite(tva) ? tva : 20;
-  return round2(amountTtc / (1 + rate / 100));
+  const inv = state.invoices.find(x => x.booking_id === b.id);
+  if(inv && inv.amount_ht != null && isFinite(Number(inv.amount_ht))) return round2(Number(inv.amount_ht) - (fee ? round2(fee / (1 + rate / 100)) : 0));
+  return round2(ttc / (1 + rate / 100));
 }
 function bookingOwnerShare(b, amountTtc){
   if(!bookingOwnerUsername(b)) return 0;
@@ -9494,6 +9544,7 @@ function gestionCardHtml(b){
         <span class="gb-price" ${source === 'estime' ? 'title="Estimé d\'après le tarif catalogue : pas encore de facture"' : ''}>${price}</span>
       </div>
       ${gbUnitChipHtml(b, item)}
+      ${gbOpChipHtml(b)}
       ${steps}
       <div class="gb-act">${main.join('')}${menu}</div>
     </div>`;
@@ -9532,7 +9583,7 @@ function gestionDateGroupHtml(group){
       <div class="gestion-date-head" onclick="toggleGestionDateGroup('${date}')">
         <span class="gestion-date-chevron">${collapsed ? '▸' : '▾'}</span>
         <span class="gestion-date-label">${esc(label)}</span>
-        <button type="button" class="gestion-date-rename" onclick="event.stopPropagation(); openRenameBookingDateGroup('${date}')" title="Renommer ce groupe">✎</button>
+        <button type="button" class="gestion-date-rename" onclick="event.stopPropagation(); openRenameBookingDateGroup('${date}')" title="Opérations de cette date">✎</button>
         ${bookings.length > 1 || collapsed ? `<span class="gestion-date-count">${bookings.length}</span>` : ''}
       </div>
       ${!collapsed ? `<div class="gestion-date-body"><div class="gb-grid">${bookings.map(gestionCardHtml).join('')}</div></div>` : ''}
@@ -11106,6 +11157,8 @@ function renderModal(){
       <div class="modal-actions"><button class="btn btn-primary" style="width:100%;" onclick="closeModal()">${esc(t('common.close'))}</button></div>
     </div></div>`;
   }
+  if(m.type === "bookingOps") return bookingOpsModalHtml(m);
+  if(m.type === "attachOps") return attachOpsModalHtml(m);
   if(m.type === "renameBookingDateGroup"){
     const current = bookingDateLabel(m.date);
     return `
@@ -11130,16 +11183,19 @@ function renderModal(){
   }
   if(m.type === "book"){
     const item = state.items.find(i => i.id === m.itemId);
+    const dr = (state.bookingDraft && state.bookingDraft.itemId === item.id) ? state.bookingDraft : { itemId: item.id, start: todayStr(), end: addDaysStr(todayStr(), MIN_BOOKING_DAYS-1), opSel: '', opOther: '', ship: false };
+    if(state.bookingDraft) setTimeout(() => { updateAvailabilityPreview(item.id); }, 0);
     return `
     <div class="modal-bg" onclick="closeModalBg(event)"><div class="modal">
       <h3>${esc(t('booking.modal.title', { item: item.name }))}</h3>
       ${state.bookingError ? `<div class="msg msg-error">${esc(state.bookingError)}</div>` : ''}
       <div class="row">
-        <div class="field"><label>${esc(t('booking.field.start'))}</label><input id="bk-start" type="date" min="${todayStr()}" value="${todayStr()}" oninput="onBookingStartChange('${item.id}')"></div>
-        <div class="field"><label>${esc(t('booking.field.end'))}</label><input id="bk-end" type="date" min="${addDaysStr(todayStr(), MIN_BOOKING_DAYS-1)}" value="${addDaysStr(todayStr(), MIN_BOOKING_DAYS-1)}" oninput="updateAvailabilityPreview('${item.id}')"></div>
+        <div class="field"><label>${esc(t('booking.field.start'))}</label><input id="bk-start" type="date" min="${todayStr()}" value="${esc(dr.start)}" oninput="onBookingStartChange('${item.id}')"></div>
+        <div class="field"><label>${esc(t('booking.field.end'))}</label><input id="bk-end" type="date" min="${addDaysStr(todayStr(), MIN_BOOKING_DAYS-1)}" value="${esc(dr.end)}" oninput="updateAvailabilityPreview('${item.id}')"></div>
       </div>
       <div id="bk-availability" style="font-size:12.5px;color:var(--accent);margin-bottom:8px;"></div>
       ${(item.price_per_day!=null || item.price_per_week!=null) ? `<div style="font-size:12.5px;color:var(--text-dim);margin-bottom:6px;">${item.price_per_day!=null?esc(t('catalogue.priceDay', { price: Number(item.price_per_day).toFixed(2) })):''}${item.price_per_day!=null&&item.price_per_week!=null?' · ':''}${item.price_per_week!=null?esc(t('catalogue.priceWeek', { price: Number(item.price_per_week).toFixed(2) })):''}</div>` : ''}
+      ${bookingOpBlockHtml(item, dr)}
       <div style="font-size:12px;color:var(--text-faint);">${esc(t('booking.note', { xp: item.xp_value }))}</div>
       <div class="modal-actions"><button class="btn btn-ghost" onclick="closeModal()">${esc(t('common.cancel'))}</button><button class="btn btn-primary" onclick="confirmBooking('${item.id}')">${esc(t('booking.send'))}</button></div>
     </div></div>`;
@@ -12049,6 +12105,215 @@ function tplModalHtml(m){
   </div></div>`;
 }
 
+/* ---------- Lot 53 : opérations par date, choix de l'opération, envoi 24 h avant ---------- */
+const SHIP24_FEE = 19.90;
+function opsSorted(list){ return list.slice().sort((a, b) => String(a.date).localeCompare(String(b.date)) || String(a.name).localeCompare(String(b.name), 'fr')); }
+function opsOnDate(date){ return opsSorted((state.bookingOperations || []).filter(o => o.date === date)); }
+function opsInRange(start, end){ return opsSorted((state.bookingOperations || []).filter(o => o.date >= start && o.date <= end)); }
+function opsNear(start, end, days){
+  const lo = addDaysStr(start, -days), hi = addDaysStr(end, days);
+  return opsSorted((state.bookingOperations || []).filter(o => o.date >= lo && o.date <= hi));
+}
+function bookingOpLabel(b){ return b && b.operation_name ? String(b.operation_name) : ''; }
+function fmtEurFr(v){ return fmtDecimalFr(v) + ' €'; }
+function shortDateFr(d){ const x = String(d || '').split('-'); return x.length === 3 ? x[2] + '/' + x[1] : String(d || ''); }
+function bookingsWithoutOp(includeDone){
+  return state.bookings.filter(b => !b.operation_name && (includeDone || ['demande', 'accepte', 'loue'].includes(b.status)))
+    .sort((a, c) => String(a.start_date).localeCompare(String(c.start_date)));
+}
+
+/* ----- Master : opérations d'une date (plusieurs possibles) ----- */
+window.openRenameBookingDateGroup = (date) => { state.modal = { type: 'bookingOps', date, error: '' }; render(); };
+window.openBookingOpsModal = () => { state.modal = { type: 'bookingOps', date: null, addDate: todayStr(), error: '' }; render(); };
+window.bookingOpsShowAll = () => { state.modal = { type: 'bookingOps', date: null, addDate: (state.modal && state.modal.date) || todayStr(), error: '' }; render(); };
+window.addBookingOperations = async () => {
+  const m = state.modal; if(!m || m.type !== 'bookingOps') return;
+  const dEl = document.getElementById('bop-date'), nEl = document.getElementById('bop-name');
+  const date = m.date || (dEl ? dEl.value : '');
+  const names = String(nEl ? nEl.value : '').split(/[;\n]/).map(s => s.trim().replace(/\s+/g, ' ')).filter(Boolean);
+  if(!date){ m.error = 'Choisissez une date.'; render(); return; }
+  if(!names.length){ m.error = "Saisissez le nom de l'opération."; render(); return; }
+  const seen = new Set(opsOnDate(date).map(o => o.name.toLowerCase()));
+  const rows = [];
+  for(const n of names){ if(n.length > 120){ m.error = 'Nom trop long (120 caractères maximum).'; render(); return; } if(!seen.has(n.toLowerCase())){ seen.add(n.toLowerCase()); rows.push({ date, name: n }); } }
+  if(!rows.length){ m.error = 'Cette opération existe déjà à cette date.'; render(); return; }
+  const { data, error } = await sb.from('booking_operations').insert(rows).select();
+  if(error){ m.error = /booking_operations|relation|does not exist/i.test(error.message) ? "La table des opérations n'existe pas encore : exécutez migration_lot53_operations.sql dans Supabase." : 'Erreur : ' + error.message; render(); return; }
+  state.bookingOperations = (state.bookingOperations || []).concat(data || []);
+  m.error = ''; if(!m.date) m.addDate = date;
+  render();
+};
+window.deleteBookingOperation = async (id) => {
+  const o = (state.bookingOperations || []).find(x => x.id === id); if(!o) return;
+  const used = state.bookings.filter(b => b.operation_name && b.operation_name.toLowerCase() === o.name.toLowerCase()).length;
+  if(!confirm(`Supprimer l'opération « ${o.name} » du ${fmtDate(o.date)} ?` + (used ? `\n${used} réservation${used > 1 ? 's' : ''} garde${used > 1 ? 'nt' : ''} ce nom (il ne sera pas effacé des réservations).` : '') + '\nLes clients ne pourront plus la choisir.')) return;
+  const { error } = await sb.from('booking_operations').delete().eq('id', id);
+  if(error){ alert('Erreur : ' + error.message); return; }
+  state.bookingOperations = state.bookingOperations.filter(x => x.id !== id);
+  render();
+};
+function bookingOpsModalHtml(m){
+  const today = todayStr();
+  const item = (o) => `<li class="bop-item"><span>${esc(o.name)}</span><button type="button" class="bop-del" onclick="deleteBookingOperation('${esc(o.id)}')" title="Supprimer cette opération" aria-label="Supprimer ${esc(o.name)}">✕</button></li>`;
+  let listHtml;
+  if(m.date){
+    const l = opsOnDate(m.date);
+    listHtml = l.length ? `<ul class="bop-list">${l.map(item).join('')}</ul>` : `<div class="bop-empty">Aucune opération à cette date : les clients verront seulement « Autre ».</div>`;
+  } else {
+    const all = opsSorted(state.bookingOperations || []);
+    const up = all.filter(o => o.date >= today), past = all.filter(o => o.date < today).reverse();
+    const group = (arr) => { const by = new Map(); arr.forEach(o => { if(!by.has(o.date)) by.set(o.date, []); by.get(o.date).push(o); }); return [...by.entries()].map(([d, l]) => `<div class="bop-date"><b>${esc(fmtDate(d))}</b><ul class="bop-list">${l.map(item).join('')}</ul></div>`).join(''); };
+    listHtml = (up.length ? group(up) : `<div class="bop-empty">Aucune opération à venir.</div>`) + (past.length ? `<details class="bop-past"><summary>Passées (${past.length})</summary>${group(past)}</details>` : '');
+  }
+  return `
+    <div class="modal-bg" onclick="closeModalBg(event)"><div class="modal" style="max-width:520px;">
+      <h3>${m.date ? 'Opérations du ' + esc(fmtDate(m.date)) : 'Opérations'}</h3>
+      <p class="bop-help">Les clients choisissent leur opération dans cette liste au moment de la demande (les opérations qui tombent pendant leur location). Plusieurs opérations possibles le même jour.</p>
+      ${m.error ? `<div class="msg msg-error">${esc(m.error)}</div>` : ''}
+      <div class="bop-add">
+        ${m.date ? '' : `<div class="field"><label>Date</label><input id="bop-date" type="date" value="${esc(m.addDate || today)}"></div>`}
+        <div class="field" style="flex:1;"><label>Nom${m.date ? ' (plusieurs : séparez par ;)' : ''}</label><input id="bop-name" maxlength="400" placeholder="Ex. Iron Gate ; Ligne de Crête" onkeydown="if(event.key==='Enter'){event.preventDefault();addBookingOperations();}"></div>
+        <button type="button" class="btn btn-primary" style="width:auto;align-self:flex-end;margin-bottom:14px;" onclick="addBookingOperations()">Ajouter</button>
+      </div>
+      ${listHtml}
+      <div class="modal-actions">${m.date ? `<button class="btn btn-ghost" onclick="bookingOpsShowAll()">Toutes les dates</button>` : ''}<button class="btn btn-primary" onclick="closeModal()">Fermer</button></div>
+    </div></div>`;
+}
+
+/* ----- Master : puce « opération » sur chaque carte + rattachement manuel ----- */
+function gbOpChipHtml(b){
+  const id = esc(b.id), op = bookingOpLabel(b);
+  const ship = Number(b.ship_fee) > 0 ? `<div class="gb-own ship"><span>Envoi de la JVN 24 h avant l'opération</span><i>+ ${fmtEurFr(b.ship_fee)}</i></div>` : '';
+  const chip = op
+    ? `<button type="button" class="gb-own" onclick="openAttachOps('${id}')" title="Changer d'opération"><span>Opé : ${esc(op)}${b.operation_other ? ' <em class="gb-oth">(autre)</em>' : ''}</span><i>Changer</i></button>`
+    : `<button type="button" class="gb-own todo" onclick="openAttachOps('${id}')"><span>Sans opération</span><i>Rattacher</i></button>`;
+  return chip + ship;
+}
+function opsBannerHtml(){
+  if(!state.session.isMaster) return '';
+  const n = bookingsWithoutOp(false).length;
+  if(!n) return '';
+  return `<div class="un-banner ops-banner"><span><b>${n}</b> location${n > 1 ? 's' : ''} sans opération rattachée.</span><button type="button" class="btn btn-ghost btn-sm" style="width:auto;" onclick="openAttachOps()">Rattacher</button></div>`;
+}
+window.openAttachOps = (focusId) => { state.modal = { type: 'attachOps', focus: focusId || null, all: false, touched: [] }; render(); };
+window.toggleAttachOpsAll = () => { state.modal.all = !state.modal.all; render(); };
+function attachOpSelectHtml(b){
+  const id = esc(b.id), cur = bookingOpLabel(b);
+  const inRange = opsInRange(b.start_date, b.end_date);
+  const rangeIds = new Set(inRange.map(o => o.id));
+  const near = opsNear(b.start_date, b.end_date, 45).filter(o => !rangeIds.has(o.id));
+  const opt = (o) => `<option value="op:${esc(encodeURIComponent(o.name))}" ${o.name.toLowerCase() === cur.toLowerCase() && !b.operation_other ? 'selected' : ''}>${esc(o.name)} · ${esc(shortDateFr(o.date))}</option>`;
+  const known = [...inRange, ...near].some(o => o.name.toLowerCase() === cur.toLowerCase());
+  return `<select class="att-sel" onchange="onAttachOpChange('${id}', this)" aria-label="Opération">
+      <option value="" ${cur ? '' : 'selected'}>— Choisir —</option>
+      ${inRange.length ? `<optgroup label="Pendant la location">${inRange.map(opt).join('')}</optgroup>` : ''}
+      ${near.length ? `<optgroup label="Autres opérations proches">${near.map(opt).join('')}</optgroup>` : ''}
+      ${cur && (!known || b.operation_other) ? `<option value="__keep__" selected>${esc(cur)} (saisie libre)</option>` : ''}
+      <option value="__other__">Autre (saisie libre)…</option>
+      ${cur ? `<option value="__none__">Retirer l'opération</option>` : ''}
+    </select>
+    <input class="att-other" id="att-other-${id}" style="display:none" maxlength="120" placeholder="Nom de l'opération" onkeydown="if(event.key==='Enter'){event.preventDefault();saveAttachOther('${id}');}" onblur="saveAttachOther('${id}')">`;
+}
+function attachOpsModalHtml(m){
+  const base = bookingsWithoutOp(m.all).map(b => b.id);
+  const ids = [...new Set([...(m.focus ? [m.focus] : []), ...base, ...(m.touched || [])])];
+  const rows = ids.map(id => state.bookings.find(b => b.id === id)).filter(Boolean);
+  rows.sort((a, c) => String(a.start_date).localeCompare(String(c.start_date)));
+  const itemName = (b) => (state.items.find(i => i.id === b.item_id) || {}).name || 'Matériel';
+  const cli = (b) => clientDisplayName(state.profiles.find(p => p.username === b.username)) || b.username;
+  const body = rows.length ? rows.map(b => `
+      <div class="att-row ${b.operation_name ? 'done' : ''} ${m.focus === b.id ? 'focus' : ''}" id="att-${esc(b.id)}">
+        <div class="att-info"><b>${esc(cli(b))}</b><small>${esc(itemName(b))} · ${esc(finShortRange(b.start_date, b.end_date))} · ${esc(STATUS_LABELS[b.status] || b.status)}</small></div>
+        <div class="att-pick">${attachOpSelectHtml(b)}${b.operation_name ? '<span class="att-ok" aria-hidden="true">✓</span>' : ''}</div>
+      </div>`).join('') : `<div class="bop-empty">Toutes les locations sont rattachées à une opération.</div>`;
+  return `
+    <div class="modal-bg" onclick="closeModalBg(event)"><div class="modal" style="max-width:640px;">
+      <h3>Rattacher à une opération</h3>
+      <p class="bop-help">Choisissez l'opération de chaque location : elle s'enregistre dès que vous la sélectionnez. La liste propose les opérations qui tombent pendant la location, puis celles des environs. Si aucune ne convient, « Autre » permet de saisir le nom.</p>
+      <div class="att-list">${body}</div>
+      <div class="modal-actions"><button class="btn btn-ghost" onclick="toggleAttachOpsAll()">${m.all ? 'Masquer les locations terminées' : 'Inclure les locations terminées'}</button><button class="btn btn-primary" onclick="closeModal()">Fermer</button></div>
+    </div></div>`;
+}
+async function saveBookingOperation(id, name, other){
+  const b = state.bookings.find(x => x.id === id); if(!b) return false;
+  const payload = { operation_name: name || null, operation_other: !!(name && other) };
+  const { data, error } = await sb.from('bookings').update(payload).eq('id', id).select().single();
+  if(error){ alert(/operation_name|column/i.test(error.message) ? 'Colonnes manquantes : exécutez migration_lot53_operations.sql dans Supabase.' : 'Erreur : ' + error.message); render(); return false; }
+  Object.assign(b, payload, data || {});
+  if(state.modal && state.modal.type === 'attachOps'){ state.modal.touched = [...new Set([...(state.modal.touched || []), id])]; }
+  render();
+  return true;
+}
+window.onAttachOpChange = (id, sel) => {
+  const v = sel.value;
+  if(v === '') return;
+  if(v === '__keep__') return;
+  if(v === '__other__'){ const inp = document.getElementById('att-other-' + id); if(inp){ inp.style.display = ''; inp.focus(); } return; }
+  if(v === '__none__'){ saveBookingOperation(id, null, false); return; }
+  if(v.startsWith('op:')) saveBookingOperation(id, decodeURIComponent(v.slice(3)), false);
+};
+window.saveAttachOther = (id) => {
+  const inp = document.getElementById('att-other-' + id); if(!inp || inp.style.display === 'none') return;
+  const val = inp.value.trim().replace(/\s+/g, ' ');
+  if(!val) return;
+  inp.style.display = 'none';
+  saveBookingOperation(id, val.slice(0, 120), true);
+};
+
+/* ----- Client : choix de l'opération + envoi 24 h avant dans la demande ----- */
+function bookingOpsOptionsHtml(start, end, keep){
+  const ops = start && end && start <= end ? opsInRange(start, end) : [];
+  const seen = new Set();
+  const opts = ops.filter(o => { const k = o.name.toLowerCase(); if(seen.has(k)) return false; seen.add(k); return true; })
+    .map(o => `<option value="op:${esc(encodeURIComponent(o.name))}" ${keep === 'op:' + encodeURIComponent(o.name) ? 'selected' : ''}>${esc(o.name)} · ${esc(shortDateFr(o.date))}</option>`).join('');
+  return { ops, html: `<option value="" ${keep ? '' : 'selected'}>${esc(t('booking.op.choose'))}</option>${opts}<option value="__other__" ${keep === '__other__' ? 'selected' : ''}>${esc(t('booking.op.other'))}</option>` };
+}
+window.refreshBookingOps = () => {
+  const s = document.getElementById('bk-start'), en = document.getElementById('bk-end'), sel = document.getElementById('bk-op'), inp = document.getElementById('bk-op-other'), hint = document.getElementById('bk-op-hint');
+  if(!s || !en || !sel || !inp) return;
+  const keep = sel.value;
+  const { ops, html } = bookingOpsOptionsHtml(s.value, en.value, keep);
+  if(!ops.length){
+    sel.style.display = 'none'; sel.innerHTML = html; sel.value = '__other__';
+    inp.style.display = ''; hint.textContent = t('booking.op.none');
+  } else {
+    sel.style.display = ''; sel.innerHTML = html;
+    if(![...sel.options].some(o => o.value === keep)) sel.value = ''; else sel.value = keep;
+    inp.style.display = sel.value === '__other__' ? '' : 'none'; hint.textContent = '';
+  }
+};
+window.onBookingOpChange = () => {
+  const sel = document.getElementById('bk-op'), inp = document.getElementById('bk-op-other'); if(!sel || !inp) return;
+  inp.style.display = sel.value === '__other__' ? '' : 'none';
+  if(sel.value === '__other__') inp.focus();
+  const e = document.getElementById('bk-op-err'); if(e) e.textContent = '';
+};
+window.updateBookingTotal = (itemId) => {
+  const s = document.getElementById('bk-start'), en = document.getElementById('bk-end'), out = document.getElementById('bk-total'), ship = document.getElementById('bk-ship');
+  if(!s || !en || !out) return;
+  if(!s.value || !en.value || s.value > en.value){ out.innerHTML = ''; return; }
+  const rental = estimatedRentalPrice({ item_id: itemId, start_date: s.value, end_date: en.value });
+  if(rental == null){ out.innerHTML = ''; return; }
+  const fee = ship && ship.checked ? SHIP24_FEE : 0;
+  out.innerHTML = `<div class="bk-line"><span>${esc(t('booking.total.rental'))}</span><span>${esc(fmtEurFr(rental))}</span></div>`
+    + (fee ? `<div class="bk-line"><span>${esc(t('booking.total.ship'))}</span><span>+ ${esc(fmtEurFr(fee))}</span></div>` : '')
+    + `<div class="bk-line bk-sum"><span>${esc(t('booking.total.total'))}</span><span>${esc(fmtEurFr(round2(rental + fee)))}</span></div>`;
+};
+function bookingOpBlockHtml(item, draft){
+  const { ops, html } = bookingOpsOptionsHtml(draft.start, draft.end, draft.opSel);
+  const showOther = !ops.length || draft.opSel === '__other__';
+  return `
+    <div class="field bk-op-wrap">
+      <label for="bk-op">${esc(t('booking.op.label'))}</label>
+      <select id="bk-op" onchange="onBookingOpChange()" ${ops.length ? '' : 'style="display:none"'}>${html}</select>
+      <input id="bk-op-other" maxlength="120" placeholder="${esc(t('booking.op.otherPlaceholder'))}" value="${esc(draft.opOther || '')}" ${showOther ? '' : 'style="display:none"'} oninput="document.getElementById('bk-op-err').textContent=''">
+      <div id="bk-op-hint" class="bk-hint">${ops.length ? '' : esc(t('booking.op.none'))}</div>
+      <div id="bk-op-err" class="bk-err" role="alert"></div>
+    </div>
+    <label class="bk-ship"><input type="checkbox" id="bk-ship" ${draft.ship ? 'checked' : ''} onchange="updateBookingTotal('${item.id}')"><span class="bk-ship-txt">${esc(t('booking.ship.label'))}</span><b class="bk-ship-price">+ ${esc(fmtEurFr(SHIP24_FEE))}</b></label>
+    <div id="bk-total" class="bk-total" aria-live="polite"></div>`;
+}
+
 /* ---------- Lot 51 : Mon parc (espace des propriétaires) ---------- */
 // Les chiffres viennent de la fonction SQL owner_parc() (migration_lot51_mon_parc.sql) : un propriétaire
 // ne peut pas lire les réservations des autres clients, la fonction lui renvoie seulement ce qui
@@ -12689,7 +12954,7 @@ window.openBookModal = (itemId) => {
     state.view = "profil"; state.sidebarOpen = false; render();
     return;
   }
-  state.bookingError = ""; state.modal = { type:"book", itemId }; render(); updateAvailabilityPreview(itemId);
+  state.bookingError = ""; state.bookingDraft = null; state.modal = { type:"book", itemId }; render(); updateAvailabilityPreview(itemId);
   // Lot 37 : étape 1 du suivi funnel — le client vient de choisir un modèle (fiche profil complète,
   // le formulaire de réservation s'ouvre réellement). Pas d'await : ne doit jamais retarder l'ouverture
   // du formulaire pour le client.
@@ -12734,12 +12999,20 @@ window.confirmAddXp = async (username) => {
     addXpInFlight = false;
   }
 };
-window.closeModal = () => { state.modal = null; state.bookingError = ""; state.answerError = ""; state.addXpError = ""; state.channelError = ""; render(); };
+window.closeModal = () => { state.modal = null; state.bookingDraft = null; state.bookingError = ""; state.answerError = ""; state.addXpError = ""; state.channelError = ""; render(); };
 window.closeModalBg = (e) => { if(e.target.classList.contains('modal-bg')) window.closeModal(); };
 window.confirmBooking = (itemId) => {
   const start = document.getElementById("bk-start").value;
   const end = document.getElementById("bk-end").value;
-  submitBooking(itemId, start, end);
+  const sel = document.getElementById('bk-op'), inp = document.getElementById('bk-op-other'), shipEl = document.getElementById('bk-ship'), err = document.getElementById('bk-op-err');
+  const v = sel ? sel.value : '__other__';
+  let op = '', other = false;
+  if(v.startsWith('op:')) op = decodeURIComponent(v.slice(3));
+  else if(v === '__other__'){ op = (inp ? inp.value : '').trim().replace(/\s+/g, ' ').slice(0, 120); other = true; }
+  if(!op){ if(err) err.textContent = t('booking.err.opRequired'); return; }
+  const ship24 = !!(shipEl && shipEl.checked);
+  state.bookingDraft = { itemId, start, end, opSel: v, opOther: inp ? inp.value : '', ship: ship24 };
+  submitBooking(itemId, start, end, { operation: op, other, ship24 });
 };
 window.confirmNewItem = async (e, itemId) => {
   const name = document.getElementById("it-name").value.trim();
@@ -12913,6 +13186,7 @@ window.updateAvailabilityPreview = (itemId) => {
   const { text, danger } = computeAvailabilityText(itemId, s.value, en.value);
   out.textContent = text;
   out.style.color = danger ? 'var(--danger)' : 'var(--accent)';
+  refreshBookingOps(); updateBookingTotal(itemId);
   // Lot 37 : étape 2 du suivi funnel — période de dates valide saisie (début ≤ fin), débounced
   // puisque cette fonction tourne à chaque frappe/sélection dans les deux champs date.
   if(s.value && en.value && s.value <= en.value){
@@ -12985,6 +13259,18 @@ fr: {
   'booking.modal.title': "Réserver {{item}}",
   'booking.note': "Cette réservation vous rapportera {{xp}} XP une fois validée.",
   'booking.send': "Envoyer la demande",
+  'booking.op.label': "Nom de l'opération",
+  'booking.op.choose': "— Choisir mon opération —",
+  'booking.op.other': "Autre (je précise)",
+  'booking.op.otherPlaceholder': "Nom de votre opération",
+  'booking.op.none': "Aucune opération enregistrée sur ces dates : indiquez le nom de la vôtre.",
+  'booking.err.opRequired': "Choisissez votre opération, ou précisez-la.",
+  'booking.ship.label': "Envoi de la JVN chez vous 24h avant votre op",
+  'booking.total.rental': "Location",
+  'booking.total.ship': "Envoi 24 h avant",
+  'booking.total.total': "Total estimé",
+  'reservations.op': "Opération : {{name}}",
+  'reservations.ship': "Envoi 24 h avant l'opération (+ {{price}} €)",
   'catalogue.available': "{{n}} disponibles",
   'catalogue.book': "Réserver",
   'catalogue.desc.client': "Parcourez notre matériel disponible à la location.",
@@ -13228,6 +13514,18 @@ en: {
   'booking.modal.title': "Book {{item}}",
   'booking.note': "This booking will earn you {{xp}} XP once approved.",
   'booking.send': "Send request",
+  'booking.op.label': "Operation name",
+  'booking.op.choose': "— Choose my operation —",
+  'booking.op.other': "Other (I'll specify)",
+  'booking.op.otherPlaceholder': "Name of your operation",
+  'booking.op.none': "No operation listed for these dates: enter the name of yours.",
+  'booking.err.opRequired': "Choose your operation, or specify it.",
+  'booking.ship.label': "NVD shipped to your home 24h before your op",
+  'booking.total.rental': "Rental",
+  'booking.total.ship': "Shipping 24 h before",
+  'booking.total.total': "Estimated total",
+  'reservations.op': "Operation: {{name}}",
+  'reservations.ship': "Shipping 24 h before the operation (+ {{price}} €)",
   'catalogue.available': "{{n}} available",
   'catalogue.book': "Book",
   'catalogue.desc.client': "Browse the equipment available for rental.",
@@ -13471,6 +13769,18 @@ es: {
   'booking.modal.title': "Reservar {{item}}",
   'booking.note': "Esta reserva le hará ganar {{xp}} XP una vez validada.",
   'booking.send': "Enviar solicitud",
+  'booking.op.label': "Nombre de la operación",
+  'booking.op.choose': "— Elegir mi operación —",
+  'booking.op.other': "Otra (la indico)",
+  'booking.op.otherPlaceholder': "Nombre de su operación",
+  'booking.op.none': "No hay ninguna operación registrada en esas fechas: indique el nombre de la suya.",
+  'booking.err.opRequired': "Elija su operación o indíquela.",
+  'booking.ship.label': "Envío del equipo a su domicilio 24 h antes de su operación",
+  'booking.total.rental': "Alquiler",
+  'booking.total.ship': "Envío 24 h antes",
+  'booking.total.total': "Total estimado",
+  'reservations.op': "Operación: {{name}}",
+  'reservations.ship': "Envío 24 h antes de la operación (+ {{price}} €)",
   'catalogue.available': "{{n}} disponibles",
   'catalogue.book': "Reservar",
   'catalogue.desc.client': "Explore el equipo disponible para alquilar.",
@@ -13714,6 +14024,18 @@ it: {
   'booking.modal.title': "Prenota {{item}}",
   'booking.note': "Questa prenotazione ti farà guadagnare {{xp}} XP una volta approvata.",
   'booking.send': "Invia richiesta",
+  'booking.op.label': "Nome dell'operazione",
+  'booking.op.choose': "— Scegli la mia operazione —",
+  'booking.op.other': "Altra (la indico)",
+  'booking.op.otherPlaceholder': "Nome della tua operazione",
+  'booking.op.none': "Nessuna operazione registrata in queste date: indica il nome della tua.",
+  'booking.err.opRequired': "Scegli la tua operazione o specificala.",
+  'booking.ship.label': "Spedizione del visore a casa tua 24 ore prima della tua operazione",
+  'booking.total.rental': "Noleggio",
+  'booking.total.ship': "Spedizione 24 h prima",
+  'booking.total.total': "Totale stimato",
+  'reservations.op': "Operazione: {{name}}",
+  'reservations.ship': "Spedizione 24 h prima dell'operazione (+ {{price}} €)",
   'catalogue.available': "{{n}} disponibili",
   'catalogue.book': "Prenota",
   'catalogue.desc.client': "Sfoglia l'attrezzatura disponibile per il noleggio.",
@@ -13957,6 +14279,18 @@ de: {
   'booking.modal.title': "{{item}} buchen",
   'booking.note': "Diese Buchung bringt Ihnen nach Genehmigung {{xp}} XP ein.",
   'booking.send': "Anfrage senden",
+  'booking.op.label': "Name der Operation",
+  'booking.op.choose': "— Meine Operation wählen —",
+  'booking.op.other': "Andere (ich gebe sie an)",
+  'booking.op.otherPlaceholder': "Name Ihrer Operation",
+  'booking.op.none': "Für diese Daten ist keine Operation hinterlegt: geben Sie den Namen Ihrer Operation an.",
+  'booking.err.opRequired': "Wählen Sie Ihre Operation oder geben Sie sie an.",
+  'booking.ship.label': "Versand des Nachtsichtgeräts zu Ihnen nach Hause 24 Std. vor Ihrer Operation",
+  'booking.total.rental': "Miete",
+  'booking.total.ship': "Versand 24 Std. vorher",
+  'booking.total.total': "Geschätzte Summe",
+  'reservations.op': "Operation: {{name}}",
+  'reservations.ship': "Versand 24 Std. vor der Operation (+ {{price}} €)",
   'catalogue.available': "{{n}} verfügbar",
   'catalogue.book': "Buchen",
   'catalogue.desc.client': "Durchstöbern Sie die zur Miete verfügbare Ausrüstung.",
@@ -14200,6 +14534,18 @@ lb: {
   'booking.modal.title': "{{item}} reservéieren",
   'booking.note': "Dës Reservatioun bréngt Iech {{xp}} XP, soubal se validéiert ass.",
   'booking.send': "Ufro schécken",
+  'booking.op.label': "Numm vun der Operatioun",
+  'booking.op.choose': "— Meng Operatioun wielen —",
+  'booking.op.other': "Anerer (ech präziséieren)",
+  'booking.op.otherPlaceholder': "Numm vun Ärer Operatioun",
+  'booking.op.none': "Keng Operatioun fir dës Datume registréiert: gitt den Numm vun Ärer un.",
+  'booking.err.opRequired': "Wielt Är Operatioun oder präziséiert se.",
+  'booking.ship.label': "Versand vum Nuetssiichtgerät bei Iech 24 Stonnen virun Ärer Operatioun",
+  'booking.total.rental': "Locatioun",
+  'booking.total.ship': "Versand 24 St. virdrun",
+  'booking.total.total': "Geschätzten Total",
+  'reservations.op': "Operatioun: {{name}}",
+  'reservations.ship': "Versand 24 St. virun der Operatioun (+ {{price}} €)",
   'catalogue.available': "{{n}} verfügbar",
   'catalogue.book': "Reservéieren",
   'catalogue.desc.client': "Kuckt Iech den Material un, dat fir d'Locatioun verfügbar ass.",
