@@ -11602,13 +11602,14 @@ function renderModal(){
       <div class="modal-actions"><button class="btn btn-ghost" onclick="closeModal()">Fermer</button></div>
     </div></div>`;
   }
+  if(m.type === "editProfile") return editProfileModalHtml(m);
   if(m.type === "viewProfile"){
     const p = state.profiles.find(x => x.username === m.username);
     if(!p) return "";
     return `
     <div class="modal-bg" onclick="closeModalBg(event)"><div class="modal">
       <h3>${esc(clientDisplayName(p))} ${p.is_owner ? `<span class="owner-tag">${tacticalIconSvg('house',{size:11})}Propriétaire</span>` : ''}</h3>
-      <div class="desc" style="margin:-8px 0 14px;">Fiche client</div>
+      <div class="desc" style="margin:-8px 0 14px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;">Fiche client <button type="button" class="btn btn-ghost btn-sm" style="width:auto;" onclick="openEditProfile('${esc(p.username)}')">✎ Modifier la fiche</button></div>
       <div class="field"><label>Email</label><div class="static-val">${esc(p.username)}</div></div>
       <div class="row" style="align-items:flex-end;">
         <div class="field" style="flex:1;"><label>Prénom</label><div class="static-val">${esc(p.prenom || '—')}</div></div>
@@ -13708,6 +13709,107 @@ window.onBookingStartChange = (itemId) => {
   if(en.value < minEnd) en.value = minEnd;
   updateAvailabilityPreview(itemId);
 };
+
+/* lot 57 */
+/* ---------- Lot 57 : le master modifie lui-même la fiche d'un client ---------- */
+const EP_FIELDS = [
+  ['civilite', 'ep-civilite'], ['prenom', 'ep-prenom'], ['nom', 'ep-nom'], ['date_naissance', 'ep-dob'], ['lieu_naissance', 'ep-lieu'],
+  ['nationalite', 'ep-nat'], ['telephone', 'ep-tel'], ['numero_cni', 'ep-cni'], ['adresse', 'ep-adresse'], ['code_postal', 'ep-cp'], ['ville', 'ep-ville'],
+];
+window.openEditProfile = (username) => {
+  if(!state.session.isMaster) return;
+  state.modal = { type: 'editProfile', username, error: '', fieldErr: {}, draft: null };
+  render();
+};
+window.cancelEditProfile = (username) => { state.modal = { type: 'viewProfile', username }; render(); };
+function epInput(id, key, label, value, o){
+  o = o || {};
+  const err = ((state.modal && state.modal.fieldErr) || {})[key];
+  return `<div class="field${err ? ' pfx-field-err' : ''}" ${o.style ? `style="${o.style}"` : ''}><label for="${id}">${esc(label)}</label>`
+    + (o.select
+      ? `<select id="${id}">${o.select.map(([v, l]) => `<option value="${esc(v)}" ${String(value || '') === v ? 'selected' : ''}>${esc(l)}</option>`).join('')}</select>`
+      : `<input id="${id}" type="${o.type || 'text'}" value="${esc(value || '')}" ${o.attrs || ''} oninput="this.closest('.field').classList.remove('pfx-field-err')">`)
+    + (err ? `<div class="pfx-err-msg">${esc(err)}</div>` : '') + `</div>`;
+}
+function editProfileModalHtml(m){
+  const p = state.profiles.find(x => x.username === m.username);
+  if(!p) return '';
+  const d = m.draft || p;
+  return `
+    <div class="modal-bg"><div class="modal" style="max-width:560px;">
+      <h3>Modifier la fiche de ${esc(clientDisplayName(p))}</h3>
+      <p class="bop-help">Les changements s'appliquent tout de suite partout : fiche, contrats générés, nouvelles factures, Gestion, messages. Les documents déjà émis (factures PDF, contrats signés) gardent les informations d'origine.</p>
+      ${m.error ? `<div class="msg msg-error">${esc(m.error)}</div>` : ''}
+      <div class="field"><label>Email (identifiant du compte, non modifiable)</label><div class="static-val">${esc(p.username)}</div></div>
+      <div class="row">
+        ${epInput('ep-civilite', 'civilite', 'Civilité', d.civilite, { select: [['', '—'], ['M.', 'M.'], ['Mme', 'Mme']] })}
+        ${epInput('ep-prenom', 'prenom', 'Prénom', d.prenom)}
+        ${epInput('ep-nom', 'nom', 'Nom', d.nom)}
+      </div>
+      <div class="row">
+        ${epInput('ep-dob', 'date_naissance', 'Date de naissance', d.date_naissance, { type: 'date' })}
+        ${epInput('ep-lieu', 'lieu_naissance', 'Lieu de naissance', d.lieu_naissance)}
+      </div>
+      <div class="row">
+        ${epInput('ep-nat', 'nationalite', 'Nationalité', d.nationalite)}
+        ${epInput('ep-tel', 'telephone', 'Téléphone', d.telephone, { type: 'tel' })}
+      </div>
+      ${epInput('ep-cni', 'numero_cni', "Numéro de carte d'identité / passeport", d.numero_cni)}
+      ${epInput('ep-adresse', 'adresse', 'Adresse (numéro et rue)', d.adresse)}
+      <div class="row">
+        ${epInput('ep-cp', 'code_postal', 'Code postal', d.code_postal, { style: 'max-width:160px;' })}
+        ${epInput('ep-ville', 'ville', 'Ville', d.ville)}
+      </div>
+      ${p.is_owner ? epInput('ep-iban', 'iban', 'IBAN (Propriétaire)', d.iban) : ''}
+      <div class="modal-actions"><button class="btn btn-ghost" onclick="cancelEditProfile('${esc(p.username)}')">Annuler</button><button class="btn btn-primary" id="ep-save" onclick="saveEditedProfile('${esc(p.username)}')">Enregistrer</button></div>
+    </div></div>`;
+}
+window.saveEditedProfile = async (username) => {
+  const m = state.modal; if(!m || m.type !== 'editProfile' || !state.session.isMaster) return;
+  const p = state.profiles.find(x => x.username === username); if(!p) return;
+  const get = (id) => { const el = document.getElementById(id); return el ? String(el.value || '').trim().replace(/[ \t]+/g, ' ') : undefined; };
+  const draft = {};
+  EP_FIELDS.forEach(([k, id]) => { const v = get(id); if(v !== undefined) draft[k] = v; });
+  if(p.is_owner){ const v = get('ep-iban'); if(v !== undefined) draft.iban = v; }
+  m.draft = draft;
+  const errs = {};
+  if(draft.date_naissance){ const dob = new Date(draft.date_naissance + 'T00:00:00'); if(isNaN(dob) || dob.getFullYear() < 1900 || dob > new Date()) errs.date_naissance = 'Date invalide.'; }
+  if(draft.telephone){ const n = normalizeMobile(draft.telephone); if(n) draft.telephone = n; else if(!/^[+0-9 .()\-]{6,20}$/.test(draft.telephone)) errs.telephone = 'Numéro invalide (ex. 06 12 34 56 78 ou +32 470 12 34 56).'; }
+  if(draft.code_postal && !/^[A-Za-z0-9][A-Za-z0-9 \-]{2,9}$/.test(draft.code_postal)) errs.code_postal = 'Code postal invalide.';
+  if(draft.iban && !/^[A-Za-z]{2}\d{2}[A-Za-z0-9 ]{10,30}$/.test(draft.iban)) errs.iban = 'IBAN invalide.';
+  ['prenom', 'nom', 'lieu_naissance', 'nationalite', 'adresse', 'ville', 'numero_cni'].forEach(k => { if(draft[k] && draft[k].length > 120) errs[k] = 'Trop long (120 caractères maximum).'; });
+  m.fieldErr = errs;
+  if(Object.keys(errs).length){ m.error = 'Certains champs sont invalides (en rouge).'; render(); return; }
+  const payload = {};
+  Object.keys(draft).forEach(k => { payload[k] = draft[k] === '' ? null : draft[k]; });
+  if(payload.iban) payload.iban = payload.iban.replace(/\s+/g, ' ').toUpperCase();
+  const btn = document.getElementById('ep-save'); if(btn){ btn.disabled = true; btn.textContent = 'Enregistrement…'; }
+  const oldName = clientDisplayName(p);
+  const { data, error } = await sb.from('profiles').update(payload).eq('username', username).select().single();
+  if(error){
+    m.error = /column|schema cache/i.test(error.message || '') ? "Une colonne manque en base (nationalité / lieu de naissance / IBAN). Exécutez les migrations précédentes puis réessayez : " + error.message : 'Erreur : ' + error.message;
+    render(); return;
+  }
+  Object.assign(p, data);
+  const newName = clientDisplayName(p);
+  // les lignes de ventes créées automatiquement portent le nom du client dans leur libellé : on les met à jour
+  if(newName !== oldName){
+    const mine = new Set(state.bookings.filter(b => b.username === username).map(b => b.id));
+    state.financeSales.filter(s => s.booking_id && mine.has(s.booking_id) && typeof s.label === 'string' && s.label.endsWith(' — ' + oldName)).forEach(s => {
+      const label = s.label.slice(0, s.label.length - oldName.length) + newName;
+      s.label = label; sb.from('finance_sales').update({ label }).eq('id', s.id).then(() => {});
+    });
+  }
+  state.modal = { type: 'viewProfile', username };
+  render();
+  epToast('Fiche enregistrée', clientDisplayName(p));
+};
+function epToast(title, sub){
+  const el = document.createElement('div'); el.className = 'levelup-toast';
+  el.innerHTML = `<div class="levelup-badge">${tacticalIconSvg('check-circle',{size:22})}</div><div><div class="levelup-title">${esc(title)}</div><div class="levelup-sub">${esc(sub)}</div></div>`;
+  document.body.appendChild(el); requestAnimationFrame(() => el.classList.add('show'));
+  setTimeout(() => { el.classList.remove('show'); setTimeout(() => el.remove(), 400); }, 2600);
+}
 
 /* lot 56 */
 /* ---------- Lot 56 : fermetures de location (plages de dates sans demande possible) ---------- */
